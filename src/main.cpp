@@ -2,6 +2,6 @@
 
 int main()
 {
-    std::cout << "Software Graphics Labs\n";
+    std::cout << "sfwqfqwfwfw";
     return 0;
 }
