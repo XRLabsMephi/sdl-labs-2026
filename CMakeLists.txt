@@ -1,20 +1,18 @@
-cmake_minimum_required(VERSION 3.24)
+cmake_minimum_required(VERSION 3.16)
 
-project(SoftwareGraphicsLabs LANGUAGES CXX)
+project(graphics_lab LANGUAGES CXX)
+
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+set(SDL_SHARED OFF CACHE BOOL "" FORCE)
+set(SDL_STATIC ON CACHE BOOL "" FORCE)
+
+add_subdirectory(vendored/SDL EXCLUDE_FROM_ALL)
 
 add_executable(graphics_lab
-    src/main.cpp
+        src/main.cpp
+        src/map.cpp
 )
 
-target_compile_features(graphics_lab PRIVATE cxx_std_20)
-
-target_compile_options(graphics_lab PRIVATE
-    -Wall
-    -Wextra
-    -Wpedantic
-)
-
-set_target_properties(graphics_lab PROPERTIES
-    CXX_EXTENSIONS OFF
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
-)
+target_link_libraries(graphics_lab PRIVATE SDL3::SDL3-static)
