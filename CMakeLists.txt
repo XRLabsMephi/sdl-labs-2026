@@ -28,6 +28,10 @@ add_executable(graphics_lab
 
     src/math/vector.h
 
+    src/world/map.cc
+    src/world/map.h
+    src/world/tile.h
+
     src/main.cc
 )
 
