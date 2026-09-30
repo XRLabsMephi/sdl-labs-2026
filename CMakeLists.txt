@@ -6,20 +6,20 @@ option(GRAPHICS_LAB_VENDORED "Use vendored libraries" OFF)
 if(GRAPHICS_LAB_VENDORED)
     add_subdirectory(vendored/SDL EXCLUDE_FROM_ALL)
 else()
-    find_package(SDL3 REQUIRED CONFIG REQUIRED COMPONENTS SDL3-shared)
+    find_package(SDL3 CONFIG REQUIRED COMPONENTS SDL3-shared)
 endif()
 
 set(CMAKE_CXX_STANDARD 20)
-
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/$<CONFIGURATION>")
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/$<CONFIGURATION>")
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/$<CONFIGURATION>")
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
 
-add_executable(graphics_lab
+# Core engine library
+add_library(graphics_lab_core STATIC
     src/core/application.cc
     src/core/application.h
 
@@ -31,18 +31,30 @@ add_executable(graphics_lab
     src/world/map.cc
     src/world/map.h
     src/world/tile.h
-
-    src/main.cc
 )
 
-target_include_directories(graphics_lab PRIVATE
+target_include_directories(graphics_lab_core PUBLIC
     "${CMAKE_CURRENT_SOURCE_DIR}/src"
 )
 
-target_compile_options(graphics_lab PRIVATE
-    -Wall
-    -Wextra
-    -Wpedantic
+target_compile_options(graphics_lab_core PRIVATE
+    $<$<CXX_COMPILER_ID:MSVC>:/W4 /permissive->
+    $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall -Wextra -Wpedantic>
 )
 
-target_link_libraries(graphics_lab PRIVATE SDL3::SDL3)
+target_link_libraries(graphics_lab_core PUBLIC SDL3::SDL3)
+
+# Main executable
+add_executable(graphics_lab
+    src/main.cc
+)
+
+target_link_libraries(graphics_lab PRIVATE graphics_lab_core)
+
+# Tests
+option(BUILD_TESTING "Build the testing tree" ON)
+
+if(BUILD_TESTING)
+    enable_testing()
+    add_subdirectory(tests)
+endif()
