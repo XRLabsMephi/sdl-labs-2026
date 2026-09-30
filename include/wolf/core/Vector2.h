@@ -1,8 +1,24 @@
-//
-// Created by Misha on 30.09.2026.
-//
+#pragma once
+#include <cmath>
 
-#ifndef SOFTWAREGRAPHICSLABS_VECTOR2_H
-#define SOFTWAREGRAPHICSLABS_VECTOR2_H
+struct Vector2 {
+    double x = 0.0;
+    double y = 0.0;
 
-#endif //SOFTWAREGRAPHICSLABS_VECTOR2_H
+    Vector2& operator+=(const Vector2& o) { x += o.x; y += o.y; return *this; }
+    Vector2& operator-=(const Vector2& o) { x -= o.x; y -= o.y; return *this; }
+    Vector2& operator*=(double s)         { x *= s; y *= s;   return *this; }
+
+    [[nodiscard]] double get_length() const { return std::sqrt(x * x + y * y); }
+
+    void normalize() {
+        auto length = get_length();
+        if (length == 0) return;
+        *this *= 1.0 / length;
+    }
+};
+
+inline Vector2 operator+(Vector2 a, const Vector2& b) { return a += b; }
+inline Vector2 operator-(Vector2 a, const Vector2& b) { return a -= b; }
+inline Vector2 operator*(Vector2 v, double s)      { return v *= s; }
+inline Vector2 operator*(double s, Vector2 v)      { return v *= s; }
