@@ -7,7 +7,7 @@
 
 int main(int argc, char* argv[]) {
     Map m;
-    if (!m.load_from_file("C:\\Users\\Misha\\CLionProjects\\sdl-labs-2026\\assets\\wolf\\world\\map.txt")) {
+    if (!m.load_from_file(std::string(ASSETS_DIR) + "/wolf/world/map.txt")) {
         std::cerr << "load failed\n";
         return 1;
     }
