@@ -13,6 +13,7 @@ add_executable(graphics_lab
         include/wolf/input/InputState.hpp
         include/wolf/input/PlayerController.hpp
         src/wolf/input/PlayerController.cpp
+        include/wolf/app/Application.hpp
 )
 
 target_compile_features(graphics_lab PRIVATE cxx_std_20)

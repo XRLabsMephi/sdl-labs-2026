@@ -13,6 +13,9 @@ class PlayerController {
     void apply_movement(Player& player, const InputState& input, const Map& map, double delta_time) const;
 
 public:
+    PlayerController() = default;
+    PlayerController(double move_speed, double turn_speed) : move_speed_(move_speed), turn_speed_(turn_speed) {}
+
     void update(Player& player, const InputState& input, const Map& map, double delta_time) const {
         apply_rotation(player, input, delta_time);
         apply_movement(player, input, map, delta_time);
