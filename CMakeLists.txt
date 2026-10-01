@@ -8,6 +8,8 @@ add_executable(graphics_lab
         include/wolf/core/Vector2.hpp
         include/wolf/world/Map.hpp
         src/wolf/world/Map.cpp
+        include/wolf/world/Player.hpp
+        include/wolf/world/Player.hpp
 )
 
 target_compile_features(graphics_lab PRIVATE cxx_std_20)
