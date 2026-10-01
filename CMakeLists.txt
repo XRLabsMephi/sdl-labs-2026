@@ -10,6 +10,8 @@ add_executable(graphics_lab
         src/wolf/world/Map.cpp
         include/wolf/world/Player.hpp
         include/wolf/world/Player.hpp
+        include/wolf/input/InputState.hpp
+        include/wolf/input/PlayerController.hpp
 )
 
 target_compile_features(graphics_lab PRIVATE cxx_std_20)
