@@ -20,8 +20,8 @@ struct Vector2 {
     void rotate(double angle) {
         double sin = std::sin(angle);
         double cos = std::cos(angle);
-        double rot_x = cos * x + sin * y;
-        double rot_y = -sin * x + cos * y;
+        double rot_x = cos * x + -sin * y;
+        double rot_y = sin * x + cos * y;
 
         x = rot_x;
         y = rot_y;

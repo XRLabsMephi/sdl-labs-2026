@@ -15,6 +15,11 @@ add_executable(graphics_lab
         src/wolf/input/PlayerController.cpp
         include/wolf/app/Application.hpp
         src/wolf/app/Application.cpp
+        include/wolf/render/FrameBuffer.hpp
+        src/wolf/render/FrameBuffer.hpp
+        include/raycast/RayHit.hpp
+        include/raycast/RayCaster.hpp
+        src/wolf/raycast/RayCaster.cpp
 )
 
 target_compile_features(graphics_lab PRIVATE cxx_std_20)

@@ -1,12 +1,12 @@
 #include "render/FrameBuffer.hpp"
 #include <stdexcept>
 
-bool FrameBuffer::check_x(size_t x) const {
-    return x < width_;
+bool FrameBuffer::check_x(int x) const {
+    return 0 <= x && x < width_;
 }
 
-bool FrameBuffer::check_y(size_t y) const {
-    return y < height_;
+bool FrameBuffer::check_y(int y) const {
+    return 0 <= y && y < height_;
 }
 
 FrameBuffer::FrameBuffer(size_t width, size_t height): 
@@ -30,11 +30,9 @@ Color* FrameBuffer::get_pixels() const {
     return pixels_;
 }
 
-void FrameBuffer::set_pixel(size_t x, size_t y, Color color) {
-    bool fx = check_x(x);
-    bool fy = check_y(y);
-    if (fx && fy) {
-        pixels_[y * width_ + x] = color;
+void FrameBuffer::set_pixel(int x, int y, Color color) {
+    if (check_x(x) && check_y(y)) {
+        pixels_[static_cast<size_t>(y) * width_ + static_cast<size_t>(x)] = color;
     }
 }
 
@@ -48,7 +46,7 @@ void FrameBuffer::clear() {
     set_color(0);
 }
 
-void FrameBuffer::draw_vertical_line(size_t x, int y_start, int y_end, Color color) {
+void FrameBuffer::draw_vertical_line(int x, int y_start, int y_end, Color color) {
     if (!check_x(x)) {
         return;
     }
@@ -58,11 +56,11 @@ void FrameBuffer::draw_vertical_line(size_t x, int y_start, int y_end, Color col
     int start = std::max(0, y_start);
     int end = std::min(static_cast<int>(height) - 1, y_end);
     for (int y = start; y <= end; ++y) {
-        set_pixel(x, static_cast<size_t>(y), color);
+        set_pixel(x, y, color);
     } 
 }
 
-void FrameBuffer::draw_horizontal_line(int x_start, int x_end, size_t y, Color color) {
+void FrameBuffer::draw_horizontal_line(int x_start, int x_end, int y, Color color) {
     if (!check_y(y)) {
         return;
     }
@@ -72,6 +70,6 @@ void FrameBuffer::draw_horizontal_line(int x_start, int x_end, size_t y, Color c
     int start = std::max(0, x_start);
     int end = std::min(static_cast<int>(width) - 1, x_end);
     for (int x = start; x <= end; ++x) {
-        set_pixel(static_cast<size_t>(x), y, color);
+        set_pixel(x, y, color);
     }  
 }
