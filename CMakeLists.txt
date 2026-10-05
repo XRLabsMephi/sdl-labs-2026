@@ -6,6 +6,9 @@ find_package(SDL3 CONFIG REQUIRED)
 
 add_executable(graphics_lab
     src/wolf/main.cpp
+    src/wolf/app/Application.cpp
+    src/wolf/world/Map.cpp
+    src/wolf/input/PlayerController.cpp
     src/wolf/render/framebuffer.cpp
     src/wolf/render/SdlPresenter.cpp
 )
