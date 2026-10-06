@@ -78,6 +78,7 @@ int main(int argc, char* argv[]) {
 
     const int raysCount = 800;
 
+
     const double FOV = std::numbers::pi / 2;
 
     const double projectionDistance =
