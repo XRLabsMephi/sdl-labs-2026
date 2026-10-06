@@ -80,6 +80,7 @@ int main(int argc, char* argv[]) {
 
     const double FOV = std::numbers::pi / 2;
 
+
     const double projectionDistance =
         (screenWidth / 2.0) / std::tan(FOV / 2.0);
 
