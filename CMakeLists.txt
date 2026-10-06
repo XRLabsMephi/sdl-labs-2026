@@ -12,7 +12,10 @@ add_subdirectory(vendored/SDL EXCLUDE_FROM_ALL)
 
 add_executable(graphics_lab
         src/main.cpp
-        src/map.cpp
+        src/playfield.cpp
+        src/board.cpp
+        src/playfield.h
+        src/board.h
 )
 
 target_link_libraries(graphics_lab PRIVATE SDL3::SDL3-static)
