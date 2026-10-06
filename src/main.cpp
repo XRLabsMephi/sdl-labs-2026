@@ -71,8 +71,6 @@ int main(int argc, char* argv[]) {
 
     double PlayerCoordX = 0;
     double PlayerCoordY = 0;
-
-
     double PlayerA = std::numbers::pi / 4;
 
     const int screenWidth = 800;
