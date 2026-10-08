@@ -16,9 +16,9 @@ add_executable(graphics_lab
         include/wolf/app/Application.hpp
         src/wolf/app/Application.cpp
         include/wolf/render/FrameBuffer.hpp
-        src/wolf/render/FrameBuffer.hpp
-        include/raycast/RayHit.hpp
-        include/raycast/RayCaster.hpp
+        src/wolf/render/FrameBuffer.cpp
+        include/wolf/raycast/RayHit.hpp
+        include/wolf/raycast/RayCaster.hpp
         src/wolf/raycast/RayCaster.cpp
 )
 

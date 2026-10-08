@@ -47,8 +47,8 @@ RayHit RayCaster::cast_ray(const Player& player, const Map& map, double cameraX)
         perpWallDist = sideDistY - deltaDistY;
     }
     result.depth = perpWallDist;
-    result.x = std::max(0, mapX);
-    result.y = std::max(0, mapY);
+    result.mapX = std::max(0, mapX);
+    result.mapY = std::max(0, mapY);
     result.wall_id = map.at(mapX, mapY);
     switch(side) {
         case 0:
