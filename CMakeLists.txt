@@ -20,6 +20,8 @@ add_executable(graphics_lab
         include/wolf/raycast/RayHit.hpp
         include/wolf/raycast/RayCaster.hpp
         src/wolf/raycast/RayCaster.cpp
+        include/wolf/render/SDLPresenter.hpp
+        src/wolf/render/SDLPresenter.cpp
 )
 
 target_compile_features(graphics_lab PRIVATE cxx_std_20)
