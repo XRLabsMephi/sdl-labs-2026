@@ -1,5 +1,6 @@
 #include "render/FrameBuffer.hpp"
 #include <stdexcept>
+#include <algorithm>
 
 bool FrameBuffer::check_x(int x) const {
     return 0 <= x && x < width_;

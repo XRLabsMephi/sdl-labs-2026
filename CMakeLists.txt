@@ -9,7 +9,6 @@ add_executable(graphics_lab
         include/wolf/world/Map.hpp
         src/wolf/world/Map.cpp
         include/wolf/world/Player.hpp
-        include/wolf/world/Player.hpp
         include/wolf/input/InputState.hpp
         include/wolf/input/PlayerController.hpp
         src/wolf/input/PlayerController.cpp

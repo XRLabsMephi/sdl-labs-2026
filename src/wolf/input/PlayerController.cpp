@@ -3,8 +3,8 @@
 void PlayerController::apply_rotation(Player &player, const InputState &input, double delta_time) const {
     double angle = 0.0;
 
-    if (input.turn_left) angle += turn_speed_ * delta_time;
-    if (input.turn_right) angle -= turn_speed_ * delta_time;
+    if (input.turn_left) angle -= turn_speed_ * delta_time;
+    if (input.turn_right) angle += turn_speed_ * delta_time;
 
     player.direction.rotate(angle);
     player.camera_plane.rotate(angle);
