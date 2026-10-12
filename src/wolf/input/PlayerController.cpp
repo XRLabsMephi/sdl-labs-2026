@@ -31,8 +31,8 @@ void PlayerController::apply_movement(Player &player, const InputState &input, c
     Vector2 strafe = player.direction;
     strafe.rotate(std::numbers::pi / 2);
 
-    if (input.left) move += strafe;
-    if (input.right) move -= strafe;
+    if (input.left) move -= strafe;
+    if (input.right) move += strafe;
 
     move.normalize();
     handle_collision(player, move, map, delta_time);

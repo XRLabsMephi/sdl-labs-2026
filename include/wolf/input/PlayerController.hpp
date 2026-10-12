@@ -5,8 +5,8 @@
 #include <numbers>
 
 class PlayerController {
-    double move_speed_ = 1;
-    double turn_speed_ = std::numbers::pi / 4;
+    double move_speed_ = 2;
+    double turn_speed_ = std::numbers::pi / 2;
 
     void apply_rotation(Player& player, const InputState& input, double delta_time) const;
     void handle_collision(Player& player, const Vector2& movement, const Map& map, double delta_time) const;
