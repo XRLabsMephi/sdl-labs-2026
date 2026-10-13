@@ -7,6 +7,7 @@ namespace core {
         constexpr Color() : r_(0), g_(0), b_(0), a_(0) {
         }
 
+        // for constructing from real RGB values
         constexpr Color(Uint8 r, Uint8 g, Uint8 b, Uint8 a = 255)
             : r_(static_cast<Uint8>(r * a / 255))
               , g_(static_cast<Uint8>(g * a / 255))
@@ -14,6 +15,7 @@ namespace core {
               , a_(a) {
         }
 
+        // specially for constructing from raw values os this struct
         static constexpr Color from_premultiplied(Uint8 r, Uint8 g, Uint8 b, Uint8 a) {
             Color c;
             c.r_ = r;
@@ -23,11 +25,16 @@ namespace core {
             return c;
         }
 
+        // getter for r component. Returns value in [0, 255]
         Uint8 r() const { return a_ == 0 ? 0 : static_cast<Uint8>((r_ * 255u + a_ / 2) / a_); }
+        // getter for g component. Returns value in [0, 255]
         Uint8 g() const { return a_ == 0 ? 0 : static_cast<Uint8>((g_ * 255u + a_ / 2) / a_); }
+        // getter for b component. Returns value in [0, 255]
         Uint8 b() const { return a_ == 0 ? 0 : static_cast<Uint8>((b_ * 255u + a_ / 2) / a_); }
+        // getter for a component. Returns value in [0, 255]
         Uint8 a() const { return a_; }
 
+        // returns a color that is a result of lights overlay.
         static constexpr Color over(const Color &src, const Color &dst) {
             auto mix = [](Uint8 s, Uint8 d, Uint8 sa) -> Uint8 {
                 return static_cast<Uint8>(
@@ -40,10 +47,12 @@ namespace core {
                 mix(src.a_, dst.a_, src.a_));
         }
 
+        // linear interpolation between this and given color
         Color lerp(const Color &other, unsigned percent) const {
             return lerp(*this, other, percent);
         }
 
+        // linear interpolation between 2 given colors
         static Color lerp(const Color &lhs, const Color &rhs, unsigned percent) {
             percent = std::min(percent, 100u);
             auto mix = [percent](Uint8 l, Uint8 r) -> Uint8 {
@@ -56,6 +65,8 @@ namespace core {
                 mix(lhs.a_, rhs.a_));
         }
 
+
+        // add for spectrum accumulation (2 beams of colored lights adding)
         static constexpr Color add_saturating(const Color &lhs, const Color &rhs) {
             auto add = [](Uint8 l, Uint8 r) -> Uint8 {
                 return static_cast<Uint8>(std::min<int>(255, l + r));
