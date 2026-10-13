@@ -47,6 +47,15 @@ RayHit RayCaster::cast_ray(const Player& player, const Map& map, double cameraX)
         perpWallDist = sideDistY - deltaDistY;
     }
     result.depth = perpWallDist;
+    /* Ниже представлена реализация рыбьего глаза
+    double exact_distance;
+    if (side == 0) {
+        exact_distance = (mapX - player.position.x + (1 - stepX) / 2) / rayDir.x;
+    } else {
+        exact_distance = (mapY - player.position.y + (1 - stepY) / 2) / rayDir.y;
+    }
+    result.depth = exact_distance * rayDir.get_length();
+    */
     result.mapX = std::max(0, mapX);
     result.mapY = std::max(0, mapY);
     result.wall_id = map.at(mapX, mapY);
