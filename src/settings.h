@@ -11,7 +11,6 @@
 */
 
 namespace settings {
-
 	double map_scale = 100;
 	double rotation_scale = 0.5;
 	double moving_scale = 0.2;
