@@ -74,3 +74,13 @@ void Playfield::print() {
 	}
 }
 
+std::vector<std::vector<int>> Playfield::getField() {
+	return field;
+}
+
+int Playfield::getHight() {
+	return h;
+}
+int Playfield::getWidth() {
+	return w;
+}

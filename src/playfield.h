@@ -29,11 +29,13 @@ public:
 	//выводит игровое поле в консоль
 	void print();
 
+	std::vector<std::vector<int>> getField();
+	int getHight();
+	int getWidth();
 private:
 	int h; //высота
 	int w; //ширина
 	int k; //длина стороны клетки
-
 
 	std::vector<std::vector<int>> field; //поле в 2-мерном виде
 };
