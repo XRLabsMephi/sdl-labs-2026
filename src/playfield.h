@@ -34,5 +34,6 @@ private:
 	int w; //ширина
 	int k; //длина стороны клетки
 
+
 	std::vector<std::vector<int>> field; //поле в 2-мерном виде
 };

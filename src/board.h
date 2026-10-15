@@ -1,4 +1,5 @@
 #pragma once
+#include <vector>
 /*
     файл c определением класса Board
 
@@ -14,6 +15,8 @@ public:
     double LenghtX;
     double LenghtY;
     double LenghtZ;
+
+    std::vector<int> cur_col = { 0, 0, 0, 0 };
 
     Board(double CoordX, double CoordY, double CoordZ,
         double LenghtX, double LenghtY, double LenghtZ);

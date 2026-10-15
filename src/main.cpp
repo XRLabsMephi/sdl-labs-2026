@@ -5,30 +5,38 @@
 #include <cmath>
 #include <numbers>
 #include "playfield.h"
+#include "settings.h"
 
 /*
     Функция вычисления 1 луча. 
     Возвращает расстояние до обьекта, с которым произошло пересечение. 
     -1 если пересечения в пределах 1.000 не произошло
 */
-double RayTracing(double startPosX, double startPosY, double angle, Playfield& pf) {
-    for (double distance = 0; distance < 1000; distance += 0.5) {
+std::pair<double, Board*> RayTracing(double startPosX, double startPosY, double angle, Playfield& pf) {
+    for (double distance = 0; distance < 10 * settings::map_scale ; distance += 0.05 * settings::map_scale) {
         double x = startPosX + distance * std::cos(angle);
         double y = startPosY + distance * std::sin(angle);
 
         for (auto& board : pf.boards) {
             if (board.CheckConflict(x, y)) {
-                return distance;
+                return {distance, &board };
             }
         }
     }
 
-    return -1;
+    return {-1, nullptr};
 }
 
 int main(int argc, char* argv[]) {
+    // ускорение поворота
+    int r_scale = 2;
+
+    //ускроение ходьбы
+    int w_scale = 4;
+
     //работа с игровым полем
-    int k = 10;
+    int k = settings::map_scale;
+
     Playfield play_field(10, 10, k);
 
     play_field.set_rectangle(7, 6, 9, 8, 1);
@@ -67,7 +75,7 @@ int main(int argc, char* argv[]) {
     const int screenHeight = 600;
 
     //кол-во лучей на экран
-    const int raysCount = 800;
+    const int raysCount = screenWidth;
 
     //угол обзора
     const double FOV = std::numbers::pi / 2;
@@ -94,26 +102,37 @@ int main(int argc, char* argv[]) {
 
         //перемещение
         if (keys[SDL_SCANCODE_A]) {
-            PlayerA -= 0.02;
+            PlayerA -= 0.02 * r_scale;
         }
 
         if (keys[SDL_SCANCODE_D]) {
-            PlayerA += 0.02;
+            PlayerA += 0.02 * r_scale;
         }
 
         if (keys[SDL_SCANCODE_W]) {
-            PlayerCoordX += std::cos(PlayerA) * 2;
-            PlayerCoordY += std::sin(PlayerA) * 2;
+            PlayerCoordX += std::cos(PlayerA) * w_scale * settings::moving_scale;
+            PlayerCoordY += std::sin(PlayerA) * w_scale * settings::moving_scale;
         }
 
         if (keys[SDL_SCANCODE_S]) {
-            PlayerCoordX -= std::cos(PlayerA) * 2;
-            PlayerCoordY -= std::sin(PlayerA) * 2;
+            PlayerCoordX -= std::cos(PlayerA) * w_scale * settings::moving_scale;
+            PlayerCoordY -= std::sin(PlayerA) * w_scale * settings::moving_scale;
         }
 
         //закрашиваем весь экран в темно-серый
-        SDL_SetRenderDrawColor(renderer, 30, 30, 30, 255);
+        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
         SDL_RenderClear(renderer);
+
+        //пол кароч мда
+        SDL_FRect floorRect{
+            0.0f,
+            static_cast<float>(screenHeight / 2),
+            static_cast<float>(screenWidth),
+            static_cast<float>(screenHeight / 2)
+        };
+
+        SDL_SetRenderDrawColor(renderer, 40, 40, 40, 255); 
+        SDL_RenderFillRect(renderer, &floorRect);
 
         //для каждого луча при надобности отрисовываем столкновение со стенкой
         for (int i = 0; i < raysCount; i++) {
@@ -121,18 +140,18 @@ int main(int argc, char* argv[]) {
                 PlayerA - FOV / 2 +
                 FOV * i / raysCount;
 
-            double distance =
-                RayTracing(PlayerCoordX, PlayerCoordY, rayAngle, play_field);
+            auto [distance, cr] = RayTracing(PlayerCoordX, PlayerCoordY, rayAngle, play_field);
 
-            if (distance < 0) {
+            if (cr == nullptr) {
                 continue;
             }
 
             //тут фиксится рыбий глаз
             double correctedDistance =
-                distance * std::cos(rayAngle - PlayerA);
+                distance;
+                //* std::cos(rayAngle - PlayerA);
             //за что пофиксили - не ясно, ибо просили пофиксить на этапе сильно позже :/
-
+            //double correctedDistance = distance;
 
             double height =
                 k *
@@ -147,15 +166,15 @@ int main(int argc, char* argv[]) {
             };
             
             //коэффициент затухания цвета в зависимости от дальности
-            double brightness = 1.0 - correctedDistance / 300.0;
+            double brightness = 1.0 - correctedDistance / (300.0 * settings::map_scale);
             if (brightness < 0.0) brightness = 0.0;
             if (brightness > 1.0) brightness = 1.0;
 
             //повышаем контрастность
-            brightness = std::pow(brightness, 4);
+            brightness = std::pow(brightness, 3);
             
-            SDL_SetRenderDrawColor(renderer, 0 * brightness, 150 * brightness,
-                255 * brightness, 255 * brightness);
+            SDL_SetRenderDrawColor(renderer, cr->cur_col[0] * brightness, cr->cur_col[1] * brightness,
+                cr->cur_col[2] * brightness, cr->cur_col[3] * brightness);
             SDL_RenderFillRect(renderer, &rect);
         }
 
