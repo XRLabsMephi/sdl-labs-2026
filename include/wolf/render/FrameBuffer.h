@@ -1,41 +1,93 @@
 #pragma once
-#include <cstdint>
+
 #include <vector>
+
 #include "wolf/core/Point.h"
 #include "wolf/core/Color.h"
 
 namespace render {
     using Color = core::Color;
+    template<typename T>
+    using vector = std::vector<T>;
+
+    /**
+    * @brief Contains parameters for draw call to @c FrameBuffer.
+    */
+    struct DrawCallParams {
+        int tex_id = -1; /**< ID of texture. -1 is no texture */
+        int tex_x = -1; /**< Column in texture. Ignored if tex_id is set to -1*/
+        float depth = 0; /**< Depth of the object in the frame (z_buf value). Influences the color*/
+        Color color = Color::black; /**< Color is used only if tex_id is -1*/
+    };
+
+
+    /**
+     * Pixel buffer for a single frame
+     */
     class FrameBuffer {
-        uint32_t width_;
-        uint32_t height_;
+        int width_; /**< Width of buffer in pixels */
+        int height_; /**< Height of buffer in pixels */
+        vector<uint32_t> buffer_; /** < flat buffer*/
 
     public:
         FrameBuffer(int width, int height);
 
-        // fill whole buffer with color
-        void clear(const core::Color &color);
+        /**
+         * @brief Fills whole buffer
+         * @param params draw call parameters (see @c DrawCallParams)
+         */
+        void clear(const DrawCallParams &params);
 
-        // color single pixel at given point (points outside buffer rejects)
-        void drawPixel(const Point &point, const Color &color);
+        /**
+         * @brief Colors single pixel at point
+         * @param x x coordinate
+         * @param y y coordinate
+         * @param params draw call parameters (see @c DrawCallParams)
+         * @attention Points outside buffer rejects
+         */
+        void set(int x, int y, const DrawCallParams &params);
 
-        // draws point at given position with given color and size
-        void drawPoint(const Point& point, float size, const Color &color);
+        /**
+         * @brief Draws point at given position
+         * @param x x coordinate
+         * @param y y coordinate
+         * @param size point size in pixels
+         * @param params draw call parameters (see @c DrawCallParams)
+         */
+        void point(int x, int y, int size, const DrawCallParams &params);
 
-        // draws line from start to end
-        bool drawLine(const Point &start, const Point &end, const Color &color);
+        /**
+         * @brief Draws vertical line
+         * @param x x coordinate
+         * @param y0 start y coordinate
+         * @param y1 end y coordinate
+         * @param params draw call parameters (see @c DrawCallParams)
+         */
+        void vline(int x, int y0, int y1, const DrawCallParams &params);
 
-        // draws rectangle with left upper corner in start and lower right corner in end
-        bool drawRectangle(const Point &start, const Point &end, const Color &color);
+        /**
+         * @brief Draws horizontal line
+         * @param y y coordinate
+         * @param x0 start x coordinate
+         * @param x1 end x coordinate
+         * @param params draw call parameters (see @c DrawCallParams)
+         */
+        void hline(int y, int x0, int x1, const DrawCallParams &params);
+
+        /**
+         * @brief Draws rectangle.
+         * @param x0 top-left corner x coordinate
+         * @param y0 top-left y coordinate
+         * @param x1 bottom-right x coordinate
+         * @param y1 bottom-right y coordinate
+         * @param params draw call parameters (see @c DrawCallParams)
+         */
+        void rectangle(int x0, int y0, int x1, int y1, const DrawCallParams &params);
 
         // draws circle of given radius and color
-        bool drawCircle(const Point &center, float radius, const Color &color);
+        void circle(int x, int y, float radius, const DrawCallParams &params);
 
         // draws triangle with given vertices
-        bool drawTriangle(const Point &p1, const Point &p2, const Point &p3, const Color &color);
-
-        //draws polygon with given vertices
-        template<typename... Points>
-        void drawPolygon(const Color &color, const Points &... points);
+        bool triangle(int x0, int y0, int x1, int y1, int x2, int y2, const DrawCallParams &params);
     };
 }
