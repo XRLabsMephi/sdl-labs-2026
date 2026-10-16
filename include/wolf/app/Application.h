@@ -5,15 +5,14 @@
 #include "../input/PlayerController.h"
 #include "../world/Player.h"
 #include "../world/Map.h"
+#include <SDL3/SDL.h>
 namespace app {
-    struct SDL_Window;
-    class Renderer;
 
     class Application {
     private:
         SDL_Window* window = nullptr;
 
-        std::unique_ptr<Renderer> renderer;
+        SDL_Renderer* renderer = nullptr;
 
         world::Map map;
         world::Player player;
@@ -21,6 +20,7 @@ namespace app {
         input::PlayerController playerController;
 
         bool running = false;
+        bool initialized = false;
 
         void processEvents();
 

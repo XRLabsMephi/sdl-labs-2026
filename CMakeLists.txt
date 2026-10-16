@@ -27,6 +27,8 @@ set(SOURCES
         src/wolf/render/SdlPresenter.cpp
         src/wolf/world/Map.cpp
         include/wolf/world/Player.h
+        include/wolf/world/Map.cpp
+        include/wolf/app/Application.cpp
 )
 
 add_executable(graphics_lab ${HEADERS} ${SOURCES})
