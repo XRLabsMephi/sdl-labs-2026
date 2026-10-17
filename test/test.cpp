@@ -1,5 +1,6 @@
 #include "wolf/render/FrameBuffer.hpp"
-
+#include "wolf/raycast/Raycaster.hpp"
+#include "wolf/world/Player.hpp"
 #include <iostream>
 #include <stdexcept>
 
@@ -19,6 +20,13 @@ int main() {
             std::cout << std::hex<< frame.data()[y * frame.width() + x]<< ' ';
         }
         std::cout << '\n';
+    }
+    Player player;
+    Raycaster raycaster;
+
+    for (double cameraX : {-1.0, 0.0, 1.0}) {
+        Vec2 direction = raycaster.rayDirection(player, cameraX);
+        std::cout << direction.x << ' ' << direction.y << '\n';
     }
     try {
         FrameBuffer invalid(0, 2);

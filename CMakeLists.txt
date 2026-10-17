@@ -26,6 +26,10 @@ add_executable(graphics_lab
         src/wolf/core/Color.cpp
         include/wolf/render/FrameBuffer.hpp
         src/wolf/render/FrameBuffer.cpp
+        include/wolf/world/Player.hpp
+        include/wolf/raycast/RayHit.hpp
+        include/wolf/raycast/Raycaster.hpp
+        src/wolf/Raycaster.cpp
 )
 
 target_include_directories(graphics_lab PRIVATE include)
@@ -49,6 +53,8 @@ add_executable(test
         test/test.cpp
         src/wolf/core/Color.cpp
         src/wolf/render/FrameBuffer.cpp
+        src/wolf/core/Vec2.cpp
+        src/wolf/Raycaster.cpp
 )
 
 target_include_directories(test PRIVATE include)
