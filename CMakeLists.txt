@@ -24,6 +24,8 @@ add_executable(graphics_lab
         include/wolf/core/Vec2.hpp
         include/wolf/core/Color.hpp
         src/wolf/core/Color.cpp
+        include/wolf/render/FrameBuffer.hpp
+        src/wolf/render/FrameBuffer.cpp
 )
 
 target_include_directories(graphics_lab PRIVATE include)
@@ -42,3 +44,12 @@ set_target_properties(graphics_lab PROPERTIES
     CXX_EXTENSIONS OFF
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
 )
+
+add_executable(test
+        test/test.cpp
+        src/wolf/core/Color.cpp
+        src/wolf/render/FrameBuffer.cpp
+)
+
+target_include_directories(test PRIVATE include)
+target_compile_features(test PRIVATE cxx_std_20)
