@@ -16,7 +16,6 @@ set(HEADERS
         include/wolf/raycast/RayHit.h
         include/wolf/input/InputState.h
         include/wolf/input/PlayerController.h
-        include/wolf/core/Point.h
 )
 
 set(SOURCES
