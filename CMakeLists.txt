@@ -23,6 +23,7 @@ add_executable(graphics_lab
         src/wolf/core/Vec2.cpp
         include/wolf/core/Vec2.hpp
         include/wolf/core/Color.hpp
+        src/wolf/world/Map.cpp
         src/wolf/core/Color.cpp
         include/wolf/render/FrameBuffer.hpp
         src/wolf/render/FrameBuffer.cpp
@@ -51,6 +52,7 @@ set_target_properties(graphics_lab PROPERTIES
 
 add_executable(test
         test/test.cpp
+        src/wolf/world/Map.cpp
         src/wolf/core/Color.cpp
         src/wolf/render/FrameBuffer.cpp
         src/wolf/core/Vec2.cpp
