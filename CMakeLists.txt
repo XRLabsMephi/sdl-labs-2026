@@ -3,8 +3,11 @@ cmake_minimum_required(VERSION 3.24)
 project(SoftwareGraphicsLabs LANGUAGES CXX)
 
 add_executable(graphics_lab
-    src/main.cpp
+        src/main.cpp
+        src/wolf/Map.cpp
 )
+
+target_include_directories(graphics_lab PRIVATE include)
 
 target_compile_features(graphics_lab PRIVATE cxx_std_20)
 
