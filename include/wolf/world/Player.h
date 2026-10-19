@@ -12,7 +12,7 @@ namespace world {
             return position;
         }
 
-        void setPosition(Vector2 newPosition) {
+        void setPosition(core::Vector2 newPosition) {
             position = newPosition;
         }
 

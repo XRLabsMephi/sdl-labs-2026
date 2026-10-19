@@ -74,24 +74,18 @@ bool world::Map::loadFromFile(const std::string& filename) {
     return true;
 }
 
-bool world::Map::canOccupy(core::Vector2 position, double radius) const {
+bool world::Map::canOccupy(core::Vector2 position, float radius) const {
     if (cells.empty()) {
         return false;
     }
 
-    if (!std::isfinite(position.x) ||
-        !std::isfinite(position.y) ||
-        !std::isfinite(radius) ||
-        radius < 0) {
+    if (!(radius >= 0.0f &&
+          position.x - radius >= 0.0f &&
+          position.y - radius >= 0.0f &&
+          position.x + radius < static_cast<float>(width) &&
+          position.y + radius < static_cast<float>(height))) {
         return false;
-    }
-
-    if (position.x - radius < 0 ||
-        position.y - radius < 0 ||
-        position.x + radius >= width ||
-        position.y + radius >= height) {
-        return false;
-    }
+          }
 
     int left = static_cast<int>(
         std::floor(position.x - radius)
@@ -115,20 +109,20 @@ bool world::Map::canOccupy(core::Vector2 position, double radius) const {
                 continue;
             }
 
-            double nearestX = std::clamp(
-                static_cast<double>(position.x),
-                static_cast<double>(x),
-                static_cast<double>(x + 1)
+            float nearestX = std::clamp(
+                static_cast<float>(position.x),
+                static_cast<float>(x),
+                static_cast<float>(x + 1)
             );
 
-            double nearestY = std::clamp(
-                static_cast<double>(position.y),
-                static_cast<double>(y),
-                static_cast<double>(y + 1)
+            float nearestY = std::clamp(
+                static_cast<float>(position.y),
+                static_cast<float>(y),
+                static_cast<float>(y + 1)
             );
 
-            double dx = position.x - nearestX;
-            double dy = position.y - nearestY;
+            float dx = position.x - nearestX;
+            float dy = position.y - nearestY;
 
             if (dx * dx + dy * dy <= radius * radius) {
                 return false;

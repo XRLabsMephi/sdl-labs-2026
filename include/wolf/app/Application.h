@@ -10,9 +10,13 @@ namespace app {
 
     class Application {
     private:
-        SDL_Window* window = nullptr;
+        struct WindowDeleter {
+            void operator()(SDL_Window* window) const {
+                SDL_DestroyWindow(window);
+            }
+        };
 
-        SDL_Renderer* renderer = nullptr;
+        std::unique_ptr<SDL_Window, WindowDeleter> window;
 
         world::Map map;
         world::Player player;
@@ -21,12 +25,11 @@ namespace app {
 
         bool running = false;
         bool initialized = false;
+        bool sdlInitialized = false;
 
         void processEvents();
 
-        void update(double deltaTime);
-
-        void render();
+        void update(float deltaTime);
 
     public:
         Application();

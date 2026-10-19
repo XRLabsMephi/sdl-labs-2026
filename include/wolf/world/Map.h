@@ -40,7 +40,7 @@ namespace world {
             return getCell(x, y) != 0;
         }
 
-        bool canOccupy(core::Vector2 position, double radius) const;
+        bool canOccupy(core::Vector2 position, float radius) const;
 
         core::Vector2 getSpawnPosition() const {
             return spawnPosition;

@@ -6,6 +6,19 @@
 #include <algorithm>
 #include <iostream>
 
+namespace {
+
+    constexpr char WINDOW_TITLE[] = "RayCaster";
+
+    constexpr int WINDOW_WIDTH = 1024;
+    constexpr int WINDOW_HEIGHT = 768;
+
+    constexpr SDL_WindowFlags WINDOW_FLAGS = 0;
+
+    constexpr float NANOSECONDS_PER_SECOND = 1'000'000'000.0f;
+
+}
+
 app::Application::~Application() {
     shutdown();
 }
@@ -34,17 +47,22 @@ bool app::Application::initialize(const std::string& mapFilename) {
     if (!SDL_Init(SDL_INIT_VIDEO)) {
         std::cerr << "SDL initialization failed: "
                   << SDL_GetError() << '\n';
+
         return false;
     }
 
-    if (!SDL_CreateWindowAndRenderer(
-            "RayCaster",
-            1024,
-            768,
-            0,
-            &window,
-            &renderer
-        )) {
+    sdlInitialized = true;
+
+    window.reset(
+        SDL_CreateWindow(
+            WINDOW_TITLE,
+            WINDOW_WIDTH,
+            WINDOW_HEIGHT,
+            WINDOW_FLAGS
+        )
+    );
+
+    if (!window) {
         std::cerr << "Window creation failed: "
                   << SDL_GetError() << '\n';
 
@@ -70,13 +88,11 @@ void app::Application::run() {
     while (running) {
         Uint64 currentTime = SDL_GetTicksNS();
 
-        double deltaTime =
-            static_cast<double>(currentTime - previousTime)
-            / 1'000'000'000.0;
+        float deltaTime =
+    static_cast<float>(currentTime - previousTime)
+    / NANOSECONDS_PER_SECOND;
 
         previousTime = currentTime;
-
-        deltaTime = std::min(deltaTime, 0.05);
 
         input.beginFrame();
         processEvents();
@@ -86,9 +102,6 @@ void app::Application::run() {
         }
 
         update(deltaTime);
-        render();
-
-        SDL_Delay(1);
     }
 }
 
@@ -109,24 +122,12 @@ void app::Application::processEvents() {
             input.reset();
         }
 
-        // Подключить, когда будет реализован обработчик ввода:
-        // input.handleEvent(event);
     }
 }
 
-void app::Application::update(double deltaTime) {
-    // Заглушка обновления игрового состояния (сам просил).
+void app::Application::update(float deltaTime) {
 
     (void)deltaTime;
-}
-
-void app::Application::render() {
-    // Заглушка: вместо изображения мира выводим однотонный фон (тоже сам просил, уважаемый).
-    SDL_SetRenderDrawColor(renderer, 30, 30, 40, 255);
-    SDL_RenderClear(renderer);
-
-
-    SDL_RenderPresent(renderer);
 }
 
 void app::Application::shutdown() {
@@ -135,15 +136,10 @@ void app::Application::shutdown() {
 
     input.reset();
 
-    if (renderer != nullptr) {
-        SDL_DestroyRenderer(renderer);
-        renderer = nullptr;
-    }
+    window.reset();
 
-    if (window != nullptr) {
-        SDL_DestroyWindow(window);
-        window = nullptr;
+    if (sdlInitialized) {
+        SDL_Quit();
+        sdlInitialized = false;
     }
-
-    SDL_Quit();
 }
