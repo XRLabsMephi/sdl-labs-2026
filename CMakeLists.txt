@@ -4,7 +4,7 @@ project(SoftwareGraphicsLabs LANGUAGES CXX)
 
 add_executable(graphics_lab
         src/main.cpp
-        src/wolf/Map.cpp
+        src/wolf/world/Map.cpp
 )
 
 target_include_directories(graphics_lab PRIVATE include)

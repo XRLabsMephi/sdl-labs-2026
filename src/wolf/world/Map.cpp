@@ -2,8 +2,7 @@
 // Created by Nikita on 19.10.2026.
 //
 
-#include "wolf/Map.h"
-
+#include "wolf/world/Map.hpp"
 #include <fstream>
 
 Map::Map() : width(0), height(0) {}
