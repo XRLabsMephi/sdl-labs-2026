@@ -16,8 +16,10 @@ add_executable(graphics_lab
         src/board.cpp
         src/playfield.h
         src/board.h
-        #src/player.h
-        #src/player.cpp
+        src/player.h
+        src/player.cpp
+	src/raytracer.h
+	src/raytracer.cpp
 )
 
 target_link_libraries(graphics_lab PRIVATE SDL3::SDL3-static)
