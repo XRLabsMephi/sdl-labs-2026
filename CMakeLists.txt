@@ -28,6 +28,10 @@ add_library(graphics_lab_core STATIC
 
     src/math/vector.h
 
+    src/wolf/ray_hit.h
+    src/wolf/raycaster.h
+    src/wolf/raycaster.cc
+
     src/world/map.cc
     src/world/map.h
     src/world/tile.h
