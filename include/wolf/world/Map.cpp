@@ -26,9 +26,10 @@ bool world::Map::loadFromFile(const std::string& filename) {
         return false;
     }
 
-    std::vector<std::vector<int>> newCells(
+    // Parse into temporary storage to preserve the current map if validation fails.
+    std::vector<std::vector<int8_t>> newCells(
         newHeight,
-        std::vector<int>(newWidth)
+        std::vector<int8_t>(newWidth)
     );
 
     for (int y = 0; y < newHeight; ++y) {
@@ -44,7 +45,7 @@ bool world::Map::loadFromFile(const std::string& filename) {
     }
 
     core::Vector2 newSpawn{};
-
+    // The spawn point must be inside the map and in an empty cell.
     if (!(file >> newSpawn.x >> newSpawn.y)) {
         return false;
     }
@@ -66,6 +67,7 @@ bool world::Map::loadFromFile(const std::string& filename) {
         return false;
     }
 
+    // Commit the new map only after all input has been validated.
     cells = std::move(newCells);
     width = newWidth;
     height = newHeight;
@@ -79,6 +81,7 @@ bool world::Map::canOccupy(core::Vector2 position, float radius) const {
         return false;
     }
 
+    // The player's entire collision circle must remain within the map.
     if (!(radius >= 0.0f &&
           position.x - radius >= 0.0f &&
           position.y - radius >= 0.0f &&
@@ -87,6 +90,7 @@ bool world::Map::canOccupy(core::Vector2 position, float radius) const {
         return false;
           }
 
+    // Find the grid cells covered by the circle's bounding box.
     int left = static_cast<int>(
         std::floor(position.x - radius)
     );
@@ -124,6 +128,8 @@ bool world::Map::canOccupy(core::Vector2 position, float radius) const {
             float dx = position.x - nearestX;
             float dy = position.y - nearestY;
 
+            // Touching or overlapping a wall blocks the position.
+            // Compare squared distances to avoid computing a square root.
             if (dx * dx + dy * dy <= radius * radius) {
                 return false;
             }

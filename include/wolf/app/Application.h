@@ -10,6 +10,7 @@ namespace app {
 
     class Application {
     private:
+        // SDL windows must be destroyed with SDL_DestroyWindow, not delete.
         struct WindowDeleter {
             void operator()(SDL_Window* window) const {
                 SDL_DestroyWindow(window);

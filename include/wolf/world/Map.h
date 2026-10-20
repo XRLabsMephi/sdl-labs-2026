@@ -2,10 +2,12 @@
 #include <vector>
 #include "../core/Vec2.h"
 #include <string>
+#include <cstdint>
 namespace world {
     class Map {
     private:
-        std::vector<std::vector<int>> cells;
+        // Indexed as cells[y][x]: 0 means empty space, positive values identify wall types.
+        std::vector<std::vector<int8_t>> cells;
 
         int width = 0;
         int height = 0;
@@ -29,6 +31,7 @@ namespace world {
         }
 
         int getCell(int x, int y) const {
+            // Return a nonzero sentinel so out-of-bounds cells are treated as walls.
             if (!isInside(x, y)) {
                 return -1;
             }

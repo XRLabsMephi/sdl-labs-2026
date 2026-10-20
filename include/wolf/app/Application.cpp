@@ -61,6 +61,7 @@ bool app::Application::initialize(const std::string& mapFilename) {
             WINDOW_FLAGS
         )
     );
+    // TODO: Initialize SdlPresenter with window.get(); Application retains window ownership.
 
     if (!window) {
         std::cerr << "Window creation failed: "
@@ -88,20 +89,24 @@ void app::Application::run() {
     while (running) {
         Uint64 currentTime = SDL_GetTicksNS();
 
+        // Convert elapsed time from nanoseconds to seconds.
         float deltaTime =
     static_cast<float>(currentTime - previousTime)
     / NANOSECONDS_PER_SECOND;
 
         previousTime = currentTime;
 
+        // Reset per-frame input before processing new events.
         input.beginFrame();
         processEvents();
 
+        // Skip the rest of the frame if an exit was requested.
         if (!running) {
             break;
         }
 
         update(deltaTime);
+        // TODO: Render the scene into FrameBuffer and display it through SdlPresenter.
     }
 }
 
@@ -126,7 +131,8 @@ void app::Application::processEvents() {
 }
 
 void app::Application::update(float deltaTime) {
-
+    // TODO: Update the player through PlayerController using input and deltaTime.
+    // TODO: Update other game objects.
     (void)deltaTime;
 }
 
@@ -136,9 +142,11 @@ void app::Application::shutdown() {
 
     input.reset();
 
+    // TODO: Release SdlPresenter resources before destroying the window.
     window.reset();
 
     if (sdlInitialized) {
+        // All owned SDL resources must be released before shutting down SDL.
         SDL_Quit();
         sdlInitialized = false;
     }
