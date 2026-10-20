@@ -1,6 +1,3 @@
-//
-// Created by Nikita on 17.10.2026.
-//
 #include "Map.h"
 
 #include <algorithm>
@@ -8,7 +5,7 @@
 #include <fstream>
 #include <utility>
 
-bool world::Map::loadFromFile(const std::string& filename) {
+bool world::Map::loadFromFile(const std::string &filename) {
     std::ifstream file(filename);
 
     if (!file) {
@@ -27,7 +24,7 @@ bool world::Map::loadFromFile(const std::string& filename) {
     }
 
     // Parse into temporary storage to preserve the current map if validation fails.
-    std::vector<std::vector<int8_t>> newCells(
+    std::vector<std::vector<int8_t> > newCells(
         newHeight,
         std::vector<int8_t>(newWidth)
     );
@@ -88,7 +85,7 @@ bool world::Map::canOccupy(core::Vector2 position, float radius) const {
           position.x + radius < static_cast<float>(width) &&
           position.y + radius < static_cast<float>(height))) {
         return false;
-          }
+    }
 
     // Find the grid cells covered by the circle's bounding box.
     int left = static_cast<int>(
@@ -107,22 +104,22 @@ bool world::Map::canOccupy(core::Vector2 position, float radius) const {
         std::floor(position.y + radius)
     );
 
-    for (int y = top; y <= bottom; ++y) {
-        for (int x = left; x <= right; ++x) {
+    for (float y = top; y <= bottom; y += 1.0) {
+        for (float x = left; x <= right; x += 1.0) {
             if (!isWall(x, y)) {
                 continue;
             }
 
             float nearestX = std::clamp(
-                static_cast<float>(position.x),
-                static_cast<float>(x),
-                static_cast<float>(x + 1)
+                position.x,
+                x,
+                x + 1
             );
 
             float nearestY = std::clamp(
-                static_cast<float>(position.y),
-                static_cast<float>(y),
-                static_cast<float>(y + 1)
+                position.y,
+                y,
+                y + 1
             );
 
             float dx = position.x - nearestX;

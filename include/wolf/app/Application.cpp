@@ -1,6 +1,4 @@
-//
-// Created by Nikita on 17.10.2026.
-//
+
 #include "Application.h"
 
 #include <algorithm>
