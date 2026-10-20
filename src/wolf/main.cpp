@@ -7,7 +7,8 @@ int main() {
     try {
         app::Application app;
         return app.run();
-    } catch (const std::exception &e) {
+    } 
+    catch (const std::exception &e) {
         std::cerr << "Fatal error: " << e.what() << '\n';
         return 1;
     }

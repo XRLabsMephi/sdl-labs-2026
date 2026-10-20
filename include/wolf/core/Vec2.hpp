@@ -11,11 +11,11 @@ namespace core {
 
         constexpr Vec2(double xVal, double yVal) noexcept : x(xVal), y(yVal) {}
 
-        [[nodiscard]] constexpr Vec2 operator+(const Vec2 &other) const noexcept {
+        [[nodiscard]] constexpr Vec2 operator+(const Vec2& other) const noexcept {
             return {x + other.x, y + other.y};
         }
 
-        [[nodiscard]] constexpr Vec2 operator-(const Vec2 &other) const noexcept {
+        [[nodiscard]] constexpr Vec2 operator-(const Vec2& other) const noexcept {
             return {x - other.x, y - other.y};
         }
 
@@ -31,22 +31,22 @@ namespace core {
             return {-x, -y};
         }
 
-        Vec2 &operator+=(const Vec2 &other) noexcept {
+        Vec2& operator+=(const Vec2& other) noexcept {
             *this = *this + other;
             return *this;
         }
 
-        Vec2 &operator-=(const Vec2 &other) noexcept {
+        Vec2& operator-=(const Vec2& other) noexcept {
             *this = *this - other;
             return *this;
         }
 
-        Vec2 &operator*=(double scalar) noexcept {
+        Vec2& operator*=(double scalar) noexcept {
             *this = *this * scalar;
             return *this;
         }
 
-        [[nodiscard]] constexpr double dot(const Vec2 &other) const noexcept {
+        [[nodiscard]] constexpr double dot(const Vec2& other) const noexcept {
             return x * other.x + y * other.y;
         }
 
@@ -71,7 +71,7 @@ namespace core {
         }
     };
 
-    [[nodiscard]] constexpr Vec2 operator*(double scalar, const Vec2 &v) noexcept {
+    [[nodiscard]] constexpr Vec2 operator*(double scalar, const Vec2& v) noexcept {
         return v * scalar;
     }
 }

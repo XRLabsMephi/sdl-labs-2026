@@ -13,7 +13,7 @@ namespace render {
             throw std::runtime_error(std::string("SDL initialization failed: ") + SDL_GetError());
         }
 
-        window_ = SDL_CreateWindow(title.c_str(), width, height, SDL_WINDOW_BORDERLESS || SDL_WINDOW_INPUT_FOCUS);
+        window_ = SDL_CreateWindow(title.c_str(), width, height, SDL_WINDOW_BORDERLESS | SDL_WINDOW_INPUT_FOCUS);
         if (!window_) {
             const std::string error = SDL_GetError();
             SDL_Quit();

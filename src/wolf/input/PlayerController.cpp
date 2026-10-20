@@ -10,10 +10,10 @@ namespace input {
                                   const world::Map &map, double dt) {
         double rotation = 0.0;
         if (input.isSet(InputState::kTurnLeft)) {
-            rotation += turnSpeed_ * dt;
+            rotation -= turnSpeed_ * dt;
         }
         if (input.isSet(InputState::kTurnRight)) {
-            rotation -= turnSpeed_ * dt;
+            rotation += turnSpeed_ * dt;
         }
         if (rotation != 0.0) {
             player.rotate(rotation);

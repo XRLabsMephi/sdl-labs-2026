@@ -2,6 +2,7 @@
 
 #include "wolf/input/InputState.hpp"
 #include "wolf/input/PlayerController.hpp"
+#include "wolf/raycast/Raycaster.hpp"
 #include "wolf/render/SdlPresenter.hpp"
 #include "wolf/render/framebuffer.hpp"
 #include "wolf/world/Map.hpp"
@@ -32,6 +33,7 @@ namespace app {
         render::SdlPresenter presenter_;
         world::Map map_;
         world::Player player_;
+        raycast::Raycaster raycaster_;
         input::PlayerController controller_;
         bool running_ = true;
     };

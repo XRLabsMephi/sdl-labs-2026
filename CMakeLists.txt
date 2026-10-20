@@ -11,6 +11,7 @@ add_executable(graphics_lab
     src/wolf/input/PlayerController.cpp
     src/wolf/render/framebuffer.cpp
     src/wolf/render/SdlPresenter.cpp
+    src/wolf/raycast/Raycaster.cpp
 )
 
 target_include_directories(graphics_lab PRIVATE
