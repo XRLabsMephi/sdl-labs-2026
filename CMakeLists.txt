@@ -12,7 +12,7 @@ set(HEADERS
         include/wolf/world/Player.h
         include/wolf/render/FrameBuffer.h
         include/wolf/render/SdlPresenter.h
-        include/wolf/raycast/Raycaster.h
+        include/wolf/raycast/RayCaster.h
         include/wolf/raycast/RayHit.h
         include/wolf/input/InputState.h
         include/wolf/input/PlayerController.h
@@ -22,7 +22,7 @@ set(SOURCES
         src/wolf/main.cpp
         src/wolf/app/Application.cpp
         src/wolf/input/PlayerController.cpp
-        src/wolf/raycast/Raycaster.cpp
+        src/wolf/raycast/RayCaster.cpp
         src/wolf/render/FrameBuffer.cpp
         src/wolf/render/SdlPresenter.cpp
         src/wolf/world/Map.cpp
