@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.24)
+cmake_minimum_required(VERSION 3.22.1)
 
 project(SoftwareGraphicsLabs LANGUAGES CXX)
 
@@ -26,6 +26,9 @@ set(SOURCES
         src/wolf/render/FrameBuffer.cpp
         src/wolf/render/SdlPresenter.cpp
         src/wolf/world/Map.cpp
+        include/wolf/world/Player.h
+        src/wolf/world/Map.cpp
+        src/wolf/app/Application.cpp
 )
 
 add_executable(graphics_lab ${HEADERS} ${SOURCES})
