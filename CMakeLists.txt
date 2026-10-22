@@ -34,7 +34,7 @@ set(SOURCES
 add_executable(graphics_lab ${HEADERS} ${SOURCES})
 
 target_include_directories(graphics_lab PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/wolf
 )
 
 target_link_libraries(graphics_lab PRIVATE SDL3::SDL3)
