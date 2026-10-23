@@ -1,4 +1,4 @@
-#include "../../../include/wolf/world/Map.h"
+#include <world/Map.h>
 
 #include <algorithm>
 #include <cmath>
@@ -73,17 +73,17 @@ bool world::Map::loadFromFile(const std::string &filename) {
     return true;
 }
 
-bool world::Map::canOccupy(core::Vector2 position, float radius) const {
+bool world::Map::canOccupy(core::Vector2 position, double radius) const {
     if (cells.empty()) {
         return false;
     }
 
     // The player's entire collision circle must remain within the map.
-    if (!(radius >= 0.0f &&
-          position.x - radius >= 0.0f &&
-          position.y - radius >= 0.0f &&
-          position.x + radius < static_cast<float>(width) &&
-          position.y + radius < static_cast<float>(height))) {
+    if (!(radius >= 0.0 &&
+          position.x - radius >= 0.0 &&
+          position.y - radius >= 0.0 &&
+          position.x + radius < static_cast<double>(width) &&
+          position.y + radius < static_cast<double>(height))) {
         return false;
     }
 
@@ -104,26 +104,26 @@ bool world::Map::canOccupy(core::Vector2 position, float radius) const {
         std::floor(position.y + radius)
     );
 
-    for (float y = top; y <= bottom; y += 1.0) {
-        for (float x = left; x <= right; x += 1.0) {
+    for (double y = top; y <= bottom; y += 1.0) {
+        for (double x = left; x <= right; x += 1.0) {
             if (!isWall(x, y)) {
                 continue;
             }
 
-            float nearestX = std::clamp(
+            double nearestX = std::clamp(
                 position.x,
                 x,
                 x + 1
             );
 
-            float nearestY = std::clamp(
+            double nearestY = std::clamp(
                 position.y,
                 y,
                 y + 1
             );
 
-            float dx = position.x - nearestX;
-            float dy = position.y - nearestY;
+            double dx = position.x - nearestX;
+            double dy = position.y - nearestY;
 
             // Touching or overlapping a wall blocks the position.
             // Compare squared distances to avoid computing a square root.
@@ -135,3 +135,5 @@ bool world::Map::canOccupy(core::Vector2 position, float radius) const {
 
     return true;
 }
+
+#include <world/Map.h>
