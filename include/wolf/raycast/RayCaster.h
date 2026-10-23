@@ -7,8 +7,7 @@
 #include <render/FrameBuffer.h>
 #include <world/Player.h>
 
-namespace raycast
-{
+namespace raycast{
     using Vector2 = core::Vector2;
     //TODO documentation
     class RayCaster{
@@ -24,7 +23,6 @@ namespace raycast
             frame_height_(frame_height)
         {if (frame_width_ <= 1 || frame_height_ <= 0){
             //надо принять соглашение об исключениях и логгировании
-            std::cerr << "[Error] invalid frame resolution";
             throw std::invalid_argument("Invalid frame resolution");
         }}
         /**

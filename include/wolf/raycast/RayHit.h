@@ -1,8 +1,7 @@
 #pragma once
 #include <core/Vec2.h>
 
-namespace raycast
-{
+namespace raycast{
     /**@brief storage for the side of hit\n
          *@c None = -1\n
          *@c Vertical = 0 : the side that is parallel to ordinate\n

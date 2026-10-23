@@ -22,11 +22,15 @@ namespace core {
             y += other.y;
             return *this;
         }
+        double length() const{
+            return Vector2::length(*this);
+        }
+        inline static double distance(const Vector2& v1, const Vector2& v2){
+            return sqrt((v1.x - v2.x)*(v1.x-v2.x) + (v1.y - v2.y) * (v1.y - v2.y));
+        }
+        inline static double length(const Vector2& v){
+            return sqrt(v.x * v.x + v.y * v.y);
+        }
     };
-    inline double distance(const Vector2& v1, const Vector2& v2){
-        return sqrt((v1.x - v2.x)*(v1.x-v2.x) + (v1.y - v2.y) * (v1.y - v2.y));
-    }
-    inline double length(const Vector2& v){
-        return sqrt(v.x * v.x + v.y * v.y);
-    }
+
 }

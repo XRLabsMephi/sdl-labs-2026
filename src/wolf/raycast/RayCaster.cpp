@@ -5,10 +5,10 @@
 
 using namespace raycast;
 
-void RayCaster::DoRayCasting() const
-{
+void RayCaster::DoRayCasting() const{
     Vector2 camera_direction = player_.getDirection();
 
+    //возможно стоит заменить на assert
     if (camera_direction.x == 0.0 && camera_direction.y == 0.0){
         std::cerr << "[Error] Zero ray direction." << "\n";
         return;
@@ -23,7 +23,8 @@ void RayCaster::DoRayCasting() const
 
     double tan_half_fov = tan(field_of_view / 2.0f);
 
-    //поворот на -pi/2, строим ортогональный вектор и приводим его к нужной нам длине
+    //Further, we turn camera direction by -pi/2 to get orthogonal vector and transform it to necessary for current fov length
+
     // the vector of half of virtual screen (where image is projected)
     Vector2 plane = {camera_direction.y * tan_half_fov, -camera_direction.x * tan_half_fov};
 
@@ -44,15 +45,14 @@ void RayCaster::DoRayCasting() const
     }
 }
 
-RayHit RayCaster::CastRay(Vector2 ray_direction) const
-{
+RayHit RayCaster::CastRay(Vector2 ray_direction) const{
     double distance = 0;
     Vector2 ray_coordinate = player_.getPosition();
 
     // можно оптимизировать предпроцессинг и избавиться от корней в теории
     //normalization
 
-    double len = core::length(ray_direction);
+    double len = ray_direction.length();
     if (std::isinf(len) || len == 0.0){
         std::cerr << "[Error] Invalid ray direction.\n";
         return RayHit{};
@@ -71,41 +71,39 @@ RayHit RayCaster::CastRay(Vector2 ray_direction) const
     int sign_dx = (ray_dir_x == 0.0) ? 0 : ray_dir_x > 0.0 ? 1 : -1;
     int sign_dy = (ray_dir_y == 0.0) ? 0 : ray_dir_y > 0.0 ? 1 : -1;
 
-    int cell_x = static_cast<int>(std::floor(x)), cell_y = static_cast<int>(std::floor(y)); //start cell coordinates
+    double double_cell_x = std::floor(x), double_cell_y = std::floor(y); //the coordinate of cell where x and y is
 
     IntersectionSide intersection_side = IntersectionSide::None; //the cell side that was hit
-    if (x == static_cast<double>(cell_x)){intersection_side = IntersectionSide::Vertical;}
-    if (y == static_cast<double>(cell_y)){intersection_side = IntersectionSide::Horizontal;}
+    if (x == double_cell_x){intersection_side = IntersectionSide::Vertical;}
+    if (y == double_cell_y){intersection_side = IntersectionSide::Horizontal;}
 
-    if (sign_dx < 0 && x == static_cast<double>(cell_x)) {--cell_x;};
-    if (sign_dy < 0 && y == static_cast<double>(cell_y)) {--cell_y;};
+    if (sign_dx < 0 && x == double_cell_x) {--double_cell_x;}
+    if (sign_dy < 0 && y == double_cell_y) {--double_cell_y;}
 
-    double rx = static_cast<double>(cell_x + (sign_dx > 0)) - x;
-    double ry = static_cast<double>(cell_y + (sign_dy > 0)) - y;
+    double rx = double_cell_x + (sign_dx > 0 ? 1.0 : 0.0) - x;
+    double ry = double_cell_y + (sign_dy > 0 ? 1.0 : 0.0) - y;
 
     //coordinate in ray-axe closest not processed x-border
     double closest_t_x = std::numeric_limits<double>::infinity();
-    if (ray_dir_x != 0.0)
-    {
+    if (ray_dir_x != 0.0){
         double yl = rx * (ray_dir_y / ray_dir_x);
         closest_t_x= std::sqrt(rx * rx + yl * yl);
     }
 
     //coordinate in ray-axe closest not processed y-border
     double closest_t_y = std::numeric_limits<double>::infinity();
-    if (ray_dir_y != 0.0)
-    {
+    if (ray_dir_y != 0.0){
         double xl = ry * (ray_dir_x / ray_dir_y);
         closest_t_y = std::sqrt(ry * ry + xl * xl);
     }
 
     double t_inter = 0.0; //coordinate in ray-axe of the last intersection_side
 
+    int cell_x = static_cast<int>(double_cell_x), cell_y = static_cast<int>(double_cell_y); //start cell coordinates
     //main loop
     //calculating the next cell and check is there wall
     //TODO более подробно расписаро работу алгоритма
-    while (!map_.isWall(cell_x, cell_y))
-    {
+    while (!map_.isWall(cell_x, cell_y)){
         if (closest_t_x > closest_t_y){
             cell_y += sign_dy;
             t_inter = closest_t_y;
@@ -113,8 +111,7 @@ RayHit RayCaster::CastRay(Vector2 ray_direction) const
             intersection_side = IntersectionSide::Horizontal;
             continue;
         }
-        else
-        {
+        else{
             cell_x += sign_dx;
             t_inter = closest_t_x;
             closest_t_x += tdx;
