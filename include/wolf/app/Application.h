@@ -30,7 +30,7 @@ namespace app {
 
         void processEvents();
 
-        void update(float deltaTime);
+        void update(double deltaTime);
 
     public:
         Application();

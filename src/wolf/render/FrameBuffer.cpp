@@ -1,5 +1,8 @@
-#include <iostream>
-#include <wolf/render/FrameBuffer.h>
+#include <render/FrameBuffer.h>
+#include <stdexcept>
+#include <ranges>
+#include <algorithm>
+#include <cstdint>
 
 using namespace render;
 using std::min;
@@ -86,7 +89,7 @@ void FrameBuffer::rectangle(int x0, int y0, int x1, int y1, const DrawCallParams
     }
 }
 
-void FrameBuffer::circle(int x, int y, float radius, const DrawCallParams &params) {
+void FrameBuffer::circle(int x, int y, double radius, const DrawCallParams &params) {
     // TODO
 }
 
