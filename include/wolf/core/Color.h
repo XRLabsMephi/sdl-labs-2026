@@ -26,7 +26,10 @@ namespace core {
          * @return uint32_t representation of color
          */
         static uint32_t to_uint32_t(const Color &color) {
-            return color.r_ << 24 | color.g_ << 16 | color.b_ << 8 | color.a_;
+            return static_cast<uint32_t>(color.a_) << 24
+                 | static_cast<uint32_t>(color.r_) << 16
+                 | static_cast<uint32_t>(color.g_) << 8
+                 | static_cast<uint32_t>(color.b_);
         }
 
         /**
