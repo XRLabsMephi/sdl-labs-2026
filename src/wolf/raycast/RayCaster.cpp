@@ -1,64 +1,105 @@
 #include <raycast/Raycaster.h>
+#include <core/Color.h>
 #include <iostream>
 #include <cmath>
 #include <limits>
+#include <cassert>
 
 using namespace raycast;
 
+
+void RayCaster::DrawByRayHit(const RayHit& ray_hit, double depth, int column) const{
+    /////////////////////////////////////////// parameters
+    //sky parameters
+    core::Color SKY_COLOR = core::Color::blue;
+
+    //ground parameters
+    core::Color GROUND_COLOR = core::Color::lerp(core::Color::black, core::Color::white, 30);
+
+    //wall parameters
+    const int W_H = frame_height_; // the height of wall in pixels
+    core::Color W_COLOR = core::Color::red;
+
+    //other parameters
+    constexpr double W_P_rel = 2.0; // the relation beetween player and wall height
+    constexpr double P_W_rel = 1.0 / W_P_rel; // the relation beetween wall and player height
+    const int P_H = static_cast<int>(W_H * P_W_rel); // the height of player in pixels
+
+    constexpr double SC_D = 1.0; //distance beetween camera and virtual screen
+    //constexpr double vertical_field_of_view = 0.0; //the angle of view in vertical axe. Interchangeably with SC_D
+
+    ///////////////////////////////////////////
+
+    const double SC_RAY_DEPTH_rel = SC_D/depth;
+
+    int y0 = static_cast<int>(P_H * (1 - SC_RAY_DEPTH_rel)); //bottom border of wall projection in pixels(can be negative)
+    int y1 = static_cast<int>(P_H + SC_RAY_DEPTH_rel * (W_H - P_H)); //top border of wall projection in pixels(can be more than frame_height_)
+
+    auto get_draw_params = [&ray_hit, depth, W_COLOR, SKY_COLOR, GROUND_COLOR](int wall_id) -> render::DrawCallParams{
+        core::Color color;
+        switch (wall_id){
+            case 0: color = W_COLOR; break;
+            case 1: color = GROUND_COLOR; break;
+            case 2: color = SKY_COLOR; break;
+            default: break;
+        }
+        double brightness = ray_hit.hit_cos2_; // the brightness in [0, 1]
+        color.r_ = static_cast<Uint8>(color.r_ * brightness);
+        color.g_ = static_cast<Uint8>(color.g_ * brightness);
+        color.b_ = static_cast<Uint8>(color.b_ * brightness);
+        return {.tex_id = ray_hit.wall_id_, .tex_x = -1, .depth = depth, .color = color};
+    };
+
+    frame_buffer_.vline(column, y0, y1, get_draw_params(ray_hit.wall_id_));
+}
+
+
 void RayCaster::DoRayCasting() const{
+
     Vector2 camera_direction = player_.getDirection();
-
-    //возможно стоит заменить на assert
-    if (camera_direction.x == 0.0 && camera_direction.y == 0.0){
-        std::cerr << "[Error] Zero ray direction." << "\n";
-        return;
-    }
-
     double field_of_view = player_.getAngle(); // the angle of view in radians (вопрос какой угол)
-    //validate angle to prevent inf tan
-    if (std::fabs(field_of_view) > pi - angle_eps){
-        std::cerr << "[Error] Field-of-view angle out of range." << "\n";
-        return;
-    }
+
+    //check Player contract
+    assert(!(camera_direction.x == 0.0 && camera_direction.y == 0.0) && "[Error] Zero ray direction.");
+    assert(std::abs(camera_direction.length() - 1.0) < eps  && "[Error] Not normalized vector of camera direction.");
+    assert(!(std::fabs(field_of_view) > pi - angle_eps) && "[Error] Field-of-view angle out of range.");
 
     double tan_half_fov = tan(field_of_view / 2.0f);
 
     //Further, we turn camera direction by -pi/2 to get orthogonal vector and transform it to necessary for current fov length
-
     // the vector of half of virtual screen (where image is projected)
     Vector2 plane = {camera_direction.y * tan_half_fov, -camera_direction.x * tan_half_fov};
 
     // the step vector
     Vector2 shift = {2.0f * plane.x / static_cast<double>(frame_width_ - 1), 2.0f * plane.y / static_cast<double>(frame_width_ - 1)};
-    // the first direction
-    Vector2 ray_direction = camera_direction - plane;
+    Vector2 ray_direction = camera_direction - plane; // the first direction
 
     //сейчас реализация такова, что делим на w - 1 отрезок и берем границы в качестве векторов направления
     /*возможно она будет изменена или просто будут добавлены дополнительно расчет
      *на основе равных углов или привязки к серединам отрезков*/
-    for (int i = 0; i < frame_width_; ++i)
+    for (int xi = 0; xi < frame_width_; ++xi, ray_direction += shift) //calculate next direction of ray
     {
-        RayHit ray_hit = CastRay(ray_direction);
-        ray_direction += shift; //calculate next direction of ray
 
-        //TODO сделать взаимодействия с framebuffer(в т.ч расчёт цвета, теней, depth=проекцию distance на вектор камеры), высоту земли, стен и т.д)
+        // можно оптимизировать предпроцессинг и избавиться от корней в теории
+        //normalization
+        double len = ray_direction.length();
+        Vector2 normal_ray_direction;
+        normal_ray_direction = {.x = ray_direction.x / len, .y = ray_direction.y / len};
+
+        RayHit ray_hit = CastRay(normal_ray_direction);
+
+        //projection of ray vector way on camera vector
+        double depth = ray_hit.distance_ * (normal_ray_direction.x * camera_direction.x + normal_ray_direction.y * camera_direction.y);
+
+        DrawByRayHit(ray_hit, depth, xi);
     }
+
+
 }
 
 RayHit RayCaster::CastRay(Vector2 ray_direction) const{
     double distance = 0;
     Vector2 ray_coordinate = player_.getPosition();
-
-    // можно оптимизировать предпроцессинг и избавиться от корней в теории
-    //normalization
-
-    double len = ray_direction.length();
-    if (std::isinf(len) || len == 0.0){
-        std::cerr << "[Error] Invalid ray direction.\n";
-        return RayHit{};
-    }
-    ray_direction.x = ray_direction.x / len;
-    ray_direction.y = ray_direction.y / len;
 
     auto [ray_dir_x, ray_dir_y] = ray_direction;
     auto [x, y] = ray_coordinate;

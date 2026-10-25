@@ -40,9 +40,12 @@ namespace raycast{
         int frame_width_, frame_height_;
 
         static constexpr double angle_eps = 1e-7f;
+        static constexpr double eps = 1e-8f;
         static constexpr double pi = 3.1415926536;
         //Cast a single ray with given nonzero direction
         RayHit CastRay(Vector2 direction) const;
+
+        void DrawByRayHit(const RayHit& rayhit, double depth, int column) const;
     };
 }
 
