@@ -16,7 +16,7 @@ set(HEADERS
         include/wolf/raycast/RayHit.h
         include/wolf/input/InputState.h
         include/wolf/input/PlayerController.h
-        include/wolf/core/Logger.h
+        include/wolf/debug/Logger.h
 )
 
 set(SOURCES
@@ -27,7 +27,7 @@ set(SOURCES
         src/wolf/render/FrameBuffer.cpp
         src/wolf/render/SdlPresenter.cpp
         src/wolf/world/Map.cpp
-        include/wolf/core/Logger.cpp
+        src/wolf/debug/Logger.cpp
 )
 
 add_executable(graphics_lab ${HEADERS} ${SOURCES})

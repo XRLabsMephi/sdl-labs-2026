@@ -1,4 +1,4 @@
-#include "wolf/core/Logger.h"
+#include "../../../include/wolf/debug/Logger.h"
 
 #include <ctime>
 #include <fstream>
@@ -41,7 +41,7 @@ std::string singleLine(std::string_view text) {
 
 }
 
-void core::Logger::write(
+void log::write(
     std::string_view level,
     std::string_view component,
     std::string_view message
@@ -88,21 +88,21 @@ void core::Logger::write(
     sessionStarted = true;
 }
 
-void core::Logger::info(
+void log::info(
     std::string_view component,
     std::string_view message
 ) {
     write("INFO", component, message);
 }
 
-void core::Logger::warning(
+void log::warning(
     std::string_view component,
     std::string_view message
 ) {
     write("WARNING", component, message);
 }
 
-void core::Logger::error(
+void log::error(
     std::string_view component,
     int code,
     std::string_view message,
@@ -119,7 +119,7 @@ void core::Logger::error(
     write("ERROR", component, text.str());
 }
 
-void core::Logger::enter(
+void log::enter(
     std::string_view component,
     std::string_view tool,
     std::string_view arguments
@@ -135,7 +135,7 @@ void core::Logger::enter(
     write("ENTER", component, text.str());
 }
 
-void core::Logger::exit(
+void log::exit(
     std::string_view component,
     std::string_view tool,
     bool success,
