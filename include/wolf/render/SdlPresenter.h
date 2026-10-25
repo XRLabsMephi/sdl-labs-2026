@@ -2,6 +2,8 @@
 #include <SDL3/SDL.h>
 #include "SDL3/SDL_render.h"
 #include <memory>
+#include <utility>
+
 #include "FrameBuffer.h"
 
 namespace render {
@@ -17,6 +19,7 @@ namespace render {
         std::unique_ptr<SDL_Renderer, SDL_Renderer_Deleter> renderer_;
         std::unique_ptr<SDL_Texture, SDL_Texture_Deleter> texture_;
         buf_size_t width_ = 0, height_ = 0;
+        std::string error_message;
 
     public:
         /**
@@ -28,8 +31,11 @@ namespace render {
         /**
          * @brief Prints FrameBuffer into Texture and draws it on the screen
          * @param buffer Buffer to get pixels from
+         * @return @c true on success, @c false on error and set an error message to be read from getError
          */
-        void present(const FrameBuffer& buffer);
+        bool present(const FrameBuffer& buffer);
+
+        std::string getError();
     };
 
 }

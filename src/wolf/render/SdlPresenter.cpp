@@ -46,15 +46,20 @@ render::SdlPresenter::SdlPresenter(SDL_Window *window) {
     texture_.reset(raw_texture);
 }
 
-void render::SdlPresenter::present(const FrameBuffer &buffer) {
+bool render::SdlPresenter::present(const FrameBuffer &buffer) {
     if (buffer.width() != width_ || buffer.height() != height_) {
-        throw std::invalid_argument("buffer dimensions do not match presenter dimensions");
+        error_message = std::format(
+            "buffer dimensions ({} x {}) do not match presenter dimensions ({} x {})",
+            buffer.width(), buffer.height(),
+            width_, height_);
+        return false;
     }
 
     void *pixels = nullptr;
     int pitch = 0;
     if (!SDL_LockTexture(texture_.get(), nullptr, &pixels, &pitch)) {
-        throw std::runtime_error(std::format("failed to lock texture: {}", SDL_GetError()));
+        error_message = std::format("failed to lock texture: {}", SDL_GetError());
+        return false;
     }
     //AFTER HEATED DISCUSSION WAS ALTERED TO CURRENT VERSION
     /*
@@ -83,8 +88,8 @@ void render::SdlPresenter::present(const FrameBuffer &buffer) {
 
     // GPU-transposed-flipped rendering: setting up texture as height_ x width_ and transforming it in query to GPU
     const size_t bytes_per_row = height_ * sizeof(uint32_t);
-    const auto* src_buffer = reinterpret_cast<const uint8_t*>(buffer.raw_data());
-    uint8_t* dst_texture = static_cast<uint8_t*>(pixels);
+    const auto *src_buffer = reinterpret_cast<const uint8_t *>(buffer.raw_data());
+    auto *dst_texture = static_cast<uint8_t *>(pixels);
 
     if (static_cast<size_t>(pitch) == bytes_per_row) {
         std::memcpy(dst_texture, src_buffer, bytes_per_row * width_);
@@ -98,23 +103,36 @@ void render::SdlPresenter::present(const FrameBuffer &buffer) {
 
     int out_width, out_height;
     if (!SDL_GetRenderOutputSize(renderer_.get(), &out_width, &out_height)) {
-        throw std::runtime_error(std::format("failed to get render output size: {}", SDL_GetError()));
+        error_message = std::format("failed to get render output size: {}", SDL_GetError());
+        return false;
     }
 
-    SDL_FRect dst{
-        (out_width - out_height) / 2.0f,
-        (out_height - out_width) / 2.0f,
+    const SDL_FRect dst{
+        static_cast<float>(out_width - out_height) / 2.0f,
+        static_cast<float>(out_height - out_width) / 2.0f,
         static_cast<float>(out_height), static_cast<float>(out_width)
     };
 
-    SDL_RenderTextureRotated(
+    if (!SDL_RenderTextureRotated(
         renderer_.get(),
         texture_.get(),
         nullptr,
         &dst,
         90.0,
         nullptr,
-        SDL_FLIP_VERTICAL);
+        SDL_FLIP_VERTICAL)) {
+        error_message = std::format("failed to render the texture: {}", SDL_GetError());
+        return false;
+    }
 
-    SDL_RenderPresent(renderer_.get());
+    if (!SDL_RenderPresent(renderer_.get())) {
+        error_message = std::format("failed to present texture: {}", SDL_GetError());
+        return false;
+    }
+
+    return true;
+}
+
+std::string render::SdlPresenter::getError() {
+    return error_message;
 }
