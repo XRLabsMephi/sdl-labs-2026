@@ -26,7 +26,12 @@ add_library(graphics_lab_core STATIC
     src/core/config.cc
     src/core/config.h
 
+    src/core/color.h
+
     src/math/vector.h
+
+    src/render/frame_buffer.cc
+    src/render/frame_buffer.h
 
     src/wolf/ray_hit.h
     src/wolf/raycaster.h
