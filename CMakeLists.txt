@@ -33,6 +33,9 @@ add_library(graphics_lab_core STATIC
     src/render/frame_buffer.cc
     src/render/frame_buffer.h
 
+    src/render/sdl_presenter.cc
+    src/render/sdl_presenter.h
+
     src/wolf/ray_hit.h
     src/wolf/raycaster.h
     src/wolf/raycaster.cc
