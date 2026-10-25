@@ -1,6 +1,6 @@
 #include <cstdlib>
 
-#include "wolf/app/Application.h"
+#include "app/Application.h"
 
 int main() {
     app::Application application;

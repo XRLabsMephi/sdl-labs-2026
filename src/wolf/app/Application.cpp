@@ -1,5 +1,7 @@
 
+
 #include "../../../include/wolf/app/Application.h"
+
 
 #include <algorithm>
 #include <iostream>
@@ -13,7 +15,7 @@ namespace {
 
     constexpr SDL_WindowFlags WINDOW_FLAGS = 0;
 
-    constexpr float NANOSECONDS_PER_SECOND = 1'000'000'000.0f;
+    constexpr double NANOSECONDS_PER_SECOND = 1'000'000'000.0;
 
 }
 
@@ -88,9 +90,10 @@ void app::Application::run() {
         Uint64 currentTime = SDL_GetTicksNS();
 
         // Convert elapsed time from nanoseconds to seconds.
-        float deltaTime =
-    static_cast<float>(currentTime - previousTime)
-    / NANOSECONDS_PER_SECOND;
+        // Convert elapsed time from nanoseconds to seconds.
+        double deltaTime =
+            static_cast<double>(currentTime - previousTime)
+            / NANOSECONDS_PER_SECOND;
 
         previousTime = currentTime;
 
@@ -133,7 +136,7 @@ void app::Application::processEvents() {
     }
 }
 
-void app::Application::update(float deltaTime) {
+void app::Application::update(double deltaTime) {
     // TODO: Update the player through PlayerController using input and deltaTime.
     // TODO: Update other game objects.
     (void)deltaTime;

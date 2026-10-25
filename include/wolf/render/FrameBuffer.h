@@ -1,14 +1,13 @@
 #pragma once
 
 #include <vector>
-
-#include "wolf/core/Point.h"
-#include "wolf/core/Color.h"
+#include "core/Color.h"
 
 namespace render {
     using Color = core::Color;
     template<typename T>
     using vector = std::vector<T>;
+    using buf_size_t = size_t;
 
     /**
     * @brief Contains parameters for draw call to @c FrameBuffer.
@@ -16,7 +15,7 @@ namespace render {
     struct DrawCallParams {
         int tex_id = -1; /**< ID of texture. -1 is no texture */
         int tex_x = -1; /**< Column in texture. Ignored if tex_id is set to -1*/
-        float depth = 0; /**< Depth of the object in the frame (z_buf value). Influences the color*/
+        double depth = 0; /**< Depth of the object in the frame (z_buf value). Influences the color*/
         Color color = Color::black; /**< Color is used only if tex_id is -1*/
     };
 
@@ -25,12 +24,29 @@ namespace render {
      * Pixel buffer for a single frame
      */
     class FrameBuffer {
-        int width_; /**< Width of buffer in pixels */
-        int height_; /**< Height of buffer in pixels */
-        vector<uint32_t> buffer_; /** < flat buffer*/
+        buf_size_t width_; /**< Width of buffer in pixels */
+        buf_size_t height_; /**< Height of buffer in pixels */
+        int int_width_; /**< Integer version of buffer width. Internal-use only */
+        int int_height_; /**< Integer version of buffer height. Internal-use only */
+        vector<uint32_t> buffer_; /** < flat column-major buffer*/
 
     public:
-        FrameBuffer(int width, int height);
+        FrameBuffer(int32_t width, int32_t height);
+
+        /**
+         * @brief Returns width of the buffer
+         */
+        buf_size_t width() const;
+
+        /**
+         * @brief Returns width of the buffer
+         */
+        buf_size_t height() const;
+
+        /**
+         * @return const pointer to the start of raw buffer data (column-major)
+         */
+        const uint32_t *raw_data() const;
 
         /**
          * @brief Fills whole buffer
@@ -85,7 +101,7 @@ namespace render {
         void rectangle(int x0, int y0, int x1, int y1, const DrawCallParams &params);
 
         // draws circle of given radius and color
-        void circle(int x, int y, float radius, const DrawCallParams &params);
+        void circle(int x, int y, double radius, const DrawCallParams &params);
 
         // draws triangle with given vertices
         void triangle(int x0, int y0, int x1, int y1, int x2, int y2, const DrawCallParams &params);
