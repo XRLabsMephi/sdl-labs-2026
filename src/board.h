@@ -16,7 +16,9 @@ public:
     double LenghtY;
     double LenghtZ;
 
-    std::vector<int> cur_col = { 0, 0, 0, 0 };
+    int wallId = 1; // id текстуры которой будет краситься параллелепипед
+
+    std::vector<int> cur_col = { 0, 0, 0, 0 };// - рудимент до добавления текстурирования
 
     Board(double CoordX, double CoordY, double CoordZ,
         double LenghtX, double LenghtY, double LenghtZ);

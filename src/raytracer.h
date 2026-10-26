@@ -1,7 +1,25 @@
 #pragma once
+#include <cmath>
+#include "playfield.h"
+#include "settings.h"
+
 /*
 	Файл с функциями для пускания лучей, нахождения коллизий и тп.
 */
+
+
+// структура для хранения информации о том с чем столкнулся луч, как и тд.
+struct RayHit {
+	bool   hit = false;	// произошло ли столкновение
+	double depth = 0.0;	// глубина для проекции
+	double len = 0.0;	// полная длина луча
+	int    mapX = 0;	// координаты в клетках мини-краты
+	int    mapY = 0;	// 
+	int    wallId = 0;	// id текстуры стены, с которой произошло столкновение
+	int    side = 0;	// 0 = вертикальная грань, 1 = горизонтальная (надо менять x или y)
+	double wallU = 0.0;	// [0, 1) доля от длины грани клетки, в которой произошло столкновение
+};
+
 
 /*
 	Функция вычисления 1 луча.
@@ -9,4 +27,4 @@
 	-1 если пересечения в пределах 1.000 не произошло
 	Реализовано через DDA, то есть двигаем луч не с каким то шагом, а проверяем клетки на его пути.
 */
-std::pair<double, Board*> RayTracing(double startPosX, double startPosY, double angle, Playfield& pf);
+RayHit RayTracing(double startPosX, double startPosY, double angle, double playerDir, Playfield& pf);

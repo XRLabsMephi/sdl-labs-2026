@@ -8,8 +8,7 @@
 Board::Board(double CoordX, double CoordY, double CoordZ,
     double LenghtX, double LenghtY, double LenghtZ)
     : CoordX(CoordX), CoordY(CoordY), CoordZ(CoordZ),
-    LenghtX(LenghtX), LenghtY(LenghtY), LenghtZ(LenghtZ) {
-}
+    LenghtX(LenghtX), LenghtY(LenghtY), LenghtZ(LenghtZ) {}
 
     
 bool Board::CheckConflict(double x, double y) {

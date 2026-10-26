@@ -1,34 +1,66 @@
-#include <cmath>
+п»ї#include <cmath>
+#include "raytracer.h"
 #include "playfield.h"
 #include "settings.h"
 /*
-	файл с реализацией функций из raytracer.h
+	С„Р°Р№Р» СЃ СЂРµР°Р»РёР·Р°С†РёРµР№ С„СѓРЅРєС†РёР№ РёР· raytracer.h
 */
 
 
-std::pair<double, Board*> RayTracing(double startPosX, double startPosY, double angle, Playfield& pf) {
+RayHit RayTracing(double startPosX, double startPosY, double angle, double playerDir, Playfield& pf) {
 	std::vector<std::vector<int>> field = pf.getField();
-	// координаты в таблице карты
+	// РєРѕРѕСЂРґРёРЅР°С‚С‹ РІ С‚Р°Р±Р»РёС†Рµ РєР°СЂС‚С‹
 	std::pair<int, int> CoordsInFireld = {
 		int(std::floor(startPosX / settings::map_scale)),
 		int(std::floor(startPosY / settings::map_scale))
 	};
-	// куда смотрим в проекциях на XY
+	// РєСѓРґР° СЃРјРѕС‚СЂРёРј РІ РїСЂРѕРµРєС†РёСЏС… РЅР° XY
 	int stepX = std::cos(angle) >= 0 ? 1 : -1;
 	int stepY = std::sin(angle) >= 0 ? 1 : -1;
 
 	double dist = 0;
 
+	// Р§РµСЂРµР· РєР°РєСѓСЋ РіСЂР°РЅСЊ РјС‹ РІРѕС€Р»Рё РІ С‚РµРєСѓС‰СѓСЋ РєР»РµС‚РєСѓ.
+	// РќР° РїРµСЂРІРѕР№ РёС‚РµСЂР°С†РёРё (dist = 0) Р·РЅР°С‡РµРЅРёСЏ РЅРµ РёРјРµРµС‚.
+	int lastSide = 0;
+
 	while (dist < 30 * settings::map_scale) {
 		if (CoordsInFireld.first >= 0 && CoordsInFireld.second >= 0 &&
 			CoordsInFireld.first < int(field.size()) &&
 			CoordsInFireld.second < int(field[CoordsInFireld.first].size())) {
-			// Если в клетке стоит объект, не воздух, возвращаем результат
+			// Р•СЃР»Рё РІ РєР»РµС‚РєРµ СЃС‚РѕРёС‚ РѕР±СЉРµРєС‚, РЅРµ РІРѕР·РґСѓС…, РІРѕР·РІСЂР°С‰Р°РµРј СЂРµР·СѓР»СЊС‚Р°С‚
 			if (field[CoordsInFireld.first][CoordsInFireld.second] != 0) {
+
 				for (auto& board : pf.boards) {
 					if (board.CoordX / settings::map_scale == CoordsInFireld.first &&
 						board.CoordY / settings::map_scale == CoordsInFireld.second) {
-						return { dist, &board };
+
+						RayHit hit;
+						hit.hit = true;
+						hit.len = dist;
+						//hit.depth = dist;
+						hit.depth = dist * std::cos(angle - playerDir);// - Р¤РРљРЎ Р Р«Р‘Р¬Р•Р“Рћ Р“Р›РђР—Рђ
+						hit.mapX = CoordsInFireld.first;
+						hit.mapY = CoordsInFireld.second;
+						hit.wallId = board.wallId;
+						hit.side = lastSide;
+
+
+						// РўРѕС‡РєР° РїРѕРїР°РґР°РЅРёСЏ
+						const double hitX = startPosX + dist * std::cos(angle);
+						const double hitY = startPosY + dist * std::sin(angle);
+
+						// РІРґРѕР»СЊ РІРµСЂС‚РёРєР°Р»СЊРЅРѕР№ РіСЂР°РЅРё РјРµРЅСЏРµС‚СЃСЏ Y, РІРґРѕР»СЊ РіРѕСЂРёР·РѕРЅС‚Р°Р»СЊРЅРѕР№ вЂ” X
+						const double coord = (lastSide == 0) ? hitY : hitX;
+						double u = coord / settings::map_scale;
+						u -= std::floor(u); //[0, 1)
+						hit.wallU = u;
+
+						// Р·РµСЂРєР°Р»РёРј, С‡С‚РѕР±С‹ С‚РµРєСЃС‚СѓСЂР° РЅРµ Р±С‹Р»Р° РїРµСЂРµРІС‘СЂРЅСѓС‚РѕР№
+						//if (lastSide == 0 && std::cos(angle) > 0) hit.wallU = 1.0 - hit.wallU;
+						//if (lastSide == 1 && std::sin(angle) < 0) hit.wallU = 1.0 - hit.wallU;
+
+						return hit;
 					}
 				}
 			}
@@ -36,14 +68,16 @@ std::pair<double, Board*> RayTracing(double startPosX, double startPosY, double 
 
 		double cornerX = (CoordsInFireld.first + (stepX == 1)) * settings::map_scale;
 		double cornerY = (CoordsInFireld.second + (stepY == 1)) * settings::map_scale;
-		// определяем в какую клетку следующей переместиться, отдельно рассмотрим углы в 90 градусов
+		// РѕРїСЂРµРґРµР»СЏРµРј РІ РєР°РєСѓСЋ РєР»РµС‚РєСѓ СЃР»РµРґСѓСЋС‰РµР№ РїРµСЂРµРјРµСЃС‚РёС‚СЊСЃСЏ, РѕС‚РґРµР»СЊРЅРѕ СЂР°СЃСЃРјРѕС‚СЂРёРј СѓРіР»С‹ РІ 90 РіСЂР°РґСѓСЃРѕРІ
 		if (std::abs(std::cos(angle)) < 1e-10) {
 			dist = (cornerY - startPosY) / std::sin(angle);
 			CoordsInFireld.second += stepY;
+			lastSide = 1;
 		}
 		else if (std::abs(std::sin(angle)) < 1e-10) {
 			dist = (cornerX - startPosX) / std::cos(angle);
 			CoordsInFireld.first += stepX;
+			lastSide = 0;
 		}
 		else {
 			double y = startPosY + (cornerX - startPosX) * std::tan(angle);
@@ -51,12 +85,14 @@ std::pair<double, Board*> RayTracing(double startPosX, double startPosY, double 
 			if ((y - cornerY) * stepY >= 0) {
 				dist = (cornerY - startPosY) / std::sin(angle);
 				CoordsInFireld.second += stepY;
+				lastSide = 1;
 			}
 			else {
 				dist = (cornerX - startPosX) / std::cos(angle);
 				CoordsInFireld.first += stepX;
+				lastSide = 0;
 			}
 		}
 	}
-	return { -1, nullptr };
+	return RayHit{};
 }
