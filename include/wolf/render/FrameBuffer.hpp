@@ -27,7 +27,6 @@ public:
     void set_color(Color color); //зададим цвет всем пикселям
     void clear(); //очищаем кадр (по факту задаем color="BLACK")
     void draw_vertical_line(int x, int y_start, int y_end, Color color); //отрисовываем вертикаль
-    void draw_horizontal_line(int x_start, int x_end, int y, Color color); //отрисовываем горизонталь
-
+    
     ~FrameBuffer();
 };
