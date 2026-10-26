@@ -126,6 +126,25 @@ void testCopyAndMove()
     require(source.cellAt(1, 0) == 8, "A moved-from map must remain assignable");
 }
 
+void testDefaultMap()
+{
+    const auto map = wolf::makeDefaultMap();
+    require(map.width() == 12 && map.height() == 10 && map.isEmpty(1, 1),
+            "Default map must have a free starting cell");
+    for (int x = 0; x < map.width(); ++x)
+    {
+        require(map.isWall(x, 0) && map.isWall(x, map.height() - 1),
+                "Default map must have closed top and bottom borders");
+    }
+    for (int y = 0; y < map.height(); ++y)
+    {
+        require(map.isWall(0, y) && map.isWall(map.width() - 1, y),
+                "Default map must have closed left and right borders");
+    }
+    require(map.cellAt(7, 2) == 2 && map.cellAt(4, 4) == 3,
+            "Default map must preserve different wall IDs");
+}
+
 }
 
 int main()
@@ -137,6 +156,7 @@ int main()
         testSmallMapsAndOwnership();
         testInvalidData();
         testCopyAndMove();
+        testDefaultMap();
         std::cout << "All Map tests passed\n";
         return 0;
     }

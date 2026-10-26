@@ -41,4 +41,6 @@ private:
     std::vector<int> cells_;
 };
 
+[[nodiscard]] Map makeDefaultMap();
+
 }
