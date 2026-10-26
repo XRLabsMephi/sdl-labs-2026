@@ -1,9 +1,35 @@
 #include "wolf/raycaster.h"
 
+#include <algorithm>
 #include <cmath>
 #include <limits>
 
 #include "world/map.h"
+
+namespace {
+
+bool IsValidCamera(const Vec2f& direction, const Vec2f& camera_plane) {
+  const double dir_x = direction.x();
+  const double dir_y = direction.y();
+  const double plane_x = camera_plane.x();
+  const double plane_y = camera_plane.y();
+  if (!std::isfinite(dir_x) || !std::isfinite(dir_y) ||
+      !std::isfinite(plane_x) || !std::isfinite(plane_y)) {
+    return false;
+  }
+
+  const double direction_length = std::hypot(dir_x, dir_y);
+  const double plane_length = std::hypot(plane_x, plane_y);
+  // Допуск учитывает погрешность float при поворотах векторов камеры.
+  constexpr double kCameraTolerance = 1e-4;
+  return std::abs(direction_length - 1.0) <= kCameraTolerance &&
+         plane_length > 0.0 &&
+         std::abs(dir_x * plane_x + dir_y * plane_y) <=
+             kCameraTolerance * plane_length &&
+         dir_x * plane_y - dir_y * plane_x > 0.0;
+}
+
+}  // namespace
 
 RayHit Raycaster::CastRay(const Map& map, const Vec2f& position,
                           const Vec2f& ray_direction) const {
@@ -78,4 +104,48 @@ RayHit Raycaster::CastRay(const Map& map, const Vec2f& position,
       return result;
     }
   }
+}
+
+WallColumn Raycaster::ProjectWall(const RayHit& ray_hit,
+                                  int screen_height) const {
+  WallColumn column;
+  column.ray_hit = ray_hit;
+  if (!ray_hit.hit || screen_height <= 0 || !std::isfinite(ray_hit.depth) ||
+      ray_hit.depth < 0.0) {
+    return column;
+  }
+
+  // Защита деления нужна только для проекции, глубину попадания не меняем.
+  constexpr double kMinProjectionDepth = 1e-6;
+  const double projection_depth = std::max(ray_hit.depth, kMinProjectionDepth);
+  column.projected_height = screen_height / projection_depth;
+
+  const double horizon = screen_height / 2.0;
+  const double top = horizon - column.projected_height / 2.0;
+  const double bottom = horizon + column.projected_height / 2.0;
+  // Сначала обрезаем вещественные границы: близкая стена может не влезть в int.
+  column.draw_start = static_cast<int>(
+      std::floor(std::clamp(top, 0.0, static_cast<double>(screen_height))));
+  column.draw_end = static_cast<int>(
+      std::ceil(std::clamp(bottom, 0.0, static_cast<double>(screen_height))));
+  return column;
+}
+
+std::vector<WallColumn> Raycaster::CastColumns(
+    const Map& map, const Vec2f& position, const Vec2f& direction,
+    const Vec2f& camera_plane, int screen_width, int screen_height) const {
+  if (screen_width <= 0 || screen_height <= 0 ||
+      !IsValidCamera(direction, camera_plane)) {
+    return {};
+  }
+
+  std::vector<WallColumn> columns;
+  columns.reserve(screen_width);
+  for (int x = 0; x < screen_width; ++x) {
+    const double camera_x = 2.0 * x / screen_width - 1.0;
+    const Vec2f ray_direction = direction + camera_plane * camera_x;
+    const RayHit ray_hit = CastRay(map, position, ray_direction);
+    columns.push_back(ProjectWall(ray_hit, screen_height));
+  }
+  return columns;
 }
