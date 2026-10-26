@@ -61,9 +61,7 @@ Vec2 rotate(Vec2 value, double cosine, double sine)
 void PlayerController::update(Player& player, const Map& map,
                               const InputState& input, double dt) const noexcept
 {
-    if (input.quit || !std::isfinite(dt) || dt <= 0.0 ||
-        !isFinite(player.direction) || !isFinite(player.cameraPlane) ||
-        !canOccupy(map, player.position))
+    if (input.quit || !std::isfinite(dt) || dt <= 0.0 || !canOccupy(map, player.position))
     {
         return;
     }
@@ -98,8 +96,6 @@ void PlayerController::update(Player& player, const Map& map,
     }
     movement = movement * (moveSpeed * dt / length);
 
-    // Each step is smaller than a cell and the player's footprint. Check the
-    // axes independently so a blocked component still permits wall sliding.
     const int steps = static_cast<int>(std::ceil(moveSpeed * dt / maxStepDistance));
     const Vec2 step = movement * (1.0 / steps);
     for (int i = 0; i < steps; ++i)

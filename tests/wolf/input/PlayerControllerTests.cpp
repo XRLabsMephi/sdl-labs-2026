@@ -228,6 +228,22 @@ void testBoundariesAndInvalidInput()
     player.direction = {};
     controller.update(player, map, input, 0.1);
     require(near(player.position.x, 1.5), "A zero direction must not cause division by zero");
+
+    const double invalidComponents[] = {std::numeric_limits<double>::quiet_NaN(),
+                                        std::numeric_limits<double>::infinity()};
+    for (double value : invalidComponents)
+    {
+        player = {};
+        player.direction.x = value;
+        controller.update(player, map, input, 0.1);
+        require(near(player.position.x, 1.5) && near(player.cameraPlane.x, 0.0),
+                "A nonfinite direction must not change position or camera plane");
+        player = {};
+        player.cameraPlane.y = value;
+        controller.update(player, map, input, 0.1);
+        require(near(player.position.x, 1.5) && near(player.direction.x, 1.0),
+                "A nonfinite camera plane must not change position or direction");
+    }
 }
 
 }

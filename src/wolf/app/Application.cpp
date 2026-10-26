@@ -10,7 +10,6 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
-#include <utility>
 
 namespace wolf
 {
@@ -86,8 +85,8 @@ void showDiagnostics(SDL_Window& window, const Player& player)
 
 }
 
-Application::Application(RendererFactory rendererFactory)
-    : map_(makeDefaultMap()), rendererFactory_(std::move(rendererFactory))
+Application::Application()
+    : map_(makeDefaultMap())
 {
 }
 
@@ -109,40 +108,7 @@ int Application::run()
             throw sdlError("SDL_CreateWindow");
         }
 
-        const RenderFrame renderFrame = rendererFactory_ ? rendererFactory_(*window) :
-                                                          RenderFrame{};
-        Uint64 previousTime = SDL_GetTicksNS();
-        constexpr Uint64 targetFrameTime = 1'000'000'000 / 60;
-        while (true)
-        {
-            const Uint64 frameStart = SDL_GetTicksNS();
-            const double dt = static_cast<double>(frameStart - previousTime) / 1e9;
-            previousTime = frameStart;
-            const InputState input = readInput(*window);
-            if (input.quit)
-            {
-                break;
-            }
-            controller_.update(player_, map_, input, dt);
-
-            if (!(SDL_GetWindowFlags(window.get()) & SDL_WINDOW_MINIMIZED))
-            {
-                if (renderFrame)
-                {
-                    renderFrame(map_, player_);
-                }
-                else
-                {
-                    showDiagnostics(*window, player_);
-                }
-            }
-
-            const Uint64 elapsed = SDL_GetTicksNS() - frameStart;
-            if (elapsed < targetFrameTime)
-            {
-                SDL_DelayNS(targetFrameTime - elapsed);
-            }
-        }
+        runLoop(*window);
         return 0;
     }
     catch (const std::exception& error)
@@ -150,21 +116,35 @@ int Application::run()
         std::cerr << "Application: " << error.what() << '\n';
         return 1;
     }
-    catch (...)
+}
+
+void Application::runLoop(SDL_Window& window)
+{
+    Uint64 previousTime = SDL_GetTicksNS();
+    constexpr Uint64 targetFrameTime = 1'000'000'000 / 60;
+    while (true)
     {
-        std::cerr << "Application: unknown error\n";
-        return 1;
+        const Uint64 frameStart = SDL_GetTicksNS();
+        const double dt = static_cast<double>(frameStart - previousTime) / 1e9;
+        previousTime = frameStart;
+        const InputState input = readInput(window);
+        if (input.quit)
+        {
+            return;
+        }
+        controller_.update(player_, map_, input, dt);
+
+        if (!(SDL_GetWindowFlags(&window) & SDL_WINDOW_MINIMIZED))
+        {
+            showDiagnostics(window, player_);
+        }
+
+        const Uint64 elapsed = SDL_GetTicksNS() - frameStart;
+        if (elapsed < targetFrameTime)
+        {
+            SDL_DelayNS(targetFrameTime - elapsed);
+        }
     }
-}
-
-const Map& Application::map() const noexcept
-{
-    return map_;
-}
-
-const Player& Application::player() const noexcept
-{
-    return player_;
 }
 
 }
