@@ -60,17 +60,3 @@ void FrameBuffer::draw_vertical_line(int x, int y_start, int y_end, Color color)
         set_pixel(x, y, color);
     } 
 }
-
-void FrameBuffer::draw_horizontal_line(int x_start, int x_end, int y, Color color) {
-    if (!check_y(y)) {
-        return;
-    }
-    if (x_start > x_end) {
-        std::swap(x_start, x_end);
-    }
-    int start = std::max(0, x_start);
-    int end = std::min(static_cast<int>(width_) - 1, x_end);
-    for (int x = start; x <= end; ++x) {
-        set_pixel(x, y, color);
-    }  
-}
