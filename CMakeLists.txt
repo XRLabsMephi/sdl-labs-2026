@@ -18,3 +18,13 @@ set_target_properties(graphics_lab PROPERTIES
     CXX_EXTENSIONS OFF
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
 )
+
+add_library(wolf_render
+    src/wolf/render/FrameBuffer.cpp
+)
+
+target_include_directories(wolf_render PUBLIC
+    "${CMAKE_CURRENT_SOURCE_DIR}/include"
+)
+
+target_compile_features(wolf_render PUBLIC cxx_std_20)
