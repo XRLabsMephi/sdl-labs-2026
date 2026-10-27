@@ -10,6 +10,8 @@
 	0 - пустота
 	1 - стенка
 	2 - допустим, предмет ?
+
+	P - spawn
 */
 
 class Playfield {
@@ -39,3 +41,5 @@ private:
 
 	std::vector<std::vector<int>> field; //поле в 2-мерном виде
 };
+
+//чтение из txt

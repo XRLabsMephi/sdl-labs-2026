@@ -13,7 +13,7 @@ public:
 	
 	//конструктор по умолчанию
 	Player(double x, double y, double A, double r);
-
+	
 	//проверка касания игроком коллизий
 	bool CheckCollision(double x, double y, Playfield& pf);
 
@@ -23,11 +23,17 @@ public:
 	//смещение назад
 	void back(Playfield& pf);
 
-	//поворт налево
-	void left();
+	//повернуть налево
+	void turn_left();
 
-	//поворот направо
-	void right();
+	//повернуть направо
+	void turn_right();
+
+	//налево
+	void left(Playfield& pf);
+
+	//направо
+	void right(Playfield& pf);
 
 	double get_A();
 	double get_X();

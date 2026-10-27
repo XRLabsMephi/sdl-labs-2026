@@ -105,21 +105,29 @@ int Application::run() {
 
 			//перемещение
 			if (keys[SDL_SCANCODE_A]) {
-				main_pl.left();
+				main_pl.left(play_field);
+				if (keys[SDL_SCANCODE_LSHIFT]) main_pl.left(play_field);
 			}
-
 			if (keys[SDL_SCANCODE_D]) {
-				main_pl.right();
+				main_pl.right(play_field);
+				if (keys[SDL_SCANCODE_LSHIFT]) main_pl.right(play_field);
+			}
+			if (keys[SDL_SCANCODE_LEFT]) {
+				main_pl.turn_left();
+			}
+			if (keys[SDL_SCANCODE_RIGHT]) {
+				main_pl.turn_right();
 			}
 			if (keys[SDL_SCANCODE_W]) {
 				main_pl.forward(play_field);
 				if (keys[SDL_SCANCODE_LSHIFT]) main_pl.forward(play_field);
 			}
-
 			if (keys[SDL_SCANCODE_S]) {
 				main_pl.back(play_field);
 				if (keys[SDL_SCANCODE_LSHIFT]) main_pl.back(play_field);
 			}
+
+
 
 			//хотим красивый скайбокс
 			const Texture& skyTex = textures_[3];
@@ -223,11 +231,14 @@ int Application::run() {
 
 			//для каждого луча при надобности отрисовываем столкновение со стенкой
 			for (int i = 0; i < raysCount; i++) {
-				//
+				
 				double cameraX = 2.0 * i / raysCount - 1.0; // [-1:1] - коэф от левого до правого края.
 
 				// Истинный угол луча с учетом плоской проекции
 				double rayAngle = main_pl.get_A() + std::atan(cameraX * std::tan(FOV / 2.0));
+
+				//double rayAngle = main_pl.get_A() - FOV / 2 + FOV * i / raysCount;
+
 
 				RayHit hit = RayTracing(main_pl.get_X(), main_pl.get_Y(), rayAngle, main_pl.get_A() ,play_field);
 				if (!hit.hit) continue;

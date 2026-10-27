@@ -25,11 +25,11 @@ bool Player::CheckCollision(double _x, double _y, Playfield& pf) {
 	return true;
 }
 
-void Player::left() {
+void Player::turn_left() {
 	A -= 0.02 * settings::rotation_scale;
 }
 
-void Player::right() {
+void Player::turn_right() {
 	A += 0.02 * settings::rotation_scale;
 }
 
@@ -37,12 +37,13 @@ void Player::right() {
 // Предсказываем перемещение игрока вдоль оси X и Y. Если вдоль одной их них мы окажемся около объекта,
 // то отменяем передвижение вдоль этой оси.
 
+
 void Player::forward(Playfield& pf) {
 	if (this->CheckCollision(x + std::cos(A) * settings::moving_scale, y, pf)) {
 		x += std::cos(A) * settings::moving_scale;
 	}
 	if (this->CheckCollision(x, y + std::sin(A) * settings::moving_scale, pf)) {
-		y += std::sin(A) * settings::moving_scale ;
+		y += std::sin(A) * settings::moving_scale;
 	}
 }
 
@@ -52,6 +53,24 @@ void Player::back(Playfield& pf) {
 	}
 	if (this->CheckCollision(x, y - std::sin(A) * settings::moving_scale, pf)) {
 		y -= std::sin(A) * settings::moving_scale;
+	}
+}
+
+void Player::left(Playfield& pf) {
+	if (this->CheckCollision(x + std::cos(A - std::numbers::pi / 2) * settings::moving_scale, y, pf)) {
+		x += std::cos(A - std::numbers::pi / 2) * settings::moving_scale;
+	}
+	if (this->CheckCollision(x, y + std::sin(A - std::numbers::pi / 2) * settings::moving_scale, pf)) {
+		y += std::sin(A - std::numbers::pi / 2) * settings::moving_scale;
+	}
+}
+
+void Player::right(Playfield& pf) {
+	if (this->CheckCollision(x + std::cos(A + std::numbers::pi / 2) * settings::moving_scale, y, pf)) {
+		x += std::cos(A + std::numbers::pi / 2) * settings::moving_scale;
+	}
+	if (this->CheckCollision(x, y + std::sin(A + std::numbers::pi / 2) * settings::moving_scale, pf)) {
+		y += std::sin(A + std::numbers::pi / 2) * settings::moving_scale;
 	}
 }
 
