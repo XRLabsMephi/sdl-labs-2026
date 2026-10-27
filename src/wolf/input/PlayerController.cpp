@@ -18,7 +18,7 @@ namespace wolf {
         constexpr double maxDeltaTime = 1.0;
 
         bool withinBounds(const Map& map, Vec2 position) {
-            if (!std::isfinite(position.x) || !std::isfinite(position.y)) {
+            if (!isFinite(position)) {
                 return false;
             }
             if (position.x - playerHalfSize < 0.0 || position.x + playerHalfSize >= map.width()) {
@@ -65,27 +65,27 @@ namespace wolf {
         if (input.quit || !std::isfinite(dt) || dt <= 0.0 || !canOccupy(map, player.position)) {
             return;
         }
-        const double directionLength = std::hypot(player.direction.x, player.direction.y);
-        const double planeLength = std::hypot(player.cameraPlane.x, player.cameraPlane.y);
-        if (!std::isfinite(directionLength) || directionLength < 1e-12 ||
-            !std::isfinite(planeLength) || planeLength < 1e-12) {
+        if (!(std::isfinite(player.direction.length()) && std::isfinite(player.cameraPlane.length()))) {
+            return;
+        }
+        if (player.direction.length() < minVectorLength || player.cameraPlane.length() < minVectorLength) {
             return;
         }
         dt = std::min(dt, maxDeltaTime);
         const int turn = static_cast<int>(input.turnRight) - static_cast<int>(input.turnLeft);
         const double angle = turn * turnSpeed * dt;
-        player.direction = rotate(player.direction, std::cos(angle), std::sin(angle));
-        player.cameraPlane = rotate(player.cameraPlane, std::cos(angle), std::sin(angle));
+        const double cosine = std::cos(angle), sine = std::sin(angle);
+        player.direction = rotate(player.direction, cosine, sine);
+        player.cameraPlane = rotate(player.cameraPlane, cosine, sine);
         const int forward = static_cast<int>(input.moveForward) -
                             static_cast<int>(input.moveBackward);
         const int strafe = static_cast<int>(input.strafeRight) -
                            static_cast<int>(input.strafeLeft);
-        const Vec2 facing = player.direction * (1.0 / directionLength);
+        const Vec2 facing = player.direction * (1.0 / player.direction.length());
         const Vec2 right{-facing.y, facing.x};
         Vec2 movement = facing * forward + right * strafe;
-        const double length = std::hypot(movement.x, movement.y);
-        if (length == 0.0) {return;}
-        movement = movement * (moveSpeed * dt / length);
+        if (movement.length() == 0.0) {return;}
+        movement = movement * (moveSpeed * dt / movement.length());
         const int steps = static_cast<int>(std::ceil(moveSpeed * dt / maxStepDistance));
         const Vec2 step = movement * (1.0 / steps);
         for (int i = 0; i < steps; ++i) {
