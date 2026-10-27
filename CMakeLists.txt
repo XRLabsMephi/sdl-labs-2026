@@ -51,3 +51,12 @@ target_link_libraries(wolf_sdl
 )
 
 target_compile_features(wolf_sdl PUBLIC cxx_std_20)
+
+add_executable(wolf_render_demo
+    examples/wolf_render_demo.cpp
+)
+
+target_link_libraries(wolf_render_demo PRIVATE
+    wolf_sdl
+    SDL3::SDL3
+)
