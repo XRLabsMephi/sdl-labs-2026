@@ -15,6 +15,9 @@ public:
     void clear(Color color);
     void setPixel(int x, int y, Color color);
 
+    void fillRect(int x, int y, int w, int h, Color color);
+    void drawColumn(int x, int yBegin, int yEnd, Color color);
+
     const Color* data() const { return pixels_.data(); }
 
 private:
