@@ -38,3 +38,16 @@ add_executable(wolf_render_test
 target_link_libraries(wolf_render_test PRIVATE wolf_render)
 
 add_test(NAME wolf_render_test COMMAND wolf_render_test)
+
+find_package(SDL3 CONFIG REQUIRED)
+
+add_library(wolf_sdl
+    src/wolf/render/SdlPresenter.cpp
+)
+
+target_link_libraries(wolf_sdl
+    PUBLIC wolf_render
+    PRIVATE SDL3::SDL3
+)
+
+target_compile_features(wolf_sdl PUBLIC cxx_std_20)
