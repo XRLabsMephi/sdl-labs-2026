@@ -10,17 +10,17 @@ set(SDL_TESTS OFF CACHE BOOL "Build SDL tests")
 set(SDL_EXAMPLES OFF CACHE BOOL "Build SDL examples")
 set(SDL_INSTALL OFF CACHE BOOL "Install SDL")
 FetchContent_Declare(SDL3
-    URL https://www.libsdl.org/release/SDL3-3.4.18.tar.gz
-    URL_HASH SHA256=9c75cf16330322c217dedd2e0609f1124f1b54b8633e763467b4684d0f4334a3
-    DOWNLOAD_EXTRACT_TIMESTAMP TRUE
-    TIMEOUT 60
-    TLS_VERIFY TRUE
+        URL https://www.libsdl.org/release/SDL3-3.4.18.tar.gz
+        URL_HASH SHA256=9c75cf16330322c217dedd2e0609f1124f1b54b8633e763467b4684d0f4334a3
+        DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+        TIMEOUT 60
+        TLS_VERIFY TRUE
 )
 FetchContent_MakeAvailable(SDL3)
 
 add_library(wolf_world STATIC
-    src/wolf/world/Map.cpp
-    src/wolf/input/PlayerController.cpp
+        src/wolf/world/Map.cpp
+        src/wolf/input/PlayerController.cpp
 )
 
 target_include_directories(wolf_world PUBLIC include)
@@ -28,27 +28,32 @@ target_compile_features(wolf_world PUBLIC cxx_std_20)
 target_compile_options(wolf_world PRIVATE -Wall -Wextra -Wpedantic)
 set_target_properties(wolf_world PROPERTIES CXX_EXTENSIONS OFF)
 
+add_library(wolf_raycast STATIC src/wolf/raycast/Raycaster.cpp)
+target_link_libraries(wolf_raycast PUBLIC wolf_world)
+target_compile_options(wolf_raycast PRIVATE -Wall -Wextra -Wpedantic)
+set_target_properties(wolf_raycast PROPERTIES CXX_EXTENSIONS OFF)
+
 add_library(wolf_app STATIC src/wolf/app/Application.cpp)
 target_link_libraries(wolf_app PUBLIC wolf_world SDL3::SDL3)
 target_compile_options(wolf_app PRIVATE -Wall -Wextra -Wpedantic)
 set_target_properties(wolf_app PROPERTIES CXX_EXTENSIONS OFF)
 
 add_executable(graphics_lab
-    src/wolf/main.cpp
+        src/wolf/main.cpp
 )
 
 target_link_libraries(graphics_lab PRIVATE wolf_app)
 target_compile_features(graphics_lab PRIVATE cxx_std_20)
 
 target_compile_options(graphics_lab PRIVATE
-    -Wall
-    -Wextra
-    -Wpedantic
+        -Wall
+        -Wextra
+        -Wpedantic
 )
 
 set_target_properties(graphics_lab PROPERTIES
-    CXX_EXTENSIONS OFF
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+        CXX_EXTENSIONS OFF
+        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
 )
 
 include(CTest)
@@ -66,13 +71,19 @@ if(BUILD_TESTING)
     set_target_properties(player_controller_tests PROPERTIES CXX_EXTENSIONS OFF)
     add_test(NAME wolf_player_controller COMMAND player_controller_tests)
 
+    add_executable(raycaster_tests tests/wolf/raycast/RaycasterTests.cpp)
+    target_link_libraries(raycaster_tests PRIVATE wolf_raycast)
+    target_compile_options(raycaster_tests PRIVATE -Wall -Wextra -Wpedantic)
+    set_target_properties(raycaster_tests PROPERTIES CXX_EXTENSIONS OFF)
+    add_test(NAME wolf_raycaster COMMAND raycaster_tests)
+
     add_executable(application_tests tests/wolf/app/ApplicationTests.cpp)
     target_link_libraries(application_tests PRIVATE wolf_app)
     target_compile_options(application_tests PRIVATE -Wall -Wextra -Wpedantic)
     set_target_properties(application_tests PROPERTIES CXX_EXTENSIONS OFF)
     add_test(NAME wolf_application COMMAND application_tests)
     set_tests_properties(wolf_application PROPERTIES
-        ENVIRONMENT "SDL_VIDEODRIVER=dummy"
-        TIMEOUT 15
+            ENVIRONMENT "SDL_VIDEODRIVER=dummy"
+            TIMEOUT 15
     )
 endif()
