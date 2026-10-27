@@ -1,0 +1,40 @@
+name: C++ CI
+
+on:
+  push:
+    branches:
+      - Blobick_wolf_lab01
+
+  pull_request:
+    branches:
+      - Blobick_wolf
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install SDL3
+        uses: libsdl-org/setup-sdl@v1
+        id: sdl
+        with:
+          version: 3-latest
+          install-linux-dependencies: true
+
+      - name: Configure
+        run: |
+          cmake -S . -B build \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_PREFIX_PATH="${{ steps.sdl.outputs.prefix }}"
+
+      - name: Build
+        run: cmake --build build --parallel 2
+
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
