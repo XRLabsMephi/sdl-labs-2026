@@ -8,12 +8,6 @@ add_executable(graphics_lab
 
 target_compile_features(graphics_lab PRIVATE cxx_std_20)
 
-target_compile_options(graphics_lab PRIVATE
-    -Wall
-    -Wextra
-    -Wpedantic
-)
-
 set_target_properties(graphics_lab PROPERTIES
     CXX_EXTENSIONS OFF
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
@@ -60,3 +54,19 @@ target_link_libraries(wolf_render_demo PRIVATE
     wolf_sdl
     SDL3::SDL3
 )
+
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    foreach(target
+        graphics_lab
+        wolf_render
+        wolf_render_test
+        wolf_sdl
+        wolf_render_demo
+    )
+        target_compile_options(${target} PRIVATE
+            -Wall
+            -Wextra
+            -Wpedantic
+        )
+    endforeach()
+endif()

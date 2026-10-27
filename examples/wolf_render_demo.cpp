@@ -7,7 +7,7 @@
 #include "wolf/render/FrameBuffer.hpp"
 #include "wolf/render/SdlPresenter.hpp"
 
-int main(int argc, char* argv[]) {
+int main(int, char*[]) {
     constexpr int W = 320;
     constexpr int H = 200;
 
