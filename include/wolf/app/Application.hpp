@@ -6,21 +6,18 @@
 
 struct SDL_Window;
 
-namespace wolf
-{
+namespace wolf {
 
-class Application
-{
-public:
-    Application();
-    int run();
+    class Application {
+        public:
+            Application();
+            int run();
 
-private:
-    void runLoop(SDL_Window& window);
+        private:
+            void runLoop(SDL_Window& window);
 
-    Map map_;
-    Player player_;
-    PlayerController controller_;
-};
+            Map map_;
+            Player player_;
+    };
 
 }

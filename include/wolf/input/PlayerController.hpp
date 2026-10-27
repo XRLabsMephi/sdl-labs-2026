@@ -1,17 +1,14 @@
 #pragma once
 
-namespace wolf
-{
+namespace wolf {
 
-class Map;
-struct Player;
-struct InputState;
+    class Map;
+    struct Player;
+    struct InputState;
 
-class PlayerController
-{
-public:
-    void update(Player& player, const Map& map, const InputState& input,
-                double dt) const noexcept;
-};
+    class PlayerController {
+        public:
+            static void update(Player& player, const Map& map, const InputState& input, double dt) noexcept;
+    };
 
 }
