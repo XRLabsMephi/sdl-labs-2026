@@ -28,9 +28,9 @@ void FrameBuffer::fillRect(int x, int y, int w, int h, Color color) {
     if (w <= 0 || h <= 0) return;
 
     int left = std::max(x, 0);
-    int right = std::min(x + w, width_);
+    int right = static_cast<int>(std::min(1LL * x + w, 1LL * width_));
     int top = std::max(y, 0);
-    int bottom = std::min(y + h, height_);
+    int bottom = static_cast<int>(std::min(1LL * y + h, 1LL * height_));
 
     for (int py = top; py < bottom; ++py) {
         for (int px = left; px < right; ++px) {
