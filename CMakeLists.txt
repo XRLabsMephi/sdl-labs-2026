@@ -28,3 +28,13 @@ target_include_directories(wolf_render PUBLIC
 )
 
 target_compile_features(wolf_render PUBLIC cxx_std_20)
+
+enable_testing()
+
+add_executable(wolf_render_test
+    tests/framebuffer_test.cpp
+)
+
+target_link_libraries(wolf_render_test PRIVATE wolf_render)
+
+add_test(NAME wolf_render_test COMMAND wolf_render_test)
