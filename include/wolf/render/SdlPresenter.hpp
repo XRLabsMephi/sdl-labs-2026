@@ -9,7 +9,22 @@ class FrameBuffer;
 
 class SdlPresenter {
 public:
-    SdlPresenter(SDL_Renderer* renderer, int width, int height);
+    SdlPresenter::SdlPresenter(SDL_Renderer* renderer, int width, int height)
+        : renderer_(renderer), width_(width), height_(height) {
+        texture_ = SDL_CreateTexture(
+            renderer_,
+            SDL_PIXELFORMAT_RGBA32,
+            SDL_TEXTUREACCESS_STREAMING,
+            width_,
+            height_
+        );
+
+        if (texture_ &&
+            !SDL_SetTextureScaleMode(texture_, SDL_SCALEMODE_NEAREST)) {
+            SDL_DestroyTexture(texture_);
+            texture_ = nullptr;
+        }
+    }
     ~SdlPresenter();
 
     SdlPresenter(const SdlPresenter&) = delete;
