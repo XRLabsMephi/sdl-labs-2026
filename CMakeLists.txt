@@ -44,12 +44,15 @@ target_compile_features(wolf_render PUBLIC cxx_std_20)
 target_compile_options(wolf_render PRIVATE -Wall -Wextra -Wpedantic)
 set_target_properties(wolf_render PROPERTIES CXX_EXTENSIONS OFF)
 
-add_library(wolf_texture STATIC src/wolf/texture/TextureStore.cpp)
-target_include_directories(wolf_texture PUBLIC include)
-target_compile_features(wolf_texture PUBLIC cxx_std_20)
-target_link_libraries(wolf_texture PRIVATE SDL3::SDL3)
-target_compile_options(wolf_texture PRIVATE -Wall -Wextra -Wpedantic)
-set_target_properties(wolf_texture PROPERTIES CXX_EXTENSIONS OFF)
+add_library(wolf_resources STATIC
+        src/wolf/texture/BmpLoader.cpp
+        src/wolf/world/SceneResources.cpp
+)
+target_include_directories(wolf_resources PUBLIC include)
+target_compile_features(wolf_resources PUBLIC cxx_std_20)
+target_link_libraries(wolf_resources PUBLIC wolf_world PRIVATE SDL3::SDL3)
+target_compile_options(wolf_resources PRIVATE -Wall -Wextra -Wpedantic)
+set_target_properties(wolf_resources PROPERTIES CXX_EXTENSIONS OFF)
 
 add_library(wolf_app STATIC src/wolf/app/Application.cpp)
 target_link_libraries(wolf_app PUBLIC wolf_render)
@@ -74,14 +77,37 @@ set_target_properties(graphics_lab PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
 )
 
+add_custom_target(wolf_assets ALL
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+            "${CMAKE_CURRENT_SOURCE_DIR}/assets/wolf"
+            "$<TARGET_FILE_DIR:graphics_lab>/assets/wolf"
+    COMMENT "Copying Wolf scene resources"
+)
+add_dependencies(graphics_lab wolf_assets)
+
 include(CTest)
 
 if(BUILD_TESTING)
-    add_executable(texture_store_tests tests/wolf/texture/TextureStoreTests.cpp)
-    target_link_libraries(texture_store_tests PRIVATE wolf_texture)
-    target_compile_options(texture_store_tests PRIVATE -Wall -Wextra -Wpedantic)
-    set_target_properties(texture_store_tests PROPERTIES CXX_EXTENSIONS OFF)
-    add_test(NAME wolf_texture_store COMMAND texture_store_tests)
+    add_executable(scene_resources_tests tests/wolf/world/SceneResourcesTests.cpp)
+    target_link_libraries(scene_resources_tests PRIVATE wolf_resources wolf_raycast)
+    target_compile_options(scene_resources_tests PRIVATE -Wall -Wextra -Wpedantic)
+    set_target_properties(scene_resources_tests PROPERTIES
+            CXX_EXTENSIONS OFF
+            RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+    )
+    add_dependencies(scene_resources_tests wolf_assets)
+    add_test(NAME wolf_scene_resources COMMAND scene_resources_tests)
+    file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/resource-test-cwd")
+    add_test(NAME wolf_scene_resources_other_directory COMMAND scene_resources_tests)
+    set_tests_properties(wolf_scene_resources_other_directory PROPERTIES
+            WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/resource-test-cwd"
+    )
+
+    add_executable(bmp_loader_tests tests/wolf/texture/BmpLoaderTests.cpp)
+    target_link_libraries(bmp_loader_tests PRIVATE wolf_resources)
+    target_compile_options(bmp_loader_tests PRIVATE -Wall -Wextra -Wpedantic)
+    set_target_properties(bmp_loader_tests PROPERTIES CXX_EXTENSIONS OFF)
+    add_test(NAME wolf_bmp_loader COMMAND bmp_loader_tests)
 
     add_executable(map_tests tests/wolf/world/MapTests.cpp)
     target_link_libraries(map_tests PRIVATE wolf_world)
@@ -107,6 +133,12 @@ if(BUILD_TESTING)
     set_target_properties(application_tests PROPERTIES CXX_EXTENSIONS OFF)
     add_test(NAME wolf_application COMMAND application_tests)
     set_tests_properties(wolf_application PROPERTIES
+            ENVIRONMENT "SDL_VIDEODRIVER=dummy"
+            TIMEOUT 15
+    )
+    add_test(NAME wolf_application_other_directory COMMAND application_tests)
+    set_tests_properties(wolf_application_other_directory PROPERTIES
+            WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/resource-test-cwd"
             ENVIRONMENT "SDL_VIDEODRIVER=dummy"
             TIMEOUT 15
     )
