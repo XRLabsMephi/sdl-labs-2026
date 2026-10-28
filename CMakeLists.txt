@@ -46,6 +46,7 @@ set_target_properties(wolf_render PROPERTIES CXX_EXTENSIONS OFF)
 
 add_library(wolf_resources STATIC
         src/wolf/texture/BmpLoader.cpp
+        src/wolf/texture/TextureStore.cpp
         src/wolf/world/SceneResources.cpp
 )
 target_include_directories(wolf_resources PUBLIC include)
@@ -88,6 +89,19 @@ add_dependencies(graphics_lab wolf_assets)
 include(CTest)
 
 if(BUILD_TESTING)
+    add_executable(texture_tests tests/wolf/texture/TextureTests.cpp)
+    target_include_directories(texture_tests PRIVATE include)
+    target_compile_features(texture_tests PRIVATE cxx_std_20)
+    target_compile_options(texture_tests PRIVATE -Wall -Wextra -Wpedantic)
+    set_target_properties(texture_tests PROPERTIES CXX_EXTENSIONS OFF)
+    add_test(NAME wolf_texture COMMAND texture_tests)
+
+    add_executable(texture_store_tests tests/wolf/texture/TextureStoreTests.cpp)
+    target_link_libraries(texture_store_tests PRIVATE wolf_resources)
+    target_compile_options(texture_store_tests PRIVATE -Wall -Wextra -Wpedantic)
+    set_target_properties(texture_store_tests PROPERTIES CXX_EXTENSIONS OFF)
+    add_test(NAME wolf_texture_store COMMAND texture_store_tests)
+
     add_executable(scene_resources_tests tests/wolf/world/SceneResourcesTests.cpp)
     target_link_libraries(scene_resources_tests PRIVATE wolf_resources wolf_raycast)
     target_compile_options(scene_resources_tests PRIVATE -Wall -Wextra -Wpedantic)
