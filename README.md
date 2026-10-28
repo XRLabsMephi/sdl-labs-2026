@@ -1,5 +1,7 @@
 # Software Graphics Labs - Raycaster
 
+[![C++ CI](https://github.com/XRLabsMephi/sdl-labs-2026/actions/workflows/ci.yml/badge.svg?branch=Blobick_wolf_lab01)](https://github.com/XRLabsMephi/sdl-labs-2026/actions/workflows/ci.yml)
+
 A simple software raycaster written in C++20 using SDL3.
 
 The project is developed as part of laboratory assignments at MEPhI.
@@ -78,3 +80,8 @@ The raycaster writes pixels into FrameBuffer.
 SDL3 only displays the completed image.
 
 See [render.md](docs/wolf/render.md) for interface conventions.
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for branch,
+commit message and development conventions.
