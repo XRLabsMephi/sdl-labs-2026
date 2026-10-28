@@ -33,6 +33,17 @@ target_link_libraries(wolf_raycast PUBLIC wolf_world)
 target_compile_options(wolf_raycast PRIVATE -Wall -Wextra -Wpedantic)
 set_target_properties(wolf_raycast PROPERTIES CXX_EXTENSIONS OFF)
 
+add_library(wolf_render STATIC
+        src/wolf/render/FrameBuffer.cpp
+        src/wolf/render/SoftwareRenderer.cpp
+        src/wolf/render/SdlPresenter.cpp
+)
+target_include_directories(wolf_render PUBLIC include)
+target_link_libraries(wolf_render PUBLIC wolf_raycast SDL3::SDL3)
+target_compile_features(wolf_render PUBLIC cxx_std_20)
+target_compile_options(wolf_render PRIVATE -Wall -Wextra -Wpedantic)
+set_target_properties(wolf_render PROPERTIES CXX_EXTENSIONS OFF)
+
 add_library(wolf_app STATIC src/wolf/app/Application.cpp)
 target_link_libraries(wolf_app PUBLIC wolf_world SDL3::SDL3)
 target_compile_options(wolf_app PRIVATE -Wall -Wextra -Wpedantic)
@@ -86,4 +97,16 @@ if(BUILD_TESTING)
             ENVIRONMENT "SDL_VIDEODRIVER=dummy"
             TIMEOUT 15
     )
+    add_executable(software_renderer_tests tests/wolf/render/SoftwareRendererTests.cpp)
+    target_link_libraries(software_renderer_tests PRIVATE wolf_render)
+    target_compile_options(software_renderer_tests PRIVATE -Wall -Wextra -Wpedantic)
+    set_target_properties(software_renderer_tests PROPERTIES CXX_EXTENSIONS OFF)
+    add_test(NAME wolf_software_renderer COMMAND software_renderer_tests)
+
+    add_executable(sdl_presenter_tests tests/wolf/render/SdlPresenterTests.cpp)
+    target_link_libraries(sdl_presenter_tests PRIVATE wolf_render)
+    target_compile_options(sdl_presenter_tests PRIVATE -Wall -Wextra -Wpedantic)
+    set_target_properties(sdl_presenter_tests PROPERTIES CXX_EXTENSIONS OFF)
+    add_test(NAME wolf_sdl_presenter COMMAND sdl_presenter_tests)
+    set_tests_properties(wolf_sdl_presenter PROPERTIES ENVIRONMENT "SDL_VIDEODRIVER=dummy")
 endif()
