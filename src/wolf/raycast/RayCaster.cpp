@@ -10,6 +10,7 @@ using namespace raycast;
 
 void RayCaster::DrawByRayHit(const RayHit& ray_hit, double depth, int column) const{
     /////////////////////////////////////////// parameters
+    //TODO как то организовать ввод и получение параметров
     //sky parameters
     core::Color SKY_COLOR = core::Color::blue;
 
@@ -21,11 +22,11 @@ void RayCaster::DrawByRayHit(const RayHit& ray_hit, double depth, int column) co
     core::Color W_COLOR = core::Color::red;
 
     //other parameters
-    constexpr double W_P_rel = 2.0; // the relation beetween player and wall height
-    constexpr double P_W_rel = 1.0 / W_P_rel; // the relation beetween wall and player height
+    constexpr double W_P_rel = 2.0; // the relation between player and wall height
+    constexpr double P_W_rel = 1.0 / W_P_rel; // the relation between wall and player height
     const int P_H = static_cast<int>(W_H * P_W_rel); // the height of player in pixels
 
-    constexpr double SC_D = 1.0; //distance beetween camera and virtual screen
+    constexpr double SC_D = 1.0; //distance between camera and virtual screen
     //constexpr double vertical_field_of_view = 0.0; //the angle of view in vertical axe. Interchangeably with SC_D
 
     ///////////////////////////////////////////
@@ -35,9 +36,9 @@ void RayCaster::DrawByRayHit(const RayHit& ray_hit, double depth, int column) co
     int y0 = static_cast<int>(P_H * (1 - SC_RAY_DEPTH_rel)); //bottom border of wall projection in pixels(can be negative)
     int y1 = static_cast<int>(P_H + SC_RAY_DEPTH_rel * (W_H - P_H)); //top border of wall projection in pixels(can be more than frame_height_)
 
-    auto get_draw_params = [&ray_hit, depth, W_COLOR, SKY_COLOR, GROUND_COLOR](int wall_id) -> render::DrawCallParams{
+    auto get_draw_params = [&ray_hit, depth, W_COLOR, SKY_COLOR, GROUND_COLOR](int color_id) -> render::DrawCallParams{
         core::Color color;
-        switch (wall_id){
+        switch (color_id){
             case 0: color = W_COLOR; break;
             case 1: color = GROUND_COLOR; break;
             case 2: color = SKY_COLOR; break;
@@ -50,7 +51,9 @@ void RayCaster::DrawByRayHit(const RayHit& ray_hit, double depth, int column) co
         return {.tex_id = ray_hit.wall_id_, .tex_x = -1, .depth = depth, .color = color};
     };
 
+    frame_buffer_.vline(column, 0, std::min(y0, P_H), get_draw_params(1));
     frame_buffer_.vline(column, y0, y1, get_draw_params(ray_hit.wall_id_));
+    frame_buffer_.vline(column, y1 + 1, frame_height_, get_draw_params(2));
 }
 
 
@@ -63,12 +66,14 @@ void RayCaster::DoRayCasting() const{
     assert(!(camera_direction.x == 0.0 && camera_direction.y == 0.0) && "[Error] Zero ray direction.");
     assert(std::abs(camera_direction.length() - 1.0) < eps  && "[Error] Not normalized vector of camera direction.");
     assert(!(std::fabs(field_of_view) > pi - angle_eps) && "[Error] Field-of-view angle out of range.");
-
     double tan_half_fov = tan(field_of_view / 2.0f);
 
     //Further, we turn camera direction by -pi/2 to get orthogonal vector and transform it to necessary for current fov length
     // the vector of half of virtual screen (where image is projected)
     Vector2 plane = {camera_direction.y * tan_half_fov, -camera_direction.x * tan_half_fov};
+
+
+    //TODO реализовать другие варианты для запуска лучей(в середины отрезков, по равным углам ...)
 
     // the step vector
     Vector2 shift = {2.0f * plane.x / static_cast<double>(frame_width_ - 1), 2.0f * plane.y / static_cast<double>(frame_width_ - 1)};
@@ -80,16 +85,12 @@ void RayCaster::DoRayCasting() const{
     for (int xi = 0; xi < frame_width_; ++xi, ray_direction += shift) //calculate next direction of ray
     {
 
-        // можно оптимизировать предпроцессинг и избавиться от корней в теории
+        // можно оптимизировать препроцессинг и избавиться от корней в теории
         //normalization
-        double len = ray_direction.length();
-        Vector2 normal_ray_direction;
-        normal_ray_direction = {.x = ray_direction.x / len, .y = ray_direction.y / len};
-
-        RayHit ray_hit = CastRay(normal_ray_direction);
+        RayHit ray_hit = CastRay(ray_direction);
 
         //projection of ray vector way on camera vector
-        double depth = ray_hit.distance_ * (normal_ray_direction.x * camera_direction.x + normal_ray_direction.y * camera_direction.y);
+        double depth = ray_hit.t_distance_ * (ray_direction.x * camera_direction.x + ray_direction.y * camera_direction.y);
 
         DrawByRayHit(ray_hit, depth, xi);
     }
@@ -105,9 +106,13 @@ RayHit RayCaster::CastRay(Vector2 ray_direction) const{
     auto [x, y] = ray_coordinate;
 
     //preprocessing
+    //TODO оптимизировать алгоритм, избавить от привязки к единичному вектору направление путем вычислений в его единицах исходной длины
 
-    double tdx = 1.0f / std::fabs(ray_dir_x); //shift through ray-axis when changing x //if denominator zero will be inf
-    double tdy = 1.0f / std::fabs(ray_dir_y); //shift through ray-axis when changing y //if denominator zero will be inf
+    //we count t-parameters in another units of measurement. De-facto one t is length of ray_direction
+
+    //from the similarity of triangles
+    double tdx = 1.0f / std::fabs(ray_dir_x); //shift through ray-axis in t-measuring when changing x for one //if denominator zero will be inf
+    double tdy = 1.0f / std::fabs(ray_dir_y); //shift through ray-axis in t-measuring when changing y for one//if denominator zero will be inf
 
     int sign_dx = (ray_dir_x == 0.0) ? 0 : ray_dir_x > 0.0 ? 1 : -1;
     int sign_dy = (ray_dir_y == 0.0) ? 0 : ray_dir_y > 0.0 ? 1 : -1;
@@ -121,29 +126,28 @@ RayHit RayCaster::CastRay(Vector2 ray_direction) const{
     if (sign_dx < 0 && x == double_cell_x) {--double_cell_x;}
     if (sign_dy < 0 && y == double_cell_y) {--double_cell_y;}
 
-    double rx = double_cell_x + (sign_dx > 0 ? 1.0 : 0.0) - x;
-    double ry = double_cell_y + (sign_dy > 0 ? 1.0 : 0.0) - y;
+    const double rx = double_cell_x + (sign_dx > 0 ? 1.0 : 0.0) - x;
+    const double ry = double_cell_y + (sign_dy > 0 ? 1.0 : 0.0) - y;
 
-    //coordinate in ray-axe closest not processed x-border
+    //coordinate in ray-axe in t-measuring of closest not processed x-border
     double closest_t_x = std::numeric_limits<double>::infinity();
     if (ray_dir_x != 0.0){
-        double yl = rx * (ray_dir_y / ray_dir_x);
-        closest_t_x= std::sqrt(rx * rx + yl * yl);
+        //from the similarity of triangles
+        closest_t_x = rx/ray_dir_x;
     }
-
-    //coordinate in ray-axe closest not processed y-border
+    //coordinate in ray-axe in t-measuring of closest not processed y-border
     double closest_t_y = std::numeric_limits<double>::infinity();
     if (ray_dir_y != 0.0){
-        double xl = ry * (ray_dir_x / ray_dir_y);
-        closest_t_y = std::sqrt(ry * ry + xl * xl);
+        //from the similarity of triangles
+        closest_t_y = ry/ray_dir_y;
     }
 
-    double t_inter = 0.0; //coordinate in ray-axe of the last intersection_side
+    double t_inter = 0.0; //coordinate in ray-axe in t-measuring of the last intersection_side
 
     int cell_x = static_cast<int>(double_cell_x), cell_y = static_cast<int>(double_cell_y); //start cell coordinates
     //main loop
     //calculating the next cell and check is there wall
-    //TODO более подробно расписаро работу алгоритма
+    //TODO более подробно расписать работу алгоритма
     while (!map_.isWall(cell_x, cell_y)){
         if (closest_t_x > closest_t_y){
             cell_y += sign_dy;

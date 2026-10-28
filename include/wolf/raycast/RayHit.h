@@ -14,24 +14,24 @@ namespace raycast{
             RayHit() = default;
         /**
          * @param has_hit has hit (if false any other parameters has no sense)
-         * @param distance the length of ray way before hit
+         * @param t_distance the length of ray way before hit in t-measuring
          * @param coord coordinate of hit
          * @param wall_id id of wall
          * @param face_id the index of wall's face, where ray was hit
          * @param hit_cos2 the cos^2 of the hit angle (using for smooth shadows changes)
          * @param coor_rel_wall the hit position relative to wall
          **/
-            RayHit(bool has_hit, double distance, Vector2 coord, int wall_id, IntersectionSide face_id, double hit_cos2, int coor_rel_wall)
+            RayHit(bool has_hit, double t_distance, Vector2 coord, int wall_id, IntersectionSide face_id, double hit_cos2, int coor_rel_wall)
                 :
                 has_hit_(has_hit),
-                distance_(distance),
+                t_distance_(t_distance),
                 coordinate_(coord),
                 wall_id_(wall_id),
                 face_index_(face_id),
                 hit_cos2_(hit_cos2),
                 coordinate_relate_wall_(coor_rel_wall) {}
         bool has_hit_ = false; //has hit (if false other parameters make no sense)
-        double distance_ = 0.0; //the length of ray way before hit
+        double t_distance_ = 0.0; //the length of ray way before hit
         Vector2 coordinate_ {0.0, 0.0}; //coordinate of hit
         int wall_id_ = -1; //id of wall
         IntersectionSide face_index_ = IntersectionSide::None; //the index of wall's face, where ray was hit
