@@ -1,0 +1,27 @@
+# Automatically detect text files
+* text=auto
+
+# Source code
+*.cpp text eol=lf
+*.hpp text eol=lf
+*.h text eol=lf
+*.c text eol=lf
+
+# Build configuration
+CMakeLists.txt text eol=lf
+*.cmake text eol=lf
+*.sh text eol=lf
+
+# Documentation and configuration
+*.md text eol=lf
+*.txt text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.json text eol=lf
+
+# Image assets
+*.bmp binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
