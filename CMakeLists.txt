@@ -38,6 +38,14 @@ target_link_libraries(wolf_render_test PRIVATE wolf_render)
 
 add_test(NAME wolf_render_test COMMAND wolf_render_test)
 
+add_executable(wolf_raster_test
+    tests/framebuffer_raster_test.cpp
+)
+
+target_link_libraries(wolf_raster_test PRIVATE wolf_render)
+
+add_test(NAME wolf_raster_test COMMAND wolf_raster_test)
+
 find_package(SDL3 CONFIG REQUIRED)
 
 add_library(wolf_sdl
@@ -78,6 +86,7 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
         wolf_sdl
         wolf_render_demo
         wolf_map_preview
+        wolf_raster_test
     )
         target_compile_options(${target} PRIVATE
             -Wall
