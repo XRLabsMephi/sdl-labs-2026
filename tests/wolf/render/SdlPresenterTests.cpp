@@ -22,7 +22,7 @@ void testPresentation() {
     const SdlQuit cleanup;
     require(SDL_Init(SDL_INIT_VIDEO), "SDL video initialization failed");
     const std::unique_ptr<SDL_Window, decltype(&SDL_DestroyWindow)> window(
-        SDL_CreateWindow("Software rendering test", 64, 48, SDL_WINDOW_HIDDEN),
+        SDL_CreateWindow("Software rendering test", 64, 48, SDL_WINDOW_HIDDEN | SDL_WINDOW_RESIZABLE),
         SDL_DestroyWindow);
     require(window != nullptr, "SDL window creation failed");
 
@@ -30,6 +30,17 @@ void testPresentation() {
     frame.clear(wolf::makeColor(12, 34, 56));
     wolf::SdlPresenter presenter(*window, frame.width(), frame.height());
     presenter.present(frame);
+
+    require(SDL_SetWindowSize(window.get(), 100, 80), "Window resize failed");
+    SDL_PumpEvents();
+    presenter.present(frame);
+    int logicalWidth = 0, logicalHeight = 0;
+    SDL_RendererLogicalPresentation mode{};
+    require(SDL_GetRenderLogicalPresentation(SDL_GetRenderer(window.get()),
+                &logicalWidth, &logicalHeight, &mode) &&
+                logicalWidth == 64 && logicalHeight == 48 &&
+                mode == SDL_LOGICAL_PRESENTATION_LETTERBOX,
+            "Resize must preserve the logical frame dimensions and aspect ratio");
     frame.setPixel(10, 20, wolf::makeColor(200, 30, 70));
     presenter.present(frame);
 

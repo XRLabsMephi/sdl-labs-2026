@@ -28,6 +28,7 @@ struct ExitRequest
     std::atomic_bool exitQueued = false;
     bool diagnosticsShown = false;
     bool destroyedBeforeQuit = false;
+    bool presenterDestroyed = false;
 };
 
 Uint32 SDLCALL sendExit(void* userdata, SDL_TimerID, Uint32)
@@ -70,8 +71,9 @@ bool SDLCALL watchWindow(void* userdata, SDL_Event* event)
     {
         SDL_Window* window = SDL_GetWindowFromID(request.windowId);
         request.destroyedBeforeQuit = window && SDL_WasInit(SDL_INIT_VIDEO) != 0;
+        request.presenterDestroyed = window && SDL_GetRenderer(window) == nullptr;
         request.diagnosticsShown = window &&
-            SDL_strstr(SDL_GetWindowTitle(window), "renderer not connected | pos 1.50, 1.50") &&
+            SDL_strstr(SDL_GetWindowTitle(window), "Wolf Lab 1 | pos 1.50, 1.50") &&
             SDL_strstr(SDL_GetWindowTitle(window), "dir 1.00, 0.00");
     }
     return true;
@@ -87,7 +89,7 @@ void testExit(Uint32 eventType)
     require(request.windowId != 0 && request.timer != 0 && request.otherCloseQueued &&
                 request.exitQueued, "Application must ignore other windows before handling exit");
     require(request.diagnosticsShown, "The main loop must display initial camera diagnostics");
-    require(request.destroyedBeforeQuit && SDL_WasInit(0) == 0 &&
+    require(request.presenterDestroyed && request.destroyedBeforeQuit && SDL_WasInit(0) == 0 &&
                 SDL_GetWindowFromID(request.windowId) == nullptr,
             "Application must destroy its window before quitting SDL");
 }
@@ -103,6 +105,17 @@ void testInitializationFailure()
             "SDL initialization failure must return an error and clean up");
 }
 
+void testPresenterFailure()
+{
+    require(SDL_SetHintWithPriority(SDL_HINT_RENDER_DRIVER, "wolf-invalid-renderer", SDL_HINT_OVERRIDE),
+            "Could not configure the presenter failure test");
+    wolf::Application app;
+    const int result = app.run();
+    SDL_ResetHint(SDL_HINT_RENDER_DRIVER);
+    require(result == 1 && SDL_WasInit(0) == 0,
+            "Presenter initialization failure must return an error and clean up SDL");
+}
+
 }
 
 int main(int, char*[])
@@ -113,6 +126,7 @@ int main(int, char*[])
         testExit(SDL_EVENT_WINDOW_CLOSE_REQUESTED);
         testExit(SDL_EVENT_KEY_DOWN);
         testInitializationFailure();
+        testPresenterFailure();
         testExit(SDL_EVENT_QUIT);
         std::cout << "All Application tests passed\n";
         return 0;

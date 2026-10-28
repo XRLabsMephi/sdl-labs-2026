@@ -45,7 +45,7 @@ target_compile_options(wolf_render PRIVATE -Wall -Wextra -Wpedantic)
 set_target_properties(wolf_render PROPERTIES CXX_EXTENSIONS OFF)
 
 add_library(wolf_app STATIC src/wolf/app/Application.cpp)
-target_link_libraries(wolf_app PUBLIC wolf_world SDL3::SDL3)
+target_link_libraries(wolf_app PUBLIC wolf_render)
 target_compile_options(wolf_app PRIVATE -Wall -Wextra -Wpedantic)
 set_target_properties(wolf_app PROPERTIES CXX_EXTENSIONS OFF)
 
@@ -102,6 +102,12 @@ if(BUILD_TESTING)
     target_compile_options(software_renderer_tests PRIVATE -Wall -Wextra -Wpedantic)
     set_target_properties(software_renderer_tests PROPERTIES CXX_EXTENSIONS OFF)
     add_test(NAME wolf_software_renderer COMMAND software_renderer_tests)
+
+    add_executable(render_pipeline_tests tests/wolf/render/RenderPipelineTests.cpp)
+    target_link_libraries(render_pipeline_tests PRIVATE wolf_render)
+    target_compile_options(render_pipeline_tests PRIVATE -Wall -Wextra -Wpedantic)
+    set_target_properties(render_pipeline_tests PROPERTIES CXX_EXTENSIONS OFF)
+    add_test(NAME wolf_render_pipeline COMMAND render_pipeline_tests)
 
     add_executable(sdl_presenter_tests tests/wolf/render/SdlPresenterTests.cpp)
     target_link_libraries(sdl_presenter_tests PRIVATE wolf_render)
