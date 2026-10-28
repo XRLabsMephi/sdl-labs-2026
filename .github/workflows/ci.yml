@@ -14,7 +14,13 @@ permissions:
 
 jobs:
   build-and-test:
+    name: Build and test (${{ matrix.build_type }})
     runs-on: ubuntu-24.04
+
+    strategy:
+      fail-fast: false
+      matrix:
+        build_type: [Debug, Release]
 
     steps:
       - name: Checkout repository
@@ -30,7 +36,7 @@ jobs:
       - name: Configure
         run: |
           cmake -S . -B build \
-            -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
             -DCMAKE_PREFIX_PATH="${{ steps.sdl.outputs.prefix }}"
 
       - name: Build
