@@ -6,6 +6,7 @@ project(SoftwareGraphicsLabs LANGUAGES CXX)
 add_executable(graphics_lab
     src/wolf/main.cpp
     src/wolf/world/Map.cpp
+    src/wolf/raycast/Raycaster.cpp
 )
 
 target_include_directories(graphics_lab PRIVATE
@@ -17,6 +18,10 @@ target_compile_features(graphics_lab PRIVATE cxx_std_20)
 set_target_properties(graphics_lab PROPERTIES
     CXX_EXTENSIONS OFF
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+)
+
+target_link_libraries(graphics_lab PRIVATE
+    wolf_render
 )
 
 add_library(wolf_render
