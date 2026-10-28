@@ -29,6 +29,7 @@ namespace wolf {
         int mapY = 0;
         int wallId = 0;
         WallSide side = WallSide::West;
+        double wallU = 0.0;
     };
 
 }

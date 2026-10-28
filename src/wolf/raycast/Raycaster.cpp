@@ -13,8 +13,26 @@ namespace wolf {
 
     namespace {
 
+        constexpr double maxTextureCoordinate = 1.0 - std::numeric_limits<double>::epsilon() / 2.0;
+
         int toRow(double row, int screenHeight) {
             return static_cast<int>(std::clamp(row, 0.0, static_cast<double>(screenHeight)));
+        }
+
+        int toTexel(double coordinate, int size) {
+            if (size <= 0 || std::isnan(coordinate)) {
+                return 0;
+            }
+            const double clamped = std::clamp(coordinate, 0.0, maxTextureCoordinate);
+            return std::min(static_cast<int>(clamped * size), size - 1);
+        }
+
+        double wallCoordinate(Vec2 point, int mapX, int mapY, WallSide side) {
+            double u = isXSide(side) ? point.y - mapY : point.x - mapX;
+            if (side == WallSide::East || side == WallSide::North) {
+                u = 1.0 - u;
+            }
+            return std::clamp(u, 0.0, maxTextureCoordinate);
         }
 
     }
@@ -93,6 +111,7 @@ namespace wolf {
                 result.mapY = mapY;
                 result.wallId = *cell;
                 result.side = side;
+                result.wallU = wallCoordinate(position + rayDir * t, mapX, mapY, side);
                 return result;
             }
         }
@@ -123,14 +142,69 @@ namespace wolf {
         if (screenHeight <= 0) {
             return slice;
         }
-        const double depth = std::max(hit.depth, minDepth);
-        slice.height = focal / depth;
+        slice.height = projectedSize(hit.depth, focal);
         const double horizon = 0.5 * screenHeight;
         const double top = horizon - 0.5 * slice.height;
         const double bottom = horizon + 0.5 * slice.height;
         slice.drawStart = toRow(std::ceil(top - 0.5), screenHeight);
         slice.drawEnd = toRow(std::ceil(bottom - 0.5), screenHeight);
         return slice;
+    }
+
+    double projectedSize(double depth, double focal) noexcept {
+        if (std::isnan(depth) || !std::isfinite(focal) || focal <= 0.0) {
+            return 0.0;
+        }
+        return focal / std::max(depth, minDepth);
+    }
+
+    int wallTextureX(double wallU, int textureWidth) noexcept {
+        return toTexel(wallU, textureWidth);
+    }
+
+    int wallTextureY(
+            const WallSlice& slice,
+            int screenY,
+            int screenHeight,
+            int textureHeight) noexcept {
+        if (screenHeight <= 0 || !std::isfinite(slice.height) || slice.height <= 0.0) {
+            return 0;
+        }
+        const double top = 0.5 * screenHeight - 0.5 * slice.height;
+        return toTexel((screenY + 0.5 - top) / slice.height, textureHeight);
+    }
+
+    CameraPoint toCameraSpace(const Player& player, Vec2 point) noexcept {
+        CameraPoint result;
+        const double directionLength = player.direction.length();
+        const double planeLength = player.cameraPlane.length();
+        if (!isFinite(point) || !isFinite(player.position)) {
+            return result;
+        }
+        if (!std::isfinite(directionLength) || directionLength < minVectorLength) {
+            return result;
+        }
+        if (!std::isfinite(planeLength) || planeLength < minVectorLength) {
+            return result;
+        }
+        const Vec2 relative{point.x - player.position.x, point.y - player.position.y};
+        const double forward = dot(relative, player.direction) / directionLength;
+        const double lateral = dot(relative, player.cameraPlane) / planeLength;
+        if (!std::isfinite(forward) || !std::isfinite(lateral)) {
+            return result;
+        }
+        result.depth = forward;
+        if (forward > 0.0) {
+            result.cameraX = lateral / forward * directionLength / planeLength;
+        }
+        return result;
+    }
+
+    double screenXForCameraX(double cameraX, int screenWidth) noexcept {
+        if (screenWidth <= 0) {
+            return 0.0;
+        }
+        return 0.5 * (cameraX + 1.0) * screenWidth;
     }
 
     void Raycaster::castFrame(
@@ -145,9 +219,10 @@ namespace wolf {
         }
         columns_.reserve(static_cast<std::size_t>(screenWidth));
         depthBuffer_.reserve(static_cast<std::size_t>(screenWidth));
+        const double focal = focalLength(player, screenWidth);
         for (int x = 0; x < screenWidth; ++x) {
             const RayHit hit = castRay(map, player, cameraXForColumn(x, screenWidth));
-            columns_.push_back(projectWall(hit, focalLength(player, screenWidth), screenHeight));
+            columns_.push_back(projectWall(hit, focal, screenHeight));
             depthBuffer_.push_back(hit.depth);
         }
     }

@@ -25,7 +25,26 @@ namespace wolf {
 
     [[nodiscard]] double focalLength(const Player& player, int screenWidth) noexcept;
 
+    [[nodiscard]] double projectedSize(double depth, double focal) noexcept;
+
     [[nodiscard]] WallSlice projectWall(const RayHit& hit, double focal, int screenHeight) noexcept;
+
+    [[nodiscard]] int wallTextureX(double wallU, int textureWidth) noexcept;
+
+    [[nodiscard]] int wallTextureY(
+            const WallSlice& slice,
+            int screenY,
+            int screenHeight,
+            int textureHeight) noexcept;
+
+    struct CameraPoint {
+        double depth = 0.0;
+        double cameraX = 0.0;
+    };
+
+    [[nodiscard]] CameraPoint toCameraSpace(const Player& player, Vec2 point) noexcept;
+
+    [[nodiscard]] double screenXForCameraX(double cameraX, int screenWidth) noexcept;
 
     class Raycaster {
         public:
