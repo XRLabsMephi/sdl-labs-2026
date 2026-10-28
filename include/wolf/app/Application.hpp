@@ -11,7 +11,6 @@ namespace wolf {
             Application() = default;
             int run();
 
-            // run() prepares the scene before creating the window; CPU data survives SDL_Quit.
             [[nodiscard]] const Scene& scene() const noexcept { return scene_; }
 
         private:

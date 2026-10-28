@@ -7,15 +7,15 @@
 
 namespace wolf {
 
-class TextureStore {
-public:
-    void load(int id, const std::filesystem::path& path);
-    [[nodiscard]] const Texture& get(int id) const;
-    [[nodiscard]] bool contains(int id) const noexcept;
-    [[nodiscard]] std::size_t size() const noexcept;
+    class TextureStore {
+        public:
+            void load(int id, const std::filesystem::path& path);
+            [[nodiscard]] const Texture& get(int id) const;
+            [[nodiscard]] bool contains(int id) const noexcept;
+            [[nodiscard]] std::size_t size() const noexcept;
 
-private:
-    std::unordered_map<int, Texture> textures_;
-};
+        private:
+            std::unordered_map<int, Texture> textures_;
+    };
 
-} // namespace wolf
+}

@@ -10,13 +10,13 @@
 
 namespace wolf {
 
-struct Scene {
-    Map map = makeDefaultMap();
-    Player player;
-    TextureStore textures;
-    std::vector<Sprite> sprites;
-};
+    struct Scene {
+        Map map = makeDefaultMap();
+        Player player;
+        TextureStore textures;
+        std::vector<Sprite> sprites;
+    };
 
-[[nodiscard]] Scene loadDefaultScene(const std::filesystem::path& resourceDirectory);
+    [[nodiscard]] Scene loadDefaultScene(const std::filesystem::path& resourceDirectory);
 
-} // namespace wolf
+}

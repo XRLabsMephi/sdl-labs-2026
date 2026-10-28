@@ -9,25 +9,26 @@
 
 namespace wolf {
 
-namespace sceneTexture {
-inline constexpr int brick = 1;
-inline constexpr int metal = 2;
-inline constexpr int stone = 3;
-inline constexpr int barrel = 101;
-inline constexpr int lamp = 102;
-inline constexpr int crate = 103;
-} // namespace sceneTexture
+    namespace sceneTexture {
 
-struct SceneResource {
-    int textureId;
-    std::string_view relativePath;
-};
+        inline constexpr int brick = 1;
+        inline constexpr int metal = 2;
+        inline constexpr int stone = 3;
+        inline constexpr int barrel = 101;
+        inline constexpr int lamp = 102;
+        inline constexpr int crate = 103;
 
-[[nodiscard]] std::span<const SceneResource> defaultSceneResources() noexcept;
-[[nodiscard]] std::filesystem::path defaultResourceDirectory();
+    }
 
-// Passes each item's position, texture ID and scale to the receiver.
-void placeDefaultItems(const std::function<void(Vec2, int, double)>& placeItem);
-void validateDefaultScene(const std::filesystem::path& resourceDirectory);
+    struct SceneResource {
+        int textureId;
+        std::string_view relativePath;
+    };
 
-} // namespace wolf
+    [[nodiscard]] std::span<const SceneResource> defaultSceneResources() noexcept;
+    [[nodiscard]] std::filesystem::path defaultResourceDirectory();
+
+    void placeDefaultItems(const std::function<void(Vec2, int, double)>& placeItem);
+    void validateDefaultScene(const std::filesystem::path& resourceDirectory);
+
+}

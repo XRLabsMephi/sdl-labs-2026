@@ -4,10 +4,10 @@
 
 namespace wolf {
 
-struct Sprite {
-    Vec2 position;
-    int textureId = 0;
-    double scale = 1.0;
-};
+    struct Sprite {
+        Vec2 position;
+        int textureId = 0;
+        double scale = 1.0;
+    };
 
-} // namespace wolf
+}

@@ -13,9 +13,6 @@ namespace wolf {
 
     namespace {
 
-        constexpr double INF = std::numeric_limits<double>::infinity();
-        constexpr double minDepth = 1e-6;
-
         int toRow(double row, int screenHeight) {
             return static_cast<int>(std::clamp(row, 0.0, static_cast<double>(screenHeight)));
         }
