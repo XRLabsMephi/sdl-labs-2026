@@ -14,6 +14,12 @@ SdlPresenter::SdlPresenter(SDL_Renderer* renderer, int width, int height)
         width_,
         height_
     );
+
+    if (texture_ &&
+        !SDL_SetTextureScaleMode(texture_, SDL_SCALEMODE_NEAREST)) {
+        SDL_DestroyTexture(texture_);
+        texture_ = nullptr;
+    }
 }
 
 SdlPresenter::~SdlPresenter() {
