@@ -44,6 +44,13 @@ target_compile_features(wolf_render PUBLIC cxx_std_20)
 target_compile_options(wolf_render PRIVATE -Wall -Wextra -Wpedantic)
 set_target_properties(wolf_render PROPERTIES CXX_EXTENSIONS OFF)
 
+add_library(wolf_texture STATIC src/wolf/texture/TextureStore.cpp)
+target_include_directories(wolf_texture PUBLIC include)
+target_compile_features(wolf_texture PUBLIC cxx_std_20)
+target_link_libraries(wolf_texture PRIVATE SDL3::SDL3)
+target_compile_options(wolf_texture PRIVATE -Wall -Wextra -Wpedantic)
+set_target_properties(wolf_texture PROPERTIES CXX_EXTENSIONS OFF)
+
 add_library(wolf_app STATIC src/wolf/app/Application.cpp)
 target_link_libraries(wolf_app PUBLIC wolf_render)
 target_compile_options(wolf_app PRIVATE -Wall -Wextra -Wpedantic)
@@ -70,6 +77,12 @@ set_target_properties(graphics_lab PROPERTIES
 include(CTest)
 
 if(BUILD_TESTING)
+    add_executable(texture_store_tests tests/wolf/texture/TextureStoreTests.cpp)
+    target_link_libraries(texture_store_tests PRIVATE wolf_texture)
+    target_compile_options(texture_store_tests PRIVATE -Wall -Wextra -Wpedantic)
+    set_target_properties(texture_store_tests PROPERTIES CXX_EXTENSIONS OFF)
+    add_test(NAME wolf_texture_store COMMAND texture_store_tests)
+
     add_executable(map_tests tests/wolf/world/MapTests.cpp)
     target_link_libraries(map_tests PRIVATE wolf_world)
     target_compile_options(map_tests PRIVATE -Wall -Wextra -Wpedantic)
