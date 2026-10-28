@@ -60,6 +60,16 @@ target_link_libraries(wolf_render_demo PRIVATE
     SDL3::SDL3
 )
 
+add_executable(wolf_map_preview
+    examples/wolf_map_preview.cpp
+    src/wolf/world/Map.cpp
+)
+
+target_link_libraries(wolf_map_preview PRIVATE
+    wolf_sdl
+    SDL3::SDL3
+)
+
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     foreach(target
         graphics_lab
@@ -67,6 +77,7 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
         wolf_render_test
         wolf_sdl
         wolf_render_demo
+        wolf_map_preview
     )
         target_compile_options(${target} PRIVATE
             -Wall
