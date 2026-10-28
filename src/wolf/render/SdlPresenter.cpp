@@ -3,6 +3,9 @@
 
 #include <SDL3/SDL.h>
 
+#include <cstddef>
+#include <cstring>
+
 namespace wolf {
 
 SdlPresenter::SdlPresenter(SDL_Renderer* renderer, int width, int height)
@@ -31,11 +34,36 @@ bool SdlPresenter::present(const FrameBuffer& frame) {
         return false;
     }
 
-    int pitch = width_ * sizeof(Color);
+    void* pixels = nullptr;
+    int pitch = 0;
 
-    if (!SDL_UpdateTexture(texture_, nullptr, frame.data(), pitch)) {
+    if (!SDL_LockTexture(texture_, nullptr, &pixels, &pitch)) {
         return false;
     }
+
+    const auto rowBytes =
+        static_cast<std::size_t>(width_) * sizeof(Color);
+
+    if (!pixels || pitch < 0 ||
+        static_cast<std::size_t>(pitch) < rowBytes) {
+        SDL_UnlockTexture(texture_);
+        return false;
+    }
+
+    const auto* source =
+        reinterpret_cast<const std::byte*>(frame.data());
+
+    auto* destination = static_cast<std::byte*>(pixels);
+
+    for (int y = 0; y < height_; ++y) {
+        std::memcpy(
+            destination + static_cast<std::size_t>(y) * pitch,
+            source + static_cast<std::size_t>(y) * rowBytes,
+            rowBytes
+        );
+    }
+
+    SDL_UnlockTexture(texture_);
 
     if (!SDL_RenderClear(renderer_)) {
         return false;
