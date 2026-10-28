@@ -26,7 +26,7 @@ struct SceneResource {
 [[nodiscard]] std::span<const SceneResource> defaultSceneResources() noexcept;
 [[nodiscard]] std::filesystem::path defaultResourceDirectory();
 
-// The receiver can append to the team's Sprite container when its type is available.
+// Passes each item's position, texture ID and scale to the receiver.
 void placeDefaultItems(const std::function<void(Vec2, int, double)>& placeItem);
 void validateDefaultScene(const std::filesystem::path& resourceDirectory);
 

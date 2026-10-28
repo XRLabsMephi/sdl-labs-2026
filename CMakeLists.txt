@@ -48,6 +48,7 @@ add_library(wolf_resources STATIC
         src/wolf/texture/BmpLoader.cpp
         src/wolf/texture/TextureStore.cpp
         src/wolf/world/SceneResources.cpp
+        src/wolf/world/Scene.cpp
 )
 target_include_directories(wolf_resources PUBLIC include)
 target_compile_features(wolf_resources PUBLIC cxx_std_20)
@@ -56,7 +57,7 @@ target_compile_options(wolf_resources PRIVATE -Wall -Wextra -Wpedantic)
 set_target_properties(wolf_resources PROPERTIES CXX_EXTENSIONS OFF)
 
 add_library(wolf_app STATIC src/wolf/app/Application.cpp)
-target_link_libraries(wolf_app PUBLIC wolf_render)
+target_link_libraries(wolf_app PUBLIC wolf_render wolf_resources)
 target_compile_options(wolf_app PRIVATE -Wall -Wextra -Wpedantic)
 set_target_properties(wolf_app PROPERTIES CXX_EXTENSIONS OFF)
 
@@ -144,7 +145,17 @@ if(BUILD_TESTING)
     add_executable(application_tests tests/wolf/app/ApplicationTests.cpp)
     target_link_libraries(application_tests PRIVATE wolf_app)
     target_compile_options(application_tests PRIVATE -Wall -Wextra -Wpedantic)
-    set_target_properties(application_tests PROPERTIES CXX_EXTENSIONS OFF)
+    set_target_properties(application_tests PROPERTIES
+            CXX_EXTENSIONS OFF
+            RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+    )
+    add_dependencies(application_tests wolf_assets)
+    file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/application-without-resources")
+    add_custom_command(TARGET application_tests POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                "$<TARGET_FILE:application_tests>"
+                "${CMAKE_BINARY_DIR}/application-without-resources/$<TARGET_FILE_NAME:application_tests>"
+    )
     add_test(NAME wolf_application COMMAND application_tests)
     set_tests_properties(wolf_application PROPERTIES
             ENVIRONMENT "SDL_VIDEODRIVER=dummy"
@@ -152,6 +163,15 @@ if(BUILD_TESTING)
     )
     add_test(NAME wolf_application_other_directory COMMAND application_tests)
     set_tests_properties(wolf_application_other_directory PROPERTIES
+            WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/resource-test-cwd"
+            ENVIRONMENT "SDL_VIDEODRIVER=dummy"
+            TIMEOUT 15
+    )
+    add_test(NAME wolf_application_missing_resources
+            COMMAND "${CMAKE_BINARY_DIR}/application-without-resources/$<TARGET_FILE_NAME:application_tests>"
+                    --missing-resources
+    )
+    set_tests_properties(wolf_application_missing_resources PROPERTIES
             WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/resource-test-cwd"
             ENVIRONMENT "SDL_VIDEODRIVER=dummy"
             TIMEOUT 15

@@ -4,8 +4,10 @@
 #include "wolf/texture/BmpLoader.hpp"
 #include "wolf/world/Map.hpp"
 #include "wolf/world/Player.hpp"
+#include "wolf/world/Scene.hpp"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <iostream>
 #include <limits>
@@ -107,12 +109,56 @@ void testPlacement() {
             "Placement must support items in front of walls, partial occlusion and different depths");
 }
 
+void testPreparedScene() {
+    const auto directory = wolf::defaultResourceDirectory();
+    const auto scene = wolf::loadDefaultScene(directory);
+    require(scene.textures.size() == wolf::defaultSceneResources().size(),
+            "Preparing the scene must load every declared resource exactly once");
+    for (const auto& resource : wolf::defaultSceneResources()) {
+        const auto& texture = scene.textures.get(resource.textureId);
+        require(texture.width == 32 && texture.height == 32 && texture.pixels.size() == 1024,
+                "Scene resources must be usable CPU textures");
+    }
+    const std::array expected{
+        wolf::Sprite{{3.5, 1.5}, wolf::sceneTexture::barrel, 0.7},
+        wolf::Sprite{{6.0, 1.5}, wolf::sceneTexture::lamp, 0.8},
+        wolf::Sprite{{8.5, 2.05}, wolf::sceneTexture::crate, 1.2},
+        wolf::Sprite{{5.5, 6.5}, wolf::sceneTexture::barrel, 0.9},
+    };
+    require(scene.sprites.size() == expected.size(), "The scene must contain four actual Sprite objects");
+    for (std::size_t i = 0; i < expected.size(); ++i) {
+        const wolf::Sprite& sprite = scene.sprites[i];
+        require(sprite.position.x == expected[i].position.x && sprite.position.y == expected[i].position.y &&
+                    sprite.textureId == expected[i].textureId && sprite.scale == expected[i].scale,
+                "Preparing Sprite objects must preserve positions, IDs and scales");
+        require(scene.map.isEmpty(static_cast<int>(std::floor(sprite.position.x)),
+                                  static_cast<int>(std::floor(sprite.position.y))),
+                "Prepared Sprite objects must occupy free cells of the actual scene map");
+        require((scene.textures.get(sprite.textureId).sample(0, 0) & 255u) == 0,
+                "Every Sprite ID must resolve to a loaded image with a transparent background");
+    }
+    for (int y = 0; y < scene.map.height(); ++y) {
+        for (int x = 0; x < scene.map.width(); ++x) {
+            const int id = *scene.map.cellAt(x, y);
+            require(id == 0 || scene.textures.contains(id), "Every actual wall ID must resolve in TextureStore");
+        }
+    }
+    bool failed = false;
+    const auto absent = directory / "absent-resource-directory";
+    try { (void)wolf::loadDefaultScene(absent); }
+    catch (const std::runtime_error& error) {
+        failed = std::string(error.what()).find(absent.string()) != std::string::npos;
+    }
+    require(failed, "Scene preparation must propagate resource failures with their path");
+}
+
 } // namespace
 
 int main() {
     try {
         testResources();
         testPlacement();
+        testPreparedScene();
         std::cout << "All scene resource tests passed\n";
         return 0;
     } catch (const std::exception& error) {
