@@ -28,6 +28,10 @@ add_library(graphics_lab_core STATIC
 
     src/core/color.h
 
+    src/input/input_state.h
+    src/input/player_controller.cc
+    src/input/player_controller.h
+
     src/math/vector.h
 
     src/render/frame_buffer.cc
@@ -42,6 +46,7 @@ add_library(graphics_lab_core STATIC
 
     src/world/map.cc
     src/world/map.h
+    src/world/player.h
     src/world/tile.h
 )
 
