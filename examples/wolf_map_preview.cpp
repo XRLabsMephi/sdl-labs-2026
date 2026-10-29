@@ -11,9 +11,9 @@
 int main(int, char*[]) {
     constexpr int TILE = 40;
 
-    Map map = []() {
+    wolf::Map map = []() {
         try {
-            return Map::load("assets/wolf/maps/map01.txt");
+            return wolf::Map::load("assets/wolf/maps/map01.txt");
         } catch (const std::exception& e) {
             std::cerr << e.what() << '\n';
             throw;

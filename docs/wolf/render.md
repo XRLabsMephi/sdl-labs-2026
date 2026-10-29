@@ -69,7 +69,7 @@ FrameBuffer:
 Map stores the world as a rectangular grid of integer cells.
 It does not depend on SDL.
 
-The Map class is declared without a namespace.
+The Map class belongs to namespace wolf.
 
 ### Coordinates and cell values
 

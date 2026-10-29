@@ -3,6 +3,8 @@
 #include <string>
 #include <vector>
 
+namespace wolf {
+
 class Map {
 public:
     explicit Map(std::vector<std::vector<int>> cells);
@@ -21,3 +23,5 @@ private:
     int width_ = 0;
     int height_ = 0;
 };
+
+}

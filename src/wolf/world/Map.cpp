@@ -5,6 +5,8 @@
 #include <stdexcept>
 #include <utility>
 
+namespace wolf {
+
 Map::Map(std::vector<std::vector<int>> cells)
     : cells_(std::move(cells)) {
 
@@ -73,4 +75,6 @@ int Map::wall_id(int x, int y) const {
 
 bool Map::is_wall(int x, int y) const {
     return wall_id(x, y) > 0;
+}
+    
 }
