@@ -37,6 +37,9 @@ add_library(wolf_render STATIC
         src/wolf/render/FrameBuffer.cpp
         src/wolf/render/SoftwareRenderer.cpp
         src/wolf/render/SdlPresenter.cpp
+        src/wolf/render/TexturedWallRenderer.cpp
+        src/wolf/render/SceneRenderer.cpp
+        src/wolf/sprite/SpriteRenderer.cpp
 )
 target_include_directories(wolf_render PUBLIC include)
 target_link_libraries(wolf_render PUBLIC wolf_raycast SDL3::SDL3)
@@ -194,4 +197,10 @@ if(BUILD_TESTING)
     set_target_properties(sdl_presenter_tests PROPERTIES CXX_EXTENSIONS OFF)
     add_test(NAME wolf_sdl_presenter COMMAND sdl_presenter_tests)
     set_tests_properties(wolf_sdl_presenter PROPERTIES ENVIRONMENT "SDL_VIDEODRIVER=dummy")
+    add_executable(lab02_rendering_tests tests/wolf/render/Lab02RenderingTests.cpp)
+    target_link_libraries(lab02_rendering_tests PRIVATE wolf_render)
+    target_compile_options(lab02_rendering_tests PRIVATE -Wall -Wextra -Wpedantic)
+    set_target_properties(lab02_rendering_tests PROPERTIES CXX_EXTENSIONS OFF)
+    add_test(NAME wolf_lab02_rendering COMMAND lab02_rendering_tests)
+
 endif()
