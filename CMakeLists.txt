@@ -107,6 +107,23 @@ target_link_libraries(wolf_map_preview PRIVATE
     SDL3::SDL3
 )
 
+add_executable(wolf_player_test
+        tests/player_controller_test.cpp
+        src/wolf/world/Map.cpp
+        src/wolf/input/PlayerController.cpp
+)
+
+target_include_directories(wolf_player_test PRIVATE
+        "${CMAKE_CURRENT_SOURCE_DIR}/include"
+)
+
+target_compile_features(wolf_player_test PRIVATE cxx_std_20)
+
+add_test(
+        NAME wolf_player_test
+        COMMAND wolf_player_test
+)
+
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     foreach(target
         graphics_lab
@@ -117,6 +134,7 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
         wolf_presenter_test
         wolf_render_demo
         wolf_map_preview
+        wolf_player_test
     )
         target_compile_options(${target} PRIVATE
             -Wall
