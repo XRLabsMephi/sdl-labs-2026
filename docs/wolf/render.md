@@ -138,3 +138,38 @@ Map:
 
 Raycaster and PlayerController use Map methods instead
 of accessing its internal array directly.
+
+## Player and input
+
+Vec2, Player, InputState and PlayerController belong to
+namespace wolf and do not depend on SDL.
+
+Player stores:
+- position in world units;
+- a unit direction vector;
+- a perpendicular cameraPlane vector.
+
+One map cell corresponds to one world unit.
+The initial position is (1.5, 1.5).
+The initial direction is (1, 0).
+The horizontal field of view is 60 degrees.
+
+InputState stores movement, rotation and quit requests.
+Application fills InputState from SDL input.
+
+PlayerController updates Player using Map, InputState
+and dt measured in seconds.
+
+Movement speed is 3 world units per second.
+Rotation speed is 2 radians per second.
+Diagonal movement is normalized.
+
+Collision checks use an axis-aligned square with
+half-size 0.2 around the player position.
+The initial player position must fit in empty space.
+
+Movement is checked separately along X and Y.
+Long movements are split into smaller steps.
+
+PlayerController does not handle the quit request.
+Application handles application shutdown.
