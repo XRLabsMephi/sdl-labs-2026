@@ -1,4 +1,3 @@
-
 cmake_minimum_required(VERSION 3.24)
 
 project(SoftwareGraphicsLabs LANGUAGES CXX)
@@ -6,7 +5,6 @@ project(SoftwareGraphicsLabs LANGUAGES CXX)
 add_executable(graphics_lab
     src/wolf/main.cpp
     src/wolf/world/Map.cpp
-    src/wolf/raycast/Raycaster.cpp
 )
 
 target_include_directories(graphics_lab PRIVATE
