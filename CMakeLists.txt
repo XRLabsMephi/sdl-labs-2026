@@ -5,6 +5,7 @@ project(SoftwareGraphicsLabs LANGUAGES CXX)
 add_executable(graphics_lab
     src/wolf/main.cpp
     src/wolf/world/Map.cpp
+    src/wolf/input/PlayerController.cpp
 )
 
 target_include_directories(graphics_lab PRIVATE
