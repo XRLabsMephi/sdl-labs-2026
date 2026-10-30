@@ -2,6 +2,7 @@
 #include <cmath>
 #include <algorithm>
 #include <limits>
+#include <cstdint>
 
 namespace wolf {
 
@@ -51,11 +52,11 @@ RayHit Raycaster::castRay(const Map& map, const Vec2& origin, const Vec2& dir) c
         }
 
         // Проверка выхода за границы карты
-        if (!map.isInBounds(mapX, mapY)) {
+        if (!map.in_bounds(mapX, mapY)) {
             break;
         }
 
-        int tile = map.get(mapX, mapY);
+        int tile = map.wall_id(mapX, mapY);
         if (tile > 0) {
             hit = true;
             result.hit = true;
@@ -92,8 +93,8 @@ RayHit Raycaster::castRay(const Map& map, const Vec2& origin, const Vec2& dir) c
 }
 
 void Raycaster::render(FrameBuffer& fb, const Map& map, const Player& player) {
-    const int screenWidth = fb.getWidth();
-    const int screenHeight = fb.getHeight();
+    const int screenWidth = fb.width();
+    const int screenHeight = fb.height();
 
     if (static_cast<int>(m_depthBuffer.size()) != screenWidth) {
         m_depthBuffer.resize(screenWidth);
