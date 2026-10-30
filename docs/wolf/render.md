@@ -173,3 +173,54 @@ Long movements are split into smaller steps.
 
 PlayerController does not handle the quit request.
 Application handles application shutdown.
+
+## SDL input
+
+read_input() converts SDL events and keyboard state
+into InputState.
+
+Controls:
+- W / S: move forward / backward.
+- A / D: strafe left / right.
+- Left / Right arrows: rotate the camera.
+- Escape or window close: quit.
+
+SDL input handling is implemented in SdlInput.cpp.
+PlayerController remains independent of SDL.
+
+## Application
+
+Application starts SDL and owns SDL_Window and SDL_Renderer.
+
+Scene objects are created inside run_loop():
+- Map;
+- Player;
+- PlayerController;
+- FrameBuffer;
+- Raycaster;
+- SdlPresenter.
+
+Each frame:
+1. Read input.
+2. Calculate dt in seconds.
+3. Update the player.
+4. Draw the ceiling and floor.
+5. Render walls.
+6. Present the completed framebuffer.
+
+dt is limited to 0.1 seconds to avoid large movements
+after long pauses.
+
+The framebuffer and window size is 640 x 480.
+
+The initial map is loaded from:
+assets/wolf/maps/map01.txt
+
+Run graphics_lab with the repository root as its
+working directory.
+
+SdlPresenter is destroyed before SDL_Renderer.
+SDL_Renderer is destroyed before SDL_Window.
+SDL_Quit is called after SDL resources are released.
+
+Application::run() is called once per application instance.
