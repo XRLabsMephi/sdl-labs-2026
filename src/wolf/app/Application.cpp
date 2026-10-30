@@ -42,7 +42,7 @@ void reportError(
     const std::string& context
 ) noexcept {
     try {
-        log::error(
+        logging::error(
             "APP",
             static_cast<int>(code),
             message,
@@ -72,7 +72,7 @@ bool app::Application::initialize(const std::string& mapFilename) {
     }
 
     try {
-        log::info("APP", "Initializing application.");
+        logging::info("APP", "Initializing application.");
 
         if (!map.loadFromFile(mapFilename)) {
             reportError(
@@ -136,6 +136,14 @@ bool app::Application::initialize(const std::string& mapFilename) {
             return false;
         }
 
+        if (!SDL_SetWindowRelativeMouseMode(window.get(), true)) {
+            logging::warning(
+                "APP",
+                std::string("Failed to enable relative mouse mode: ")
+                + SDL_GetError()
+            );
+        }
+
         frameBuffer = std::make_unique<render::FrameBuffer>(
             FRAME_WIDTH,
             FRAME_HEIGHT
@@ -174,7 +182,7 @@ bool app::Application::initialize(const std::string& mapFilename) {
             (SDL_GetWindowFlags(window.get()) & SDL_WINDOW_INPUT_FOCUS)
             != 0;
 
-        log::info(
+        logging::info(
             "APP",
             "Application initialized successfully."
         );
@@ -221,7 +229,7 @@ void app::Application::run() {
     running = true;
 
     try {
-        log::info("APP", "Starting the main loop.");
+        logging::info("APP", "Starting the main loop.");
 
         Uint64 previousTime = SDL_GetTicksNS();
 
@@ -260,7 +268,7 @@ void app::Application::run() {
             }
         }
 
-        log::info("APP", "The main loop has stopped.");
+        logging::info("APP", "The main loop has stopped.");
     } catch (const std::exception& error) {
         reportError(
             ApplicationError::RuntimeException,

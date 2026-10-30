@@ -29,6 +29,7 @@ set(SOURCES
         src/wolf/world/Map.cpp
         src/wolf/debug/Logger.cpp
         src/wolf/world/Player.cpp
+        src/wolf/input/InputState.cpp
 )
 
 add_executable(graphics_lab ${HEADERS} ${SOURCES})

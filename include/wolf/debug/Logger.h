@@ -3,7 +3,7 @@
 #include <chrono>
 #include <string_view>
 
-namespace log {
+namespace logging {
     void info(
         std::string_view component,
         std::string_view message
