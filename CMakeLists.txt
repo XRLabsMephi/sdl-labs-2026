@@ -6,6 +6,7 @@ add_executable(graphics_lab
     src/wolf/main.cpp
     src/wolf/world/Map.cpp
     src/wolf/input/PlayerController.cpp
+    src/wolf/input/SdlInput.cpp
 )
 
 target_include_directories(graphics_lab PRIVATE
@@ -20,7 +21,8 @@ set_target_properties(graphics_lab PROPERTIES
 )
 
 target_link_libraries(graphics_lab PRIVATE
-    wolf_render
+        wolf_sdl
+        SDL3::SDL3
 )
 
 add_library(wolf_render
