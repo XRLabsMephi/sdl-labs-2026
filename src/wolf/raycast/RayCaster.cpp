@@ -153,4 +153,3 @@ RayHit RayCaster::CastRay(Vector2 ray_direction) const{
     RayHit rayHit(true, distance, ray_coordinate, wall_id, intersection_side, hit_square_cos, 0);
     return rayHit;
 }
-

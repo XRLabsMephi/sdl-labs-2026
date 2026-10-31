@@ -6,9 +6,9 @@
 namespace input {
     class PlayerController {
     private:
-        double moveSpeed;
-        double rotationSpeed;
-        double mouseSensitivity;
+        double moveSpeed = 3.0;
+        double rotationSpeed = 2.0;
+        double mouseSensitivity = 0.002;
 
         core::Vector2 calculateMovement(
             const world::Player& player,

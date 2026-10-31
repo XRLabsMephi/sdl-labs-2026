@@ -45,4 +45,3 @@ namespace raycast{
         RayHit CastRay(Vector2 direction) const;
     };
 }
-
