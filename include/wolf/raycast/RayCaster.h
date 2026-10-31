@@ -48,4 +48,3 @@ namespace raycast{
         void DrawByRayHit(const RayHit& rayhit, double depth, int column) const;
     };
 }
-

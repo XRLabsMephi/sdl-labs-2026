@@ -40,4 +40,3 @@ namespace raycast{
         int coordinate_relate_wall_ = 0.0; //the hit position relative to wall
     };
 }
-
