@@ -8,14 +8,15 @@
 using namespace raycast;
 
 
-void RayCaster::DrawByRayHit(const RayHit& ray_hit, double depth, int column) const{
+void RayCaster::drawByRayHit(const RayHit& ray_hit, std::pair<double, double> cos_vertical_horizontal, double depth, int column) const{
     /////////////////////////////////////////// parameters
     //TODO как то организовать ввод и получение параметров
-    //sky parameters
-    core::Color SKY_COLOR = core::Color::blue;
 
     //ground parameters
     core::Color GROUND_COLOR = core::Color::lerp(core::Color::black, core::Color::white, 30);
+
+    //sky parameters
+    core::Color SKY_COLOR = core::Color::lerp(core::Color::blue, GROUND_COLOR, 30);
 
     //wall parameters
     const int W_H = frame_height_; // the height of wall in pixels
@@ -27,6 +28,8 @@ void RayCaster::DrawByRayHit(const RayHit& ray_hit, double depth, int column) co
     const int P_H = static_cast<int>(W_H * P_W_rel); // the height of player in pixels
 
     constexpr double SC_D = 1.0; //distance between camera and virtual screen
+
+    double minimal_brightness = 0.6;
     //constexpr double vertical_field_of_view = 0.0; //the angle of view in vertical axe. Interchangeably with SC_D
 
     ///////////////////////////////////////////
@@ -36,28 +39,39 @@ void RayCaster::DrawByRayHit(const RayHit& ray_hit, double depth, int column) co
     int y0 = static_cast<int>(P_H * (1 - SC_RAY_DEPTH_rel)); //bottom border of wall projection in pixels(can be negative)
     int y1 = static_cast<int>(P_H + SC_RAY_DEPTH_rel * (W_H - P_H)); //top border of wall projection in pixels(can be more than frame_height_)
 
-    auto get_draw_params = [&ray_hit, depth, W_COLOR, SKY_COLOR, GROUND_COLOR](int color_id) -> render::DrawCallParams{
+    auto get_draw_params = [&](int color_id) -> render::DrawCallParams{
         core::Color color;
+        double brightness = 1.0;
         switch (color_id){
-            case 0: color = W_COLOR; break;
-            case 1: color = GROUND_COLOR; break;
-            case 2: color = SKY_COLOR; break;
+            case 1:{
+                color = W_COLOR;
+                //calculating for shadows
+                double brightness_procent = ray_hit.face_index_ == IntersectionSide::Vertical ?
+                                            cos_vertical_horizontal.first : cos_vertical_horizontal.second;
+                //for smooth changing
+                brightness = (1-minimal_brightness) * brightness_procent + minimal_brightness;
+                break;
+                }
+            case 0:
+                color = GROUND_COLOR; break;
+            case 2:
+                color = SKY_COLOR; break;
             default: break;
         }
-        double brightness = ray_hit.hit_cos2_; // the brightness in [0, 1]
+
         color.r_ = static_cast<Uint8>(color.r_ * brightness);
         color.g_ = static_cast<Uint8>(color.g_ * brightness);
         color.b_ = static_cast<Uint8>(color.b_ * brightness);
         return {.tex_id = ray_hit.wall_id_, .tex_x = -1, .depth = depth, .color = color};
     };
 
-    frame_buffer_.vline(column, 0, std::min(y0, P_H), get_draw_params(1));
+    frame_buffer_.vline(column, 0, std::min(y0, P_H), get_draw_params(2));
     frame_buffer_.vline(column, y0, y1, get_draw_params(ray_hit.wall_id_));
-    frame_buffer_.vline(column, y1 + 1, frame_height_, get_draw_params(2));
+    frame_buffer_.vline(column, y1 + 1, frame_height_, get_draw_params(0));
 }
 
 
-void RayCaster::DoRayCasting() const{
+void RayCaster::renderScene() const{
 
     Vector2 camera_direction = player_.getDirection();
     double field_of_view = player_.getAngle(); // the angle of view in radians (вопрос какой угол)
@@ -79,6 +93,8 @@ void RayCaster::DoRayCasting() const{
     Vector2 shift = {2.0f * plane.x / static_cast<double>(frame_width_ - 1), 2.0f * plane.y / static_cast<double>(frame_width_ - 1)};
     Vector2 ray_direction = camera_direction - plane; // the first direction
 
+    //the cos of the angle between camera direction and corresponding side of cell normal
+    std::pair<double, double> cos_vertical_horizontal = {std::abs(camera_direction.x), std::abs(camera_direction.y)};
     //сейчас реализация такова, что делим на w - 1 отрезок и берем границы в качестве векторов направления
     /*возможно она будет изменена или просто будут добавлены дополнительно расчет
      *на основе равных углов или привязки к серединам отрезков*/
@@ -87,19 +103,19 @@ void RayCaster::DoRayCasting() const{
 
         // можно оптимизировать препроцессинг и избавиться от корней в теории
         //normalization
-        RayHit ray_hit = CastRay(ray_direction);
+        RayHit ray_hit = castRay(ray_direction);
 
         //projection of ray vector way on camera vector
         double depth = ray_hit.t_distance_ * (ray_direction.x * camera_direction.x + ray_direction.y * camera_direction.y);
 
-        DrawByRayHit(ray_hit, depth, xi);
+
+        drawByRayHit(ray_hit, cos_vertical_horizontal, depth, xi);
     }
 
 
 }
 
-RayHit RayCaster::CastRay(Vector2 ray_direction) const{
-    double distance = 0;
+RayHit RayCaster::castRay(Vector2 ray_direction) const{
     Vector2 ray_coordinate = player_.getPosition();
 
     auto [ray_dir_x, ray_dir_y] = ray_direction;
@@ -182,19 +198,18 @@ RayHit RayCaster::CastRay(Vector2 ray_direction) const{
             closest_t_y += tdy;
         }*/
     }
-    distance = t_inter;
+    double t_distance = t_inter;
     int wall_id = map_.getCell(cell_x, cell_y);
 
-    //count angles with cos^2
-
-    //cos^2 of the angle through x-axe
-    double dir_square_cos_x = ray_dir_x * ray_dir_x / (ray_dir_x * ray_dir_x + ray_dir_y * ray_dir_y);
-    //cos^2 of the hit angle
-    double hit_square_cos = intersection_side == IntersectionSide::Vertical ? dir_square_cos_x: 1.0f - dir_square_cos_x;
+    //previous shadow calculating by thae angle between wall noramll and direction
+    //cos of the angle through x-axe
+    //double dir_square_cos_x = ray_dir_x * ray_dir_x / (ray_dir_x * ray_dir_x + ray_dir_y * ray_dir_y);
+    //cos of the hit angle
+    //double hit_cos = sqrt(intersection_side == IntersectionSide::Vertical ? dir_square_cos_x: 1.0f - dir_square_cos_x);
 
     ray_coordinate.x += ray_dir_x * t_inter;
     ray_coordinate.y += ray_dir_y * t_inter;
     //в данный момент не ясно как обрабатывать и получать rel_wall
-    RayHit rayHit(true, distance, ray_coordinate, wall_id, intersection_side, hit_square_cos, 0);
+    RayHit rayHit(true, t_distance, ray_coordinate, wall_id, intersection_side, 0);
     return rayHit;
 }

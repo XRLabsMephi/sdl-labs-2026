@@ -30,7 +30,7 @@ namespace raycast{
         * Based on data from class Map from "Map.h".
         * Set obtained information to FrameBuffer from "FrameBuffer.h"
         */
-        void DoRayCasting() const;
+        void renderScene() const;
         //по сути он const, хотя и меняет состояние frame_buffer
 
     private:
@@ -43,8 +43,8 @@ namespace raycast{
         static constexpr double eps = 1e-8f;
         static constexpr double pi = 3.1415926536;
         //Cast a single ray with given nonzero direction
-        RayHit CastRay(Vector2 direction) const;
+        RayHit castRay(Vector2 direction) const;
 
-        void DrawByRayHit(const RayHit& rayhit, double depth, int column) const;
+        void drawByRayHit(const RayHit& rayhit, std::pair<double, double> cos_vertical_horizontal, double depth, int column) const;
     };
 }
