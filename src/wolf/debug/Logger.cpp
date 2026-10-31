@@ -41,7 +41,7 @@ std::string singleLine(std::string_view text) {
 
 }
 
-void log::write(
+void logging::write(
     std::string_view level,
     std::string_view component,
     std::string_view message
@@ -88,21 +88,21 @@ void log::write(
     sessionStarted = true;
 }
 
-void log::info(
+void logging::info(
     std::string_view component,
     std::string_view message
 ) {
     write("INFO", component, message);
 }
 
-void log::warning(
+void logging::warning(
     std::string_view component,
     std::string_view message
 ) {
     write("WARNING", component, message);
 }
 
-void log::error(
+void logging::error(
     std::string_view component,
     int code,
     std::string_view message,
@@ -119,7 +119,7 @@ void log::error(
     write("ERROR", component, text.str());
 }
 
-void log::enter(
+void logging::enter(
     std::string_view component,
     std::string_view tool,
     std::string_view arguments
@@ -135,7 +135,7 @@ void log::enter(
     write("ENTER", component, text.str());
 }
 
-void log::exit(
+void logging::exit(
     std::string_view component,
     std::string_view tool,
     bool success,
