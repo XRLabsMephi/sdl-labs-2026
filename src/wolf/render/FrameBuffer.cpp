@@ -113,11 +113,3 @@ void FrameBuffer::rectangle(int x0, int y0, int x1, int y1, const DrawCallParams
         }*/
     }
 }
-
-void FrameBuffer::circle(int x, int y, double radius, const DrawCallParams &params) {
-    // TODO
-}
-
-void FrameBuffer::triangle(int x0, int y0, int x1, int y1, int x2, int y2, const DrawCallParams &params) {
-    // TODO
-}

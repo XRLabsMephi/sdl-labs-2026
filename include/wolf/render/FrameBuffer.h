@@ -99,11 +99,5 @@ namespace render {
          * @param params draw call parameters (see @c DrawCallParams)
          */
         void rectangle(int x0, int y0, int x1, int y1, const DrawCallParams &params);
-
-        // draws circle of given radius and color
-        void circle(int x, int y, double radius, const DrawCallParams &params);
-
-        // draws triangle with given vertices
-        void triangle(int x0, int y0, int x1, int y1, int x2, int y2, const DrawCallParams &params);
     };
 }
