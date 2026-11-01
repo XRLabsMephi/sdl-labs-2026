@@ -18,22 +18,22 @@ public:
 	bool CheckCollision(double x, double y, Playfield& pf);
 
 	//смещение вперед
-	void forward(Playfield& pf);
+	void forward(Playfield& pf, double deltaTime);
 
 	//смещение назад
-	void back(Playfield& pf);
+	void back(Playfield& pf, double deltaTime);
 
 	//повернуть налево
-	void turn_left();
+	void turn_left(double deltaTime);
 
 	//повернуть направо
-	void turn_right();
+	void turn_right(double deltaTime);
 
 	//налево
-	void left(Playfield& pf);
+	void left(Playfield& pf, double deltaTime);
 
 	//направо
-	void right(Playfield& pf);
+	void right(Playfield& pf, double deltaTime);
 
 	double get_A();
 	double get_X();
@@ -43,5 +43,5 @@ private:
 	double x, y; // нынешнее положение
 	double A; // нынешнее направление
 
-	int r; // радиус круга, описывающий игрока
+	double r; // радиус круга, описывающий игрока
 };

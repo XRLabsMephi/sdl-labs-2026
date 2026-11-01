@@ -20,6 +20,7 @@ public:
 	// вывести на экран наш кадр, который был честно собран в буфере
 	// true Ч кадр успешно выведен.
 	bool present(const FrameBuffer& fb);
+	bool resize(int width, int height);
 
 private:
 	SDL_Renderer* renderer_ = nullptr;

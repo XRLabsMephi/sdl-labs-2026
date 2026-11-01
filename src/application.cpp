@@ -16,9 +16,15 @@
 Application::Application() = default;
 
 Application::~Application() {
-	if (renderer) { SDL_DestroyRenderer(renderer); renderer = nullptr; }
-	if (window) { SDL_DestroyWindow(window);     window = nullptr; }
-	SDL_Quit();  // безопасно и повторно
+	if (renderer) {
+		SDL_DestroyRenderer(renderer);
+		renderer = nullptr;
+	}
+	if (window) {
+		SDL_DestroyWindow(window);
+		window = nullptr;
+	}
+	SDL_Quit(); // безопасно и повторно
 }
 
 
@@ -26,17 +32,13 @@ static Color toColor(std::uint32_t argb, double brightness) {
 	const auto r = static_cast<std::uint8_t>(((argb >> 16) & 255) * brightness);
 	const auto g = static_cast<std::uint8_t>(((argb >> 8) & 255) * brightness);
 	const auto b = static_cast<std::uint8_t>((argb & 255) * brightness);
-	return Color{ r, g, b, 255 };
+	return Color{r, g, b, 255};
 }
 
 int Application::run() {
 	//базовое игровое поле
 	Playfield play_field(30, 30, settings::map_scale);
-	play_field.set_rectangle(5, 5, 10, 10, 1);
-	play_field.set_rectangle(3, 2, 5, 5, 1);
-	play_field.set_rectangle(12, 2, 15, 10, 1);
-	play_field.set_rectangle(2, 12, 27, 12, 1);
-	play_field.set_rectangle(20, 20, 25, 25, 1);
+	play_field.load_map("src/map.txt");
 	play_field.print();
 
 	if (!SDL_Init(SDL_INIT_VIDEO)) {
@@ -56,6 +58,7 @@ int Application::run() {
 		SDL_Quit();
 		return 1;
 	}
+	SDL_SetWindowResizable(window, true);
 
 	//загружаем текстуры (пока мало - ручками)
 	textures_[1].loadFromFile("textures/wall01.bmp");
@@ -65,79 +68,107 @@ int Application::run() {
 	/* 
 		Область видимости нужна, чтобы frameBuffer и presenter
 		разрушились раньше, чем renderer/window/SDL_Quit
-	*/ 
+	*/
 	{
-		FrameBuffer  frameBuffer(settings::screenWidth, settings::screenHeight);
+		FrameBuffer frameBuffer(settings::screenWidth, settings::screenHeight);
 		SdlPresenter presenter(renderer, settings::screenWidth, settings::screenHeight);
-
-		//кол-во лучей на экран
-		const int raysCount = settings::screenWidth;
-
-		//угол обзора
-		const double FOV = std::numbers::pi / 2;
-
-		/*
-			расстояние до плоскости экрана, на который проэцируется все обьекты из точки игрока
-		*/
-		const double projectionDistance =
-			(settings::screenWidth / 2.0) / std::tan(FOV / 2.0);
 
 		bool running = true;
 
+		auto [x, y] = play_field.get_player_coords();
 		Player main_pl(
-			1.5 * settings::map_scale,
-			1.5 * settings::map_scale,
+			(x + 0.5) * settings::map_scale,
+			(y + 0.5) * settings::map_scale,
 			std::numbers::pi / 4,
 			0.2
 		);
 
+		Uint64 previousTime = SDL_GetTicksNS();
 		//основной цикл для отрисовки
 		while (running) {
+			Uint64 currentTime = SDL_GetTicksNS();
+			double deltaTime =
+				static_cast<double>(currentTime - previousTime) / 1'000'000'000.0;
+			previousTime = currentTime;
+			deltaTime = std::min(deltaTime, 0.05);
+
 			SDL_Event event;
 
 			while (SDL_PollEvent(&event)) {
 				if (event.type == SDL_EVENT_QUIT) {
 					running = false;
 				}
+				if (event.type == SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED) {
+					int width, height;
+					if (SDL_GetWindowSizeInPixels(window, &width, &height)
+						&& width > 0 && height > 0) {
+						if (width != frameBuffer.width() ||
+							height != frameBuffer.height()) {
+							if (presenter.resize(width, height)) {
+								frameBuffer = FrameBuffer(width, height);
+							}
+							else {
+								std::cerr << SDL_GetError() << '\n';
+								running = false;
+							}
+						}
+					}
+				}
 			}
-
+			
+			if (!running) break;
 			const bool* keys = SDL_GetKeyboardState(nullptr);
 
 			//перемещение
 			if (keys[SDL_SCANCODE_A]) {
-				main_pl.left(play_field);
-				if (keys[SDL_SCANCODE_LSHIFT]) main_pl.left(play_field);
+				main_pl.left(play_field, deltaTime);
+				if (keys[SDL_SCANCODE_LSHIFT]) main_pl.left(play_field, deltaTime);
 			}
 			if (keys[SDL_SCANCODE_D]) {
-				main_pl.right(play_field);
-				if (keys[SDL_SCANCODE_LSHIFT]) main_pl.right(play_field);
+				main_pl.right(play_field, deltaTime);
+				if (keys[SDL_SCANCODE_LSHIFT]) main_pl.right(play_field, deltaTime);
 			}
 			if (keys[SDL_SCANCODE_LEFT]) {
-				main_pl.turn_left();
+				main_pl.turn_left(deltaTime);
 			}
 			if (keys[SDL_SCANCODE_RIGHT]) {
-				main_pl.turn_right();
+				main_pl.turn_right(deltaTime);
 			}
 			if (keys[SDL_SCANCODE_W]) {
-				main_pl.forward(play_field);
-				if (keys[SDL_SCANCODE_LSHIFT]) main_pl.forward(play_field);
+				main_pl.forward(play_field, deltaTime);
+				if (keys[SDL_SCANCODE_LSHIFT]) main_pl.forward(play_field, deltaTime);
 			}
 			if (keys[SDL_SCANCODE_S]) {
-				main_pl.back(play_field);
-				if (keys[SDL_SCANCODE_LSHIFT]) main_pl.back(play_field);
+				main_pl.back(play_field, deltaTime);
+				if (keys[SDL_SCANCODE_LSHIFT]) main_pl.back(play_field, deltaTime);
 			}
 
+			int screenWidth = frameBuffer.width();
+			int screenHeight = frameBuffer.height();
+
+			//кол-во лучей на экран
+			int raysCount = screenWidth;
+
+			/*
+				расстояние до плоскости экрана, на который проэцируется все обьекты из точки игрока
+			*/
+			double projectionDistance = 400.0 * screenHeight / 600.0;
+
+			//угол обзора
+			double FOV = 2.0 * std::atan(
+				screenWidth / (2.0 * projectionDistance)
+			);
 
 
 			//хотим красивый скайбокс
 			const Texture& skyTex = textures_[3];
 			if (skyTex.valid()) {
 				// Мы рисуем небо только в верхней половине экрана (над горизонтом)
-				const int horizon = settings::screenHeight / 2;
+				const int horizon = screenHeight / 2;
 
-				for (int x = 0; x < settings::screenWidth; ++x) {
+				for (int x = 0; x < screenWidth; ++x) {
 					//Вычисляем угол луча для текущего столбца
-					double cameraX = 2.0 * x / settings::screenWidth - 1.0;
+					double cameraX = 2.0 * x / screenWidth - 1.0;
 					double rayAngle = main_pl.get_A() + std::atan(cameraX * std::tan(FOV / 2.0));
 
 					//Переводим угол в координату X на текстуре
@@ -175,18 +206,19 @@ int Application::run() {
 
 			if (floorTex.valid()) {
 				// Идем по строкам: от горизонта вниз (пол) и от горизонта вверх (потолок)
-				for (int y = (settings::screenHeight / 2) + 1e-9; y < settings::screenHeight; ++y) {
+				for (int y = (screenHeight / 2) + 1e-9; y < screenHeight; ++y) {
 					// Расстояние от горизонта
-					//if (settings::screenHeight / 2 - y == 0) continue; // Сама линия горизонта, чтобы не делить на 0
+					//if (screenHeight / 2 - y == 0) continue; // Сама линия горизонта, чтобы не делить на 0
 
 					// Расстояние до пола/потолка для этой строки
-					double rowDistance = (0.5 * settings::map_scale * projectionDistance) / abs(settings::screenHeight / 2 - y);
+					double rowDistance = (0.5 * settings::map_scale * projectionDistance) / abs(
+						screenHeight / 2 - y);
 
 					double rayDist = rowDistance / std::cos(FOV / 2.0);
 
 					// Шаг текстуры вдоль строки
-					double stepX = rayDist * (rayDirX1 - rayDirX0) / settings::screenWidth;
-					double stepY = rayDist * (rayDirY1 - rayDirY0) / settings::screenWidth;
+					double stepX = rayDist * (rayDirX1 - rayDirX0) / screenWidth;
+					double stepY = rayDist * (rayDirY1 - rayDirY0) / screenWidth;
 
 					// Начальные координаты в мире для левого края экрана
 					double floorX = main_pl.get_X() + rayDist * rayDirX0;
@@ -200,7 +232,7 @@ int Application::run() {
 					//повышаем контрастность
 					brightness = std::pow(brightness, 3);
 
-					for (int x = 0; x < settings::screenWidth; x++) {
+					for (int x = 0; x < screenWidth; x++) {
 						// Получаем координаты внутри клетки (0.0 - 1.0)
 						double texU = floorX / settings::map_scale;
 						texU -= std::floor(texU);
@@ -226,12 +258,12 @@ int Application::run() {
 			}
 			else {
 				// Fallback, если текстура пола не загрузилась
-				frameBuffer.fillRect(0, settings::screenHeight / 2, settings::screenWidth, settings::screenHeight / 2, Color{ 255, 0, 0, 255 });
+				frameBuffer.fillRect(0, screenHeight / 2, screenWidth, screenHeight / 2,
+				                     Color{255, 0, 0, 255});
 			}
 
 			//для каждого луча при надобности отрисовываем столкновение со стенкой
 			for (int i = 0; i < raysCount; i++) {
-				
 				double cameraX = 2.0 * i / raysCount - 1.0; // [-1:1] - коэф от левого до правого края.
 
 				// Истинный угол луча с учетом плоской проекции
@@ -240,12 +272,12 @@ int Application::run() {
 				//double rayAngle = main_pl.get_A() - FOV / 2 + FOV * i / raysCount;
 
 
-				RayHit hit = RayTracing(main_pl.get_X(), main_pl.get_Y(), rayAngle, main_pl.get_A() ,play_field);
+				RayHit hit = RayTracing(main_pl.get_X(), main_pl.get_Y(), rayAngle, main_pl.get_A(), play_field);
 				if (!hit.hit) continue;
 
 
 				int height = static_cast<int>(settings::map_scale * projectionDistance / hit.depth);
-				int yStart = static_cast<int>(settings::screenHeight / 2.0 - height / 2.0);
+				int yStart = static_cast<int>(screenHeight / 2.0 - height / 2.0);
 
 				//затухание в соответствии с расстоянием 
 				double brightness = 1.0 - hit.depth / (35.0 * settings::map_scale);
@@ -258,22 +290,19 @@ int Application::run() {
 				const Texture& tex = textures_[hit.wallId];
 
 				if (!tex.valid()) {
-
-					Color c { 255, 0, 0, 255};
+					Color c{255, 0, 0, 255};
 					frameBuffer.fillRect(i, yStart, 1, height, c);
 					//depthBuffer_[i] = hit.depth;
 					continue;
 				}
 
 
-				
-
 				int texX = static_cast<int>(hit.wallU * tex.width());
 				if (texX >= tex.width()) texX = tex.width() - 1;
 
 				const double texStep = static_cast<double>(tex.height()) / height;
 				const int y0 = std::max(0, yStart);
-				const int y1 = std::min(static_cast<int>(settings::screenHeight), yStart + height);
+				const int y1 = std::min(static_cast<int>(screenHeight), yStart + height);
 				double texPos = (y0 - yStart) * texStep;
 
 				for (int y = y0; y < y1; ++y) {

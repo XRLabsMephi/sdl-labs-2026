@@ -23,6 +23,25 @@ SdlPresenter::SdlPresenter(SDL_Renderer* renderer, int width, int height)
 	}
 }
 
+bool SdlPresenter::resize(int width, int height) {
+	SDL_Texture* newTexture = SDL_CreateTexture(
+		renderer_,
+		SDL_PIXELFORMAT_ARGB8888,
+		SDL_TEXTUREACCESS_STREAMING,
+		width,
+		height
+	);
+
+	if (!newTexture) return false;
+
+	SDL_SetTextureBlendMode(newTexture, SDL_BLENDMODE_NONE);
+
+	SDL_DestroyTexture(texture_);
+	texture_ = newTexture;
+
+	return true;
+}
+
 SdlPresenter::~SdlPresenter() {
 	if (texture_ != nullptr) SDL_DestroyTexture(texture_);
 }

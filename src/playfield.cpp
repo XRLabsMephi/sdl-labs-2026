@@ -1,5 +1,7 @@
 #include "playfield.h"
 
+#include <fstream>
+
 /*
 	файл с реализацией функций из playfield.h
 */
@@ -63,6 +65,30 @@ void Playfield::set_rectangle(int _x1, int _y1, int _x2, int _y2, int tp) {
 			}
 		}
 	}
+}
+
+void Playfield::load_map(std::string file) {
+	field = std::vector<std::vector<int>>(h, std::vector<int>(w, 0));
+	boards.clear();
+	std::ifstream f(file);
+	if (f.is_open()) {
+		int index = 0;
+		std::string line;
+		while (index < h && std::getline(f, line)) {
+			for (int i = 0; i < w && i < line.size(); i++) {
+				if (line[i] == '1') {
+					set_rectangle(i + 1, index + 1, i + 1, index + 1, 1);
+				} else if (line[i] == 'P') {
+					player_coords = {i, index};
+				}
+			}
+			index++;
+		}
+	}
+}
+
+std::pair<int, int> Playfield::get_player_coords() {
+	return player_coords;
 }
 
 void Playfield::print() {

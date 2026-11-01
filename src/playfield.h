@@ -27,6 +27,9 @@ public:
 	//координаты включительно, в 1-индексанции
 	//TO_DO на данный момент можно только добавлять стенки, но не убирать
 	void set_rectangle(int _x1, int _y1, int _x2, int _y2, int tp);
+	std::pair<int, int> get_player_coords();
+	//загрузка карты из файла txt
+	void load_map(std::string file);
 
 	//выводит игровое поле в консоль
 	void print();
@@ -38,7 +41,7 @@ private:
 	int h; //высота
 	int w; //ширина
 	int k; //длина стороны клетки
-
+	std::pair<int, int> player_coords;
 	std::vector<std::vector<int>> field; //поле в 2-мерном виде
 };
 

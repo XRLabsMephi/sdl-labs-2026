@@ -25,12 +25,12 @@ bool Player::CheckCollision(double _x, double _y, Playfield& pf) {
 	return true;
 }
 
-void Player::turn_left() {
-	A -= 0.02 * settings::rotation_scale;
+void Player::turn_left(double deltaTime) {
+	A -= 0.02 * settings::rotation_scale * deltaTime;
 }
 
-void Player::turn_right() {
-	A += 0.02 * settings::rotation_scale;
+void Player::turn_right(double deltaTime) {
+	A += 0.02 * settings::rotation_scale * deltaTime;
 }
 
 // для forward и back :
@@ -38,39 +38,39 @@ void Player::turn_right() {
 // то отменяем передвижение вдоль этой оси.
 
 
-void Player::forward(Playfield& pf) {
-	if (this->CheckCollision(x + std::cos(A) * settings::moving_scale, y, pf)) {
-		x += std::cos(A) * settings::moving_scale;
+void Player::forward(Playfield& pf, double deltaTime) {
+	if (this->CheckCollision(x + std::cos(A) * settings::moving_scale * deltaTime, y, pf)) {
+		x += std::cos(A) * settings::moving_scale * deltaTime;
 	}
-	if (this->CheckCollision(x, y + std::sin(A) * settings::moving_scale, pf)) {
-		y += std::sin(A) * settings::moving_scale;
-	}
-}
-
-void Player::back(Playfield& pf) {
-	if (this->CheckCollision(x - std::cos(A) * settings::moving_scale, y, pf)) {
-		x -= std::cos(A) * settings::moving_scale;
-	}
-	if (this->CheckCollision(x, y - std::sin(A) * settings::moving_scale, pf)) {
-		y -= std::sin(A) * settings::moving_scale;
+	if (this->CheckCollision(x, y + std::sin(A) * settings::moving_scale * deltaTime, pf)) {
+		y += std::sin(A) * settings::moving_scale * deltaTime;
 	}
 }
 
-void Player::left(Playfield& pf) {
-	if (this->CheckCollision(x + std::cos(A - std::numbers::pi / 2) * settings::moving_scale, y, pf)) {
-		x += std::cos(A - std::numbers::pi / 2) * settings::moving_scale;
+void Player::back(Playfield& pf, double deltaTime) {
+	if (this->CheckCollision(x - std::cos(A) * settings::moving_scale * deltaTime, y, pf)) {
+		x -= std::cos(A) * settings::moving_scale * deltaTime;
 	}
-	if (this->CheckCollision(x, y + std::sin(A - std::numbers::pi / 2) * settings::moving_scale, pf)) {
-		y += std::sin(A - std::numbers::pi / 2) * settings::moving_scale;
+	if (this->CheckCollision(x, y - std::sin(A) * settings::moving_scale * deltaTime, pf)) {
+		y -= std::sin(A) * settings::moving_scale * deltaTime;
 	}
 }
 
-void Player::right(Playfield& pf) {
-	if (this->CheckCollision(x + std::cos(A + std::numbers::pi / 2) * settings::moving_scale, y, pf)) {
-		x += std::cos(A + std::numbers::pi / 2) * settings::moving_scale;
+void Player::left(Playfield& pf, double deltaTime) {
+	if (this->CheckCollision(x + std::cos(A - std::numbers::pi / 2) * settings::moving_scale * deltaTime, y, pf)) {
+		x += std::cos(A - std::numbers::pi / 2) * settings::moving_scale * deltaTime;
 	}
-	if (this->CheckCollision(x, y + std::sin(A + std::numbers::pi / 2) * settings::moving_scale, pf)) {
-		y += std::sin(A + std::numbers::pi / 2) * settings::moving_scale;
+	if (this->CheckCollision(x, y + std::sin(A - std::numbers::pi / 2) * settings::moving_scale * deltaTime, pf)) {
+		y += std::sin(A - std::numbers::pi / 2) * settings::moving_scale * deltaTime;
+	}
+}
+
+void Player::right(Playfield& pf, double deltaTime) {
+	if (this->CheckCollision(x + std::cos(A + std::numbers::pi / 2) * settings::moving_scale * deltaTime, y, pf)) {
+		x += std::cos(A + std::numbers::pi / 2) * settings::moving_scale * deltaTime;
+	}
+	if (this->CheckCollision(x, y + std::sin(A + std::numbers::pi / 2) * settings::moving_scale * deltaTime, pf)) {
+		y += std::sin(A + std::numbers::pi / 2) * settings::moving_scale * deltaTime;
 	}
 }
 

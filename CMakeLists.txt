@@ -11,26 +11,25 @@ set(SDL_STATIC ON CACHE BOOL "" FORCE)
 add_subdirectory(vendored/SDL EXCLUDE_FROM_ALL)
 
 add_executable(graphics_lab
-        src/main.cpp
-        src/playfield.cpp
-        src/board.cpp
-        src/playfield.h
-        src/board.h
-        src/player.h
-        src/player.cpp
-	src/raytracer.h
-	src/raytracer.cpp
-	src/framebuffer.h
-	src/framebuffer.cpp
-	src/application.h
-	src/application.cpp
-	src/sdl_presenter.h
-	src/sdl_presenter.cpp
-	src/raytracer.h
-	src/raytracer.cpp
-	src/texturestore.h
-	src/texturestore.cpp
-
+		src/main.cpp
+		src/playfield.cpp
+		src/board.cpp
+		src/playfield.h
+		src/board.h
+		src/player.h
+		src/player.cpp
+		src/raytracer.h
+		src/raytracer.cpp
+		src/framebuffer.h
+		src/framebuffer.cpp
+		src/application.h
+		src/application.cpp
+		src/sdl_presenter.h
+		src/sdl_presenter.cpp
+		src/raytracer.h
+		src/raytracer.cpp
+		src/texturestore.h
+		src/texturestore.cpp
 )
 
 target_link_libraries(graphics_lab PRIVATE SDL3::SDL3-static)
