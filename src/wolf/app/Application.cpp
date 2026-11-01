@@ -255,7 +255,7 @@ void app::Application::run() {
             // Clear the previous frame before drawing the current scene.
             frameBuffer->clear(render::DrawCallParams{});
 
-            rayCaster->DoRayCasting();
+            rayCaster->renderScene();
 
             if (!presenter->present(*frameBuffer)) {
                 reportError(
