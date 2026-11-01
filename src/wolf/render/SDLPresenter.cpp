@@ -13,6 +13,13 @@ SDLPresenter::SDLPresenter(const std::string& title, size_t width, size_t height
         throw std::runtime_error("Failed to create SDL Window/Renderer: " + std::string(SDL_GetError()));
     }
 
+    SDL_SetRenderLogicalPresentation(
+        renderer_, 
+        static_cast<int>(width_), 
+        static_cast<int>(height_), 
+        SDL_LOGICAL_PRESENTATION_LETTERBOX
+    );
+
     texture_ = SDL_CreateTexture(
         renderer_,
         SDL_PIXELFORMAT_ARGB8888,
