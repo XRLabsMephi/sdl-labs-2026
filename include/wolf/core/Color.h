@@ -75,6 +75,32 @@ namespace core {
             };
         }
 
+        /**
+         * @brief Multiplies R, G, B components of color by scalar
+         * @param scalar number to multiply by
+         * @return reference to updated itself (for chaining)
+         */
+        Color& multiplyColorsByScalar(double scalar) {
+            r_ = static_cast<Uint8>(std::clamp(r_ * scalar, 0.0, 255.0));
+            g_ = static_cast<Uint8>(std::clamp(g_ * scalar, 0.0, 255.0));
+            b_ = static_cast<Uint8>(std::clamp(b_ * scalar, 0.0, 255.0));
+            return *this;
+        }
+
+        /**
+         * @brief Multiplies R, G, B components of color by scalar and returns the result
+         * @param scalar number to multiply by
+         * @return the result of multiplication
+         */
+        static Color multiplyColorsByScalar(const Color& color, double scalar) {
+            return {
+                static_cast<Uint8>(std::clamp(color.r_ * scalar, 0.0, 255.0)),
+                static_cast<Uint8>(std::clamp(color.g_ * scalar, 0.0, 255.0)),
+                static_cast<Uint8>(std::clamp(color.b_ * scalar, 0.0, 255.0)),
+                color.a_
+            };
+        }
+
         static const Color red;
         static const Color green;
         static const Color blue;
