@@ -1,6 +1,7 @@
 #include "wolf/render/FrameBuffer.hpp"
 #include "wolf/raycast/Raycaster.hpp"
 #include "wolf/world/Player.hpp"
+#include "wolf/world/Map.hpp"
 #include <iostream>
 #include <stdexcept>
 
@@ -27,6 +28,16 @@ int main() {
     for (double cameraX : {-1.0, 0.0, 1.0}) {
         Vec2 direction = raycaster.rayDirection(player, cameraX);
         std::cout << direction.x << ' ' << direction.y << '\n';
+    }
+    Map map;
+
+    if (!map.loadFromFile("resources/map.txt")) {
+        std::cout << "Failed to load map\n";
+        return 1;
+    }
+    for (double cameraX : {-1.0, 0.0, 1.0}) {
+        RayHit hit = raycaster.castRay(map, player, cameraX);
+        std::cout << std::dec << hit.hit << ' ' << hit.mapX << ' ' << hit.mapY << ' ' << hit.wallId << ' ' << hit.depth << '\n';
     }
     try {
         FrameBuffer invalid(0, 2);

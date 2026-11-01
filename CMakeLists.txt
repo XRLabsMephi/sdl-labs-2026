@@ -19,18 +19,19 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(SDL3)
 
 add_executable(graphics_lab
-    src/main.cpp
+        src/main.cpp
         src/wolf/core/Vec2.cpp
+        src/wolf/core/Color.cpp
+        src/wolf/world/Map.cpp
+        src/wolf/render/FrameBuffer.cpp
+        src/wolf/Raycaster.cpp
         include/wolf/core/Vec2.hpp
         include/wolf/core/Color.hpp
-        src/wolf/world/Map.cpp
-        src/wolf/core/Color.cpp
-        include/wolf/render/FrameBuffer.hpp
-        src/wolf/render/FrameBuffer.cpp
+        include/wolf/world/Map.hpp
         include/wolf/world/Player.hpp
+        include/wolf/render/FrameBuffer.hpp
         include/wolf/raycast/RayHit.hpp
         include/wolf/raycast/Raycaster.hpp
-        src/wolf/Raycaster.cpp
 )
 
 target_include_directories(graphics_lab PRIVATE include)
@@ -40,22 +41,22 @@ target_link_libraries(graphics_lab PRIVATE SDL3::SDL3)
 target_compile_features(graphics_lab PRIVATE cxx_std_20)
 
 target_compile_options(graphics_lab PRIVATE
-    -Wall
-    -Wextra
-    -Wpedantic
+        -Wall
+        -Wextra
+        -Wpedantic
 )
 
 set_target_properties(graphics_lab PROPERTIES
-    CXX_EXTENSIONS OFF
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+        CXX_EXTENSIONS OFF
+        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
 )
 
 add_executable(test
         test/test.cpp
         src/wolf/world/Map.cpp
         src/wolf/core/Color.cpp
-        src/wolf/render/FrameBuffer.cpp
         src/wolf/core/Vec2.cpp
+        src/wolf/render/FrameBuffer.cpp
         src/wolf/Raycaster.cpp
 )
 
