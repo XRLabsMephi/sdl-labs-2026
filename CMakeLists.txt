@@ -1,20 +1,77 @@
 cmake_minimum_required(VERSION 3.24)
-
 project(SoftwareGraphicsLabs LANGUAGES CXX)
 
+option(GRAPHICS_LAB_VENDORED "Use vendored libraries" OFF)
+
+if(GRAPHICS_LAB_VENDORED)
+    add_subdirectory(vendored/SDL EXCLUDE_FROM_ALL)
+else()
+    find_package(SDL3 CONFIG REQUIRED COMPONENTS SDL3-shared)
+endif()
+
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
+
+# Core engine library
+add_library(graphics_lab_core STATIC
+    src/core/application.cc
+    src/core/application.h
+
+    src/core/config.cc
+    src/core/config.h
+
+    src/core/color.h
+
+    src/input/input_state.h
+    src/input/player_controller.cc
+    src/input/player_controller.h
+
+    src/math/vector.h
+
+    src/render/frame_buffer.cc
+    src/render/frame_buffer.h
+
+    src/render/sdl_presenter.cc
+    src/render/sdl_presenter.h
+
+    src/wolf/ray_hit.h
+    src/wolf/raycaster.h
+    src/wolf/raycaster.cc
+
+    src/world/map.cc
+    src/world/map.h
+    src/world/player.h
+    src/world/tile.h
+)
+
+target_include_directories(graphics_lab_core PUBLIC
+    "${CMAKE_CURRENT_SOURCE_DIR}/src"
+)
+
+target_compile_options(graphics_lab_core PRIVATE
+    $<$<CXX_COMPILER_ID:MSVC>:/W4 /permissive->
+    $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall -Wextra -Wpedantic>
+)
+
+target_link_libraries(graphics_lab_core PUBLIC SDL3::SDL3)
+
+# Main executable
 add_executable(graphics_lab
-    src/main.cpp
+    src/main.cc
 )
 
-target_compile_features(graphics_lab PRIVATE cxx_std_20)
+target_link_libraries(graphics_lab PRIVATE graphics_lab_core)
 
-target_compile_options(graphics_lab PRIVATE
-    -Wall
-    -Wextra
-    -Wpedantic
-)
+# Tests
+option(BUILD_TESTING "Build the testing tree" ON)
 
-set_target_properties(graphics_lab PROPERTIES
-    CXX_EXTENSIONS OFF
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
-)
+if(BUILD_TESTING)
+    enable_testing()
+    add_subdirectory(tests)
+endif()
