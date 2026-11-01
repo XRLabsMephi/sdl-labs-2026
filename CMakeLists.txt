@@ -33,11 +33,11 @@ add_executable(graphics_lab
         src/wolf/Raycaster.cpp
         include/wolf/input/InputState.hpp
         include/wolf/input/PlayerController.hpp
-        src/wolf/core/input/PlayerController.cpp
+        src/wolf/input/PlayerController.cpp
         include/wolf/render/SdlPresenter.hpp
         src/wolf/render/SdlPresenter.cpp
-        include/wolf/input/app/Application.hpp
-        src/wolf/core/app/Application.cpp
+        include/wolf/app/Application.hpp
+        src/wolf/app/Application.cpp
 )
 
 target_include_directories(graphics_lab PRIVATE include)
@@ -68,3 +68,9 @@ add_executable(test
 
 target_include_directories(test PRIVATE include)
 target_compile_features(test PRIVATE cxx_std_20)
+
+add_custom_command(TARGET graphics_lab POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${CMAKE_SOURCE_DIR}/resources"
+        "$<TARGET_FILE_DIR:graphics_lab>/resources"
+)

@@ -1,5 +1,4 @@
 #include "wolf/app/Application.hpp"
-#include "wolf/input/app/Application.hpp"
 
 #include "wolf/input/InputState.hpp"
 #include "wolf/input/PlayerController.hpp"
