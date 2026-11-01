@@ -8,10 +8,12 @@ SDLPresenter::SDLPresenter(const std::string& title, size_t width, size_t height
         throw std::runtime_error("Failed to initialize SDL3: " + std::string(SDL_GetError()));
     }
 
-    if (!SDL_CreateWindowAndRenderer(title.c_str(), static_cast<int>(width_), static_cast<int>(height_), 0, &window_, &renderer_)) {
+    if (!SDL_CreateWindowAndRenderer(title.c_str(), static_cast<int>(width_), static_cast<int>(height_), SDL_WINDOW_RESIZABLE, &window_, &renderer_)) {
         SDL_Quit();
         throw std::runtime_error("Failed to create SDL Window/Renderer: " + std::string(SDL_GetError()));
     }
+
+    SDL_SetWindowMinimumSize(window_, static_cast<int>(width_), static_cast<int>(height_));
 
     SDL_SetRenderLogicalPresentation(
         renderer_, 
