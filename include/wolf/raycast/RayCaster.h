@@ -1,4 +1,5 @@
 #pragma once
+#include <array>
 #include <iostream>
 #include <stdexcept>
 #include <raycast/RayHit.h>
@@ -30,8 +31,7 @@ namespace raycast{
         * Based on data from class Map from "Map.h".
         * Set obtained information to FrameBuffer from "FrameBuffer.h"
         */
-        void renderScene() const;
-        //по сути он const, хотя и меняет состояние frame_buffer
+        void renderScene();
 
     private:
         const world::Player& player_;
@@ -39,12 +39,18 @@ namespace raycast{
         render::FrameBuffer& frame_buffer_;
         int frame_width_, frame_height_;
 
+        static constexpr int max_hits = 1;
         static constexpr double angle_eps = 1e-7f;
         static constexpr double eps = 1e-8f;
         static constexpr double pi = 3.1415926536;
-        //Cast a single ray with given nonzero direction
-        RayHit castRay(Vector2 direction) const;
 
-        void drawByRayHit(const RayHit& rayhit, std::pair<double, double> cos_vertical_horizontal, double depth, int column) const;
+        //current count of hits
+        int hit_count = 0;
+        std::array<RayHit, max_hits> ray_cast_hits;
+        //Cast a single ray with given nonzero direction and save information in array ray_cast_hits
+        void castRay(Vector2 direction);
+
+        //draw column in FrameBuffer
+        void drawByRayHit(const Vector2& ray_direction, const Vector2& camera_direction, const std::pair<double, double>& cos_vertical_horizontal, int column) const;
     };
 }

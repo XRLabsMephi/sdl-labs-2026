@@ -42,7 +42,7 @@ target_link_libraries(graphics_lab PRIVATE SDL3::SDL3)
 target_compile_features(graphics_lab PRIVATE cxx_std_20)
 
 target_compile_options(graphics_lab PRIVATE
-        $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Wall -Wextra -Wpedantic>
+        $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Wall -Wextra -Wpedantic -O2>
         $<$<CXX_COMPILER_ID:MSVC>:/W4 /permissive->
 )
 

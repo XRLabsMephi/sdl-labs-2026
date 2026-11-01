@@ -15,7 +15,8 @@ namespace render {
     struct DrawCallParams {
         int tex_id = -1; /**< ID of texture. -1 is no texture */
         int tex_x = -1; /**< Column in texture. Ignored if tex_id is set to -1*/
-        double depth = 0; /**< Depth of the object in the frame (z_buf value). Influences the color*/
+        int alpha_canal = 0.0;
+        double brightness = 0.0;
         Color color = Color::black; /**< Color is used only if tex_id is -1*/
     };
 

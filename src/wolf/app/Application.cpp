@@ -232,7 +232,8 @@ void app::Application::run() {
         logging::info("APP", "Starting the main loop.");
 
         Uint64 previousTime = SDL_GetTicksNS();
-
+        Uint64 fpsStartTime = previousTime;
+        Uint64 fpsFrameCount = 0;
         while (running) {
             const Uint64 currentTime = SDL_GetTicksNS();
 
@@ -265,6 +266,16 @@ void app::Application::run() {
                 );
 
                 stop();
+            } else {
+                ++fpsFrameCount;
+                const Uint64 fpsCurrentTime = SDL_GetTicksNS();
+                const double fpsElapsedSeconds =static_cast<double>(fpsCurrentTime - fpsStartTime) / NANOSECONDS_PER_SECOND;
+                if (fpsElapsedSeconds >= 1.0) {
+                    const double fps = static_cast<double>(fpsFrameCount) / fpsElapsedSeconds;
+                    std::cout << fps << std::endl;
+                    fpsFrameCount = 0;
+                    fpsStartTime = fpsCurrentTime;
+                }
             }
         }
 
