@@ -134,18 +134,21 @@ WallColumn Raycaster::ProjectWall(const RayHit& ray_hit,
 std::vector<WallColumn> Raycaster::CastColumns(
     const Map& map, const Vec2f& position, const Vec2f& direction,
     const Vec2f& camera_plane, int screen_width, int screen_height) const {
-  if (screen_width <= 0 || screen_height <= 0 ||
-      !IsValidCamera(direction, camera_plane)) {
+  if (screen_width <= 0) {
     return {};
   }
 
-  std::vector<WallColumn> columns;
-  columns.reserve(screen_width);
+  // Сохраняем индексы столбцов даже при неверной камере или высоте экрана:
+  // вызывающий код может обращаться к результату по каждому экранному x.
+  std::vector<WallColumn> columns(screen_width);
+  if (screen_height <= 0 || !IsValidCamera(direction, camera_plane)) {
+    return columns;
+  }
   for (int x = 0; x < screen_width; ++x) {
     const double camera_x = 2.0 * x / screen_width - 1.0;
     const Vec2f ray_direction = direction + camera_plane * camera_x;
     const RayHit ray_hit = CastRay(map, position, ray_direction);
-    columns.push_back(ProjectWall(ray_hit, screen_height));
+    columns[x] = ProjectWall(ray_hit, screen_height);
   }
   return columns;
 }

@@ -3,12 +3,27 @@
 #include <gtest/gtest.h>
 
 #include <cmath>
+#include <cstddef>
 #include <limits>
 #include <string>
 
 #include "world/map.h"
 
 namespace {
+
+void ExpectMissColumns(const std::vector<WallColumn>& columns,
+                       std::size_t expected_width) {
+  ASSERT_EQ(columns.size(), expected_width);
+  for (const WallColumn& column : columns) {
+    EXPECT_FALSE(column.ray_hit.hit);
+    EXPECT_TRUE(std::isinf(column.ray_hit.depth));
+    EXPECT_GT(column.ray_hit.depth, 0.0);
+    EXPECT_EQ(column.ray_hit.side, WallSide::kNone);
+    EXPECT_DOUBLE_EQ(column.projected_height, 0.0);
+    EXPECT_EQ(column.draw_start, 0);
+    EXPECT_EQ(column.draw_end, 0);
+  }
+}
 
 class RaycasterTest : public ::testing::Test {
  protected:
@@ -274,33 +289,43 @@ TEST_F(RaycasterTest, KeepsMissesAtTheirScreenColumns) {
   EXPECT_DOUBLE_EQ(columns[3].ray_hit.depth, 2.0);
 }
 
-TEST_F(RaycasterTest, RejectsInvalidScreenDimensions) {
-  for (const Vec2i size :
-       {Vec2i{0, 300}, Vec2i{-1, 300}, Vec2i{4, 0}, Vec2i{4, -1}}) {
+TEST_F(RaycasterTest, RejectsNonPositiveScreenWidth) {
+  for (const int width : {0, -1}) {
     EXPECT_TRUE(raycaster_
                     .CastColumns(map_, {3.5f, 3.5f}, {1.0f, 0.0f}, {0.0f, 0.5f},
-                                 size.x(), size.y())
+                                 width, 300)
                     .empty());
   }
 }
 
-TEST_F(RaycasterTest, RejectsInvalidCamera) {
+TEST_F(RaycasterTest, KeepsInvalidScreenHeightAsMisses) {
+  for (const int width : {1, 4, 800}) {
+    for (const int height : {0, -1}) {
+      SCOPED_TRACE(width);
+      SCOPED_TRACE(height);
+      const auto columns = raycaster_.CastColumns(
+          map_, {3.5f, 3.5f}, {1.0f, 0.0f}, {0.0f, 0.5f}, width, height);
+      ExpectMissColumns(columns, width);
+    }
+  }
+}
+
+TEST_F(RaycasterTest, KeepsInvalidCameraAsMisses) {
   const float nan = std::numeric_limits<float>::quiet_NaN();
   const float infinity = std::numeric_limits<float>::infinity();
   const Vec2f invalid_directions[] = {
       {0.0f, 0.0f}, {2.0f, 0.0f}, {nan, 0.0f}, {infinity, 0.0f}};
   for (const Vec2f direction : invalid_directions) {
-    EXPECT_TRUE(
-        raycaster_
-            .CastColumns(map_, {3.5f, 3.5f}, direction, {0.0f, 0.5f}, 4, 300)
-            .empty());
+    const auto columns = raycaster_.CastColumns(map_, {3.5f, 3.5f}, direction,
+                                                {0.0f, 0.5f}, 4, 300);
+    ExpectMissColumns(columns, 4);
   }
   const Vec2f invalid_planes[] = {
       {0.0f, 0.0f}, {0.5f, 0.5f}, {0.0f, -0.5f}, {0.0f, nan}, {0.0f, infinity}};
   for (const Vec2f plane : invalid_planes) {
-    EXPECT_TRUE(
-        raycaster_.CastColumns(map_, {3.5f, 3.5f}, {1.0f, 0.0f}, plane, 4, 300)
-            .empty());
+    const auto columns =
+        raycaster_.CastColumns(map_, {3.5f, 3.5f}, {1.0f, 0.0f}, plane, 4, 300);
+    ExpectMissColumns(columns, 4);
   }
 }
 
