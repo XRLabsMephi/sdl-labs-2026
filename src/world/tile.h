@@ -1,16 +1,35 @@
 #pragma once
 
 #include <cstdint>
+#include <ostream>
 #include <stdexcept>
 #include <string>
 #include <vector>
 
-using Color = uint32_t;
+#include "core/color.h"
+
+inline constexpr bool operator==(const Color& lhs, const Color& rhs) {
+  return lhs.GetValue() == rhs.GetValue();
+}
+
+inline constexpr bool operator==(const Color& lhs, uint32_t hex_rgb) {
+  const uint32_t rgb = (lhs.GetValue() >> 8) & 0xFFFFFF;
+  return rgb == hex_rgb;
+}
+
+inline constexpr bool operator==(uint32_t hex_rgb, const Color& rhs) {
+  return rhs == hex_rgb;
+}
+
+inline std::ostream& operator<<(std::ostream& os, const Color& c) {
+  return os << "Color(0x" << std::hex << c.GetValue() << std::dec << ")";
+}
+
 using TileId = int;
 
 struct TileType {
   TileId id = 0;
-  Color color = 0;
+  Color color;
   bool is_solid = false;
 };
 

@@ -11,5 +11,5 @@ struct Config {
     Windowed,
     Fullscreen
   } screen_mode = ScreenMode::Windowed;
-  std::string map_file = "template.map";
+  std::string map_file = "maps/default.map";
 };

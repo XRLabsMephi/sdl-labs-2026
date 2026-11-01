@@ -13,7 +13,7 @@ Map Map::FromFile(const std::string& filename) {
 
   Map map;
 
-  map.tile_registry_.Register({0, 0x000000, false});
+  map.tile_registry_.Register({0, Color::kBlack, false});
 
   int tile_type_count = 0;
   if (!(file >> tile_type_count)) {
@@ -23,10 +23,15 @@ Map Map::FromFile(const std::string& filename) {
 
   for (int i = 0; i < tile_type_count; ++i) {
     TileType tile_type;
-    if (!(file >> tile_type.id >> std::hex >> tile_type.color)) {
+    uint32_t raw_color = 0;
+    if (!(file >> tile_type.id >> std::hex >> raw_color)) {
       throw std::runtime_error("Failed to read tile type definition at index " +
                                std::to_string(i));
     }
+    const uint8_t r = static_cast<uint8_t>((raw_color >> 16) & 0xFF);
+    const uint8_t g = static_cast<uint8_t>((raw_color >> 8) & 0xFF);
+    const uint8_t b = static_cast<uint8_t>(raw_color & 0xFF);
+    tile_type.color = Color(r, g, b);
     tile_type.is_solid = (tile_type.id != 0);
     map.tile_registry_.Register(tile_type);
   }
