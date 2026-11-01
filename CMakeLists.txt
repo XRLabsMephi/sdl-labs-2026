@@ -31,6 +31,13 @@ add_executable(graphics_lab
         include/wolf/raycast/RayHit.hpp
         include/wolf/raycast/Raycaster.hpp
         src/wolf/Raycaster.cpp
+        include/wolf/input/InputState.hpp
+        include/wolf/input/PlayerController.hpp
+        src/wolf/core/input/PlayerController.cpp
+        include/wolf/render/SdlPresenter.hpp
+        src/wolf/render/SdlPresenter.cpp
+        include/wolf/input/app/Application.hpp
+        src/wolf/core/app/Application.cpp
 )
 
 target_include_directories(graphics_lab PRIVATE include)
