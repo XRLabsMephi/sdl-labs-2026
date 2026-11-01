@@ -1,10 +1,16 @@
 #pragma once
-#include "../core/Vec2.h"
+
+#include <numbers>
+#include <core/Vec2.h>
+
 namespace world {
+
     class Player {
     private:
-        core::Vector2 position;
-        double angle = 0.0;
+        core::Vector2 position{};
+
+        double rotation = 0.0;
+        double angle = std::numbers::pi / 3.0;
         double radius = 0.2;
 
     public:
@@ -16,8 +22,14 @@ namespace world {
             position = newPosition;
         }
 
+        // Return the field of view in radians.
         double getAngle() const {
             return angle;
+        }
+
+        // Return the viewing direction angle in radians.
+        double getRotation() const {
+            return rotation;
         }
 
         double getRadius() const {
@@ -28,4 +40,5 @@ namespace world {
 
         core::Vector2 getDirection() const;
     };
+
 }

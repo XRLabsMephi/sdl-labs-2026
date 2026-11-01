@@ -16,22 +16,22 @@ set(HEADERS
         include/wolf/raycast/RayHit.h
         include/wolf/input/InputState.h
         include/wolf/input/PlayerController.h
+        include/wolf/debug/Logger.h
 )
 
 set(SOURCES
-        src/wolf/main.cpp
         src/wolf/app/Application.cpp
         src/wolf/input/PlayerController.cpp
         src/wolf/raycast/RayCaster.cpp
         src/wolf/render/FrameBuffer.cpp
         src/wolf/render/SdlPresenter.cpp
         src/wolf/world/Map.cpp
-        include/wolf/world/Player.h
-        src/wolf/world/Map.cpp
-        src/wolf/app/Application.cpp
+        src/wolf/debug/Logger.cpp
+        src/wolf/world/Player.cpp
+        src/wolf/input/InputState.cpp
 )
 
-add_executable(graphics_lab ${HEADERS} ${SOURCES})
+add_executable(graphics_lab src/wolf/main.cpp ${HEADERS} ${SOURCES})
 
 target_include_directories(graphics_lab PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/include/wolf
