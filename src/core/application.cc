@@ -61,6 +61,7 @@ void Application::InitSdl() {
                              SDL_GetError());
   }
   renderer_.reset(raw_renderer);
+  SDL_SetRenderVSync(renderer_.get(), 1);
 
   presenter_ = std::make_unique<SdlPresenter>(renderer_.get(), config_.width,
                                               config_.height);
@@ -168,6 +169,5 @@ void Application::Run() {
     }
 
     presenter_->Present(frame_buffer_);
-    SDL_Delay(16);
   }
 }
