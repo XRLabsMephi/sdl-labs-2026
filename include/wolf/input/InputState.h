@@ -13,6 +13,15 @@ namespace input {
         Count
     };
 
+    enum class MovementAxis {
+        Forward,
+        Horizontal
+    };
+
+    enum class RotationAxis {
+        Horizontal
+    };
+
     class InputState {
     private:
         static constexpr std::size_t actionCount =
@@ -21,6 +30,8 @@ namespace input {
         std::array<bool, actionCount> actions{};
 
         double mouseDeltaX = 0.0;
+
+        double axisValue(Action negative, Action positive) const;
 
     public:
         void beginFrame() {
@@ -55,5 +66,8 @@ namespace input {
             actions.fill(false);
             mouseDeltaX = 0.0;
         }
+
+        double getAxis(MovementAxis axis) const;
+        double getAxis(RotationAxis axis) const;
     };
 }

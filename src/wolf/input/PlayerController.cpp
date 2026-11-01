@@ -33,13 +33,8 @@ core::Vector2 input::PlayerController::calculateMovement(
     const InputState& input,
     double deltaTime
 ) const {
-    const double forwardInput =
-        static_cast<double>(input.isActionActive(Action::MoveForward))
-        - static_cast<double>(input.isActionActive(Action::MoveBackward));
-
-    const double sideInput =
-        static_cast<double>(input.isActionActive(Action::MoveRight))
-        - static_cast<double>(input.isActionActive(Action::MoveLeft));
+    const double forwardInput = input.getAxis(MovementAxis::Forward);
+    const double sideInput = input.getAxis(MovementAxis::Horizontal);
 
     const double inputLength = std::hypot(forwardInput, sideInput);
 
@@ -143,8 +138,7 @@ void input::PlayerController::updateRotation(
     double deltaTime
 ) const {
     const double keyboardDirection =
-        static_cast<double>(input.isActionActive(Action::TurnLeft))
-        - static_cast<double>(input.isActionActive(Action::TurnRight));
+    input.getAxis(RotationAxis::Horizontal);
 
     const double keyboardRotation =
         keyboardDirection * rotationSpeed * deltaTime;
