@@ -122,22 +122,12 @@ bool world::Map::canOccupy(
         return false;
     }
 
-    const int left = static_cast<int>(
-        std::floor(position.x - radius)
-    );
+    const int left = static_cast<int>(std::floor(position.x - radius));
+    const int right = static_cast<int> (std::floor(position.x + radius));
+    const int top = static_cast<int>(std::floor(position.y - radius));
+    const int bottom = static_cast<int>(std::floor(position.y + radius));
 
-    const int right = static_cast<int>(
-        std::floor(position.x + radius)
-    );
-
-    const int top = static_cast<int>(
-        std::floor(position.y - radius)
-    );
-
-    const int bottom = static_cast<int>(
-        std::floor(position.y + radius)
-    );
-
+    const double radiusSquared = radius * radius;
     // Check wall cells covered by the circle's bounding box.
     for (int y = top; y <= bottom; ++y) {
         for (int x = left; x <= right; ++x) {
@@ -161,7 +151,7 @@ bool world::Map::canOccupy(
             const double dy = position.y - nearestY;
 
             // Touching a wall also blocks the position.
-            if (dx * dx + dy * dy <= radius * radius) {
+            if (dx * dx + dy * dy <= radiusSquared) {
                 return false;
             }
         }
