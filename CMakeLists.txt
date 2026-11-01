@@ -18,6 +18,7 @@ set(HEADERS
         include/wolf/input/PlayerController.h
         include/wolf/debug/Logger.h
         include/wolf/render/Texture.h
+        include/wolf/render/TextureStorage.h
 )
 
 set(SOURCES
@@ -31,6 +32,7 @@ set(SOURCES
         src/wolf/world/Player.cpp
         src/wolf/input/InputState.cpp
         src/wolf/render/Texture.cpp
+        src/wolf/render/TextureStorage.cpp
 )
 
 add_executable(graphics_lab src/wolf/main.cpp ${HEADERS} ${SOURCES})
