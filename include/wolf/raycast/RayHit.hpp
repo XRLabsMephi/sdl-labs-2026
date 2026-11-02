@@ -1,0 +1,19 @@
+#pragma once
+
+#include <limits>
+
+namespace wolf {
+
+enum class WallSide { X, Y };
+
+struct RayHit {
+    bool hit = false;
+    double depth = std::numeric_limits<double>::infinity();
+    int mapX = 0;
+    int mapY = 0;
+    int wallId = 0;
+    WallSide side = WallSide::X;
+    double wallU = 0.0;
+};
+
+}
