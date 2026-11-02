@@ -38,6 +38,8 @@ add_executable(graphics_lab
         src/wolf/render/SdlPresenter.cpp
         include/wolf/app/Application.hpp
         src/wolf/app/Application.cpp
+        include/wolf/sprite/SpriteRenderer.hpp
+        src/wolf/sprite/SpriteRenderer.cpp
 )
 
 target_include_directories(graphics_lab PRIVATE include)
