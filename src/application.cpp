@@ -5,6 +5,7 @@
 #include <cmath>
 #include <numbers>
 #include <algorithm>
+#include <limits>
 
 #include "framebuffer.h"
 #include "sdl_presenter.h"
@@ -12,6 +13,8 @@
 #include "player.h"
 #include "settings.h"
 #include "raytracer.h"
+#include "sprite.h"
+#include "sprite_renderer.h"
 
 Application::Application() = default;
 
@@ -62,8 +65,12 @@ int Application::run() {
 
 	//загружаем текстуры (пока мало - ручками)
 	textures_[1].loadFromFile("textures/wall01.bmp");
-	textures_[2].loadFromFile("textures/floor.bmp");
-	textures_[3].loadFromFile("textures/skybox.bmp");
+	textures_[2].loadFromFile("textures/wall02.bmp");
+	textures_[3].loadFromFile("textures/wall03.bmp");
+	textures_[4].loadFromFile("textures/floor.bmp");
+	textures_[5].loadFromFile("textures/skybox.bmp");
+	textures_[6].loadFromFile("textures/sprite01.bmp");
+	textures_[7].loadFromFile("textures/sprite02.bmp");
 
 	/* 
 		Область видимости нужна, чтобы frameBuffer и presenter
@@ -72,6 +79,7 @@ int Application::run() {
 	{
 		FrameBuffer frameBuffer(settings::screenWidth, settings::screenHeight);
 		SdlPresenter presenter(renderer, settings::screenWidth, settings::screenHeight);
+		SpriteRenderer spriteRenderer;
 
 		bool running = true;
 
@@ -143,6 +151,12 @@ int Application::run() {
 				if (keys[SDL_SCANCODE_LSHIFT]) main_pl.back(play_field, deltaTime);
 			}
 
+			std::erase_if(play_field.sprites, [&](const Sprite& sprite) {
+				return sprite.type == SpriteType::Steak &&
+					std::hypot(sprite.x - main_pl.get_X(), sprite.y - main_pl.get_Y())
+					< 0.4 * settings::map_scale;
+			});
+
 			int screenWidth = frameBuffer.width();
 			int screenHeight = frameBuffer.height();
 
@@ -159,9 +173,12 @@ int Application::run() {
 				screenWidth / (2.0 * projectionDistance)
 			);
 
-
+			depthBuffer_.assign(
+				screenWidth,
+				std::numeric_limits<double>::infinity()
+			);
 			//хотим красивый скайбокс
-			const Texture& skyTex = textures_[3];
+			const Texture& skyTex = textures_[5];
 			if (skyTex.valid()) {
 				// Мы рисуем небо только в верхней половине экрана (над горизонтом)
 				const int horizon = screenHeight / 2;
@@ -192,8 +209,8 @@ int Application::run() {
 				}
 			}
 
-			// Хотим кароч карсивый пол
-			const Texture& floorTex = textures_[2];
+			// Хотим кароч красивый пол
+			const Texture& floorTex = textures_[4];
 			const double FOV_half = FOV / 2.0;
 			const double leftAngle = main_pl.get_A() - FOV_half;
 			const double rightAngle = main_pl.get_A() + FOV_half;
@@ -274,7 +291,7 @@ int Application::run() {
 
 				RayHit hit = RayTracing(main_pl.get_X(), main_pl.get_Y(), rayAngle, main_pl.get_A(), play_field);
 				if (!hit.hit) continue;
-
+				depthBuffer_[i] = hit.depth;
 
 				int height = static_cast<int>(settings::map_scale * projectionDistance / hit.depth);
 				int yStart = static_cast<int>(screenHeight / 2.0 - height / 2.0);
@@ -292,7 +309,7 @@ int Application::run() {
 				if (!tex.valid()) {
 					Color c{255, 0, 0, 255};
 					frameBuffer.fillRect(i, yStart, 1, height, c);
-					//depthBuffer_[i] = hit.depth;
+					depthBuffer_[i] = hit.depth;
 					continue;
 				}
 
@@ -311,9 +328,26 @@ int Application::run() {
 
 					frameBuffer.setPixel(i, y, toColor(tex.sample(texX, texY), brightness));
 				}
-				//depthBuffer_[i] = hit.depth;
+				depthBuffer_[i] = hit.depth;
 			}
 
+			double c = std::cos(main_pl.get_A());
+			double s = std::sin(main_pl.get_A());
+			std::ranges::sort(play_field.sprites, [&](const Sprite& a, const Sprite& b) {
+				return a.x * c + a.y * s > b.x * c + b.y * s;
+			});
+			for (const Sprite& sprite : play_field.sprites) {
+				const Texture& texture = textures_[sprite.textureId];
+				if (!texture.valid()) continue;
+				spriteRenderer.draw(
+					sprite,
+					main_pl,
+					frameBuffer,
+					depthBuffer_,
+					projectionDistance,
+					texture
+				);
+			}
 			//готовый кадр отдаём презентеру
 			presenter.present(frameBuffer);
 		}

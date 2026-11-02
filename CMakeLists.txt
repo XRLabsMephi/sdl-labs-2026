@@ -30,6 +30,10 @@ add_executable(graphics_lab
 		src/raytracer.cpp
 		src/texturestore.h
 		src/texturestore.cpp
+		src/sprite_renderer.h
+		src/sprite_renderer.cpp
+		src/sprite.h
+		src/sprite.cpp
 )
 
 target_link_libraries(graphics_lab PRIVATE SDL3::SDL3-static)

@@ -2,6 +2,7 @@
 #include <vector>
 #include <iostream>
 #include "board.h"
+#include "sprite.h"
 /*
 	файл c определением класса Playfield
 
@@ -18,6 +19,7 @@ class Playfield {
 public:
 	
 	std::vector<Board> boards; //массив всех уже созданых коробок
+	std::vector<Sprite> sprites; // массив всех уже созданных спрайтов
 	
 	//конструктор с заданием размеров
 	// !!! ПО УМОЛЧАНИЮ ЗАПОЛНЯЕТ ГРАНИЦЫ ПОЛЯ СТЕНАМИ !!!

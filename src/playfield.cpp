@@ -54,8 +54,9 @@ void Playfield::set_rectangle(int _x1, int _y1, int _x2, int _y2, int tp) {
 	for (int i = _x1; i < _x2; i++) {
 		for (int j = _y1; j < _y2; j++) {
 			field[i][j] = tp;
-			if (tp == 1) {
+			if (1 <= tp && tp <= 3) {
 				boards.push_back(Board(i * k, j * k, 0, k, k, k));
+				boards.back().wallId = tp;
 				if ((int(i) + int(j)) % 2 == 0) {
 					boards.back().cur_col = { 0, 0, 255, 255 };
 				}
@@ -70,14 +71,31 @@ void Playfield::set_rectangle(int _x1, int _y1, int _x2, int _y2, int tp) {
 void Playfield::load_map(std::string file) {
 	field = std::vector<std::vector<int>>(h, std::vector<int>(w, 0));
 	boards.clear();
+	sprites.clear();
 	std::ifstream f(file);
 	if (f.is_open()) {
 		int index = 0;
 		std::string line;
 		while (index < h && std::getline(f, line)) {
 			for (int i = 0; i < w && i < line.size(); i++) {
-				if (line[i] == '1') {
-					set_rectangle(i + 1, index + 1, i + 1, index + 1, 1);
+				if (line[i] >= '1' && line[i] <= '3') {
+					set_rectangle(i + 1, index + 1, i + 1, index + 1, line[i] - '0');
+				} else if (line[i] == '4') {
+					sprites.push_back({
+						(i + 0.5) * k,
+						(index + 0.5) * k,
+						6,
+						0.4,
+						SpriteType::Steak
+					});
+				} else if (line[i] == '5') {
+					sprites.push_back({
+						(i + 0.5) * k,
+						(index + 0.5) * k,
+						7,
+						0.8,
+						SpriteType::Barrel
+					});
 				} else if (line[i] == 'P') {
 					player_coords = {i, index};
 				}
