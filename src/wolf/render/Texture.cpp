@@ -1,5 +1,6 @@
 #include "render/Texture.h"
 
+#include <cstring>
 #include <filesystem>
 #include <fstream>
 #include <SDL3/SDL_surface.h>
@@ -14,80 +15,59 @@ namespace {
     };
 }
 
-Uint32 Texture::pixel(int x, int y) const {
-    return pixels[x * height + y];
-}
+namespace render {
+    Texture::Texture(const std::string &filename) {
+        namespace fs = std::filesystem;
+        using SurfacePtr =  std::unique_ptr<SDL_Surface, SurfaceDeleter>;
+        fs::path path = filename;
 
-Texture::Texture(const std::string &filename) {
-    namespace fs = std::filesystem;
-    fs::path path = fs::current_path() / filename;
-    std::ifstream file(path, std::ios::binary);
-    if (!file) {
-        logging::error("TEX", 1, "failed to open texture file", "");
-        throw std::runtime_error("failed to open texture file: " + filename);
-    }
+        std::string ext = path.extension().string();
+        std::ranges::transform(ext, ext.begin(),
+        [](const unsigned char c) { return static_cast<char>(std::tolower(c)); });
 
-    logging::info("TEX", "opened " + filename);
-    std::string extension = path.extension().string();
+        //TODO Add support for JPG, Webp, and others
+        if (ext != ".png") {
+            throw std::runtime_error(std::format("file \"{}\" must have .png extension", filename));
+        }
 
-    //TODO Add support for JPG, Webp, and others
-    if (extension != ".png") {
-        logging::error(
-            "TEX",
-            1,
-            "file \"" + filename + "\" must have .png extension", "");
-        throw std::runtime_error("file \"" + filename + "\" must have .png extension");
-    }
+        SurfacePtr loaded(SDL_LoadPNG(path.string().c_str()));
+        if (!loaded) {
+            throw std::runtime_error(
+                std::format("SDL_Surface creation from file \"{}\" failed: {}", filename, SDL_GetError())
+                );
+        }
 
-    std::unique_ptr<SDL_Surface, SurfaceDeleter> surface(SDL_LoadPNG(path.string().c_str()));
-    if (!surface) {
-        logging::error(
-            "TEX",
-            1,
-            "failed to create SDL_Surface from file \"" + filename + "\"", "");
-        throw std::runtime_error("failed to open texture file: " + filename);
-    }
+        SurfacePtr surface(SDL_ConvertSurface(loaded.get(), SDL_PIXELFORMAT_RGBA8888));
+        if (!surface) {
+            throw std::runtime_error(
+                std::format(
+                    "SDL_Surface from file \"{}\" conversion to RGBA8888 failed: {}", filename, SDL_GetError()
+                    )
+                );
+        }
 
-    if (!SDL_LockSurface(surface.get())) {
-        logging::error("TEX", 1, "failed to lock SDL_Surface", "");
-        throw std::runtime_error("failed to lock SDL_Surface while creating texture");
-    }
+        width = loaded->w;
+        height = loaded->h;
+        pixels.resize(static_cast<size_t>(width) * height);
 
-    const int tex_w = surface->w;
-    const int tex_h = surface->h;
-    width = tex_w, height = tex_h;
-    pixels = std::vector(tex_w * tex_h, static_cast<Uint32>(0));
-    Uint32* tex_pixels = pixels.data();
+        //TODO implement tiling loading
+        const auto *base = static_cast<const Uint8 *>(surface->pixels);
+        for (int y = 0; y < height; ++y) {
+            const Uint8 *row = base + static_cast<size_t>(y) * surface->pitch;
 
-    const SDL_PixelFormatDetails* details = SDL_GetPixelFormatDetails(SDL_PIXELFORMAT_RGBA8888);
-
-    size_t pixel_reading_errors = 0;
-    //TODO implement tiling loading
-    for (int x = 0; x < tex_w; ++x) {
-        for (int y = 0; y < tex_h; ++y) {
-            Uint8 r, g, b, a;
-
-            if (!SDL_ReadSurfacePixel(surface.get(), x, y, &r, &g, &b, &a)) {
-                ++pixel_reading_errors;
-                continue;
+            for (int x = 0; x < width; ++x) {
+                Uint32 value;
+                std::memcpy(&value, row + static_cast<size_t>(x) * sizeof(Uint32), sizeof(value));
+                pixels[static_cast<size_t>(x) * height + y] = value;
             }
-
-            Uint32 pixel_value = SDL_MapRGBA(details, nullptr, r, g, b, a);
-
-            tex_pixels[x * tex_h + y] = pixel_value;
         }
     }
 
-    SDL_UnlockSurface(surface.get());
-
-    if (pixel_reading_errors > 0) {
-        logging::warning(
-            "TEX",
-            std::format("failed to read {} pixels while loading texture \"{}\"",
-                pixel_reading_errors, filename));
+    Texture Texture::createFromFile(const std::string &filename){
+        return Texture(filename);
     }
-}
 
-Texture Texture::createFromFile(const std::string &filename) {
-    return Texture(filename);
+    Uint32* Texture::column(const int x) {
+        return &pixels[x * height];
+    }
 }

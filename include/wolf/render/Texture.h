@@ -3,16 +3,36 @@
 #include <vector>
 #include <SDL3/SDL_stdinc.h>
 
-struct Texture
-{
-    int width = 0;
-    int height = 0;
+#include "core/Color.h"
 
-    std::vector<Uint32> pixels;
+namespace render {
+    class TextureStorage;
+}
 
-    Uint32 pixel(int x, int y) const;
+namespace render {
+    struct Texture {
+        int width = 0, height = 0;
+        std::vector<Uint32> pixels;
 
-    explicit Texture(const std::string& filename);
+        Texture() = default;
 
-    static Texture createFromFile(const std::string& filename);
-};
+        explicit Texture(const std::string &filename);
+
+        static Texture createFromFile(const std::string &filename);
+
+        Uint32 pixel(int x, int y) const { return pixels[x * height + y]; }
+
+        inline Uint32 *column(int x);
+
+        static const Texture empty;
+
+    private:
+        constexpr Texture(int w, int h, core::Color color)
+            : width(w)
+              , height(h)
+              , pixels(static_cast<size_t>(width) * height, color.toUint32_t()) {
+        }
+    };
+
+    inline const Texture Texture::empty = Texture(512, 512, core::Color::green);
+}

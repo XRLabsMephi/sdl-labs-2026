@@ -89,6 +89,7 @@ namespace core {
 
         /**
          * @brief Multiplies R, G, B components of color by scalar and returns the result
+         * @param color the color to apply operation to
          * @param scalar number to multiply by
          * @return the result of multiplication
          */
