@@ -1,68 +1,35 @@
-#ifndef SOFTWAREGRAPHICSLABS_RENDER_TEXTURE_H_
-#define SOFTWAREGRAPHICSLABS_RENDER_TEXTURE_H_
+#ifndef RENDER_TEXTURE_H_
+#define RENDER_TEXTURE_H_
 
-#include <algorithm>
 #include <cstdint>
 #include <vector>
 
 #include "core/color.h"
 
-struct Texture {
-  int width = 0;
-  int height = 0;
-  std::vector<uint32_t> pixels;
-
+// Программная текстура в том же RGBA8888, что и FrameBuffer.
+// SDL_Surface здесь не хранится: загрузка файла — задача TextureStore.
+class Texture {
+ public:
   Texture() = default;
+  Texture(int width, int height, std::vector<uint32_t> pixels);
 
-  Texture(int w, int h, std::vector<uint32_t> pix)
-      : width(w), height(h), pixels(std::move(pix)) {}
+  static Texture FromColor(int width, int height, Color color);
 
-  Texture(int w, int h, Color fill_color)
-      : width(w),
-        height(h),
-        pixels(static_cast<size_t>(std::max(0, w * h)), fill_color.GetValue()) {}
+  [[nodiscard]] int GetWidth() const { return width_; }
+  [[nodiscard]] int GetHeight() const { return height_; }
+  [[nodiscard]] bool IsEmpty() const { return pixels_.empty(); }
 
-  [[nodiscard]] bool IsValid() const noexcept {
-    return width > 0 && height > 0 &&
-           static_cast<size_t>(width * height) == pixels.size();
-  }
+  // Координаты берутся по модулю размера, в том числе отрицательные.
+  [[nodiscard]] Color Sample(int x, int y) const;
+  [[nodiscard]] uint32_t SampleRaw(int x, int y) const;
 
-  // Соответствует контракту методички: uint32_t sample(int x, int y) const
-  [[nodiscard]] uint32_t sample(int x, int y) const noexcept {
-    if (!IsValid()) {
-      return 0;
-    }
-    x = std::clamp(x, 0, width - 1);
-    y = std::clamp(y, 0, height - 1);
-    return pixels[static_cast<size_t>(y * width + x)];
-  }
+ private:
+  [[nodiscard]] int Wrap(int value, int modulo) const;
+  [[nodiscard]] int PixelIndex(int x, int y) const;
 
-  [[nodiscard]] Color Sample(int x, int y) const noexcept {
-    if (!IsValid()) {
-      return Color::kBlack;
-    }
-    const uint32_t val = sample(x, y);
-    return Color(static_cast<uint8_t>((val >> 24) & 0xFF),
-                 static_cast<uint8_t>((val >> 16) & 0xFF),
-                 static_cast<uint8_t>((val >> 8) & 0xFF),
-                 static_cast<uint8_t>(val & 0xFF));
-  }
-
-  [[nodiscard]] Color SampleUV(double u, double v) const noexcept {
-    if (!IsValid()) {
-      return Color::kBlack;
-    }
-    u = std::clamp(u, 0.0, 0.999999);
-    v = std::clamp(v, 0.0, 0.999999);
-    const int x = static_cast<int>(u * width);
-    const int y = static_cast<int>(v * height);
-    return Sample(x, y);
-  }
+  int width_ = 0;
+  int height_ = 0;
+  std::vector<uint32_t> pixels_;
 };
 
-inline bool operator==(const Texture& lhs, const Texture& rhs) noexcept {
-  return lhs.width == rhs.width && lhs.height == rhs.height &&
-         lhs.pixels == rhs.pixels;
-}
-
-#endif  // SOFTWAREGRAPHICSLABS_RENDER_TEXTURE_H_
+#endif  // RENDER_TEXTURE_H_
