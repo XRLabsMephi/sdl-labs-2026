@@ -18,6 +18,7 @@ add_library(wolf_core
     src/wolf/world/Map.cpp
     src/wolf/input/PlayerController.cpp
     src/wolf/render/FrameBuffer.cpp
+    src/wolf/raycast/Raycaster.cpp
 )
 target_include_directories(wolf_core PUBLIC include)
 wolf_target(wolf_core)
