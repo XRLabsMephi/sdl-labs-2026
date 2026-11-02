@@ -16,6 +16,7 @@ add_executable(graphics_lab_tests
     world/map_test.cc
     wolf/raycaster_test.cc
     input/player_controller_test.cc
+    render/texture_store_test.cc
 )
 
 target_link_libraries(graphics_lab_tests PRIVATE

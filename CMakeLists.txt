@@ -40,6 +40,10 @@ add_library(graphics_lab_core STATIC
     src/render/sdl_presenter.cc
     src/render/sdl_presenter.h
 
+    src/render/texture.h
+    src/render/texture_store.cc
+    src/render/texture_store.h
+
     src/wolf/ray_hit.h
     src/wolf/raycaster.h
     src/wolf/raycaster.cc
