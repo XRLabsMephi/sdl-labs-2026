@@ -89,9 +89,11 @@ Map Map::FromFile(const std::string& filename) {
         const std::filesystem::path map_dir =
             std::filesystem::path(filename).parent_path();
         if (!map_dir.empty()) {
-          const std::filesystem::path candidate = map_dir / token;
-          if (std::filesystem::exists(candidate)) {
-            resolved_path = candidate.string();
+          if (std::filesystem::exists(map_dir / token)) {
+            resolved_path = (map_dir / token).string();
+          } else if (map_dir.has_parent_path() &&
+                     std::filesystem::exists(map_dir.parent_path() / token)) {
+            resolved_path = (map_dir.parent_path() / token).string();
           }
         }
       }

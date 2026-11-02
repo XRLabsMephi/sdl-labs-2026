@@ -275,3 +275,18 @@ TEST_F(MapTest, LoadsMapWithSpritesSection) {
   EXPECT_EQ(sprites[1].texture_id, 11);
   EXPECT_DOUBLE_EQ(sprites[1].scale, 0.75);
 }
+
+TEST_F(MapTest, LoadsLab02ShowcaseMap) {
+  const std::string showcase_map = project_root_dir + "/maps/lab02.map";
+  Map map = Map::FromFile(showcase_map);
+
+  EXPECT_EQ(map.GetWidth(), 12);
+  EXPECT_EQ(map.GetHeight(), 12);
+  EXPECT_TRUE(map.HasTexture(0, 0));
+  EXPECT_EQ(map.GetTexture(0, 0).width, 64);
+  EXPECT_EQ(map.GetTexture(0, 0).height, 64);
+
+  EXPECT_EQ(map.GetSpriteCount(), 5u);
+  EXPECT_FLOAT_EQ(map.GetSprites()[0].position.x(), 2.5f);
+  EXPECT_FLOAT_EQ(map.GetSprites()[0].position.y(), 2.5f);
+}
