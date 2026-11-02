@@ -10,10 +10,6 @@
 #include "core/color.h"
 #include "render/texture.h"
 
-inline constexpr bool operator==(const Color& lhs, const Color& rhs) {
-  return lhs.GetValue() == rhs.GetValue();
-}
-
 inline constexpr bool operator==(const Color& lhs, uint32_t hex_rgb) {
   const uint32_t rgb = (lhs.GetValue() >> 8) & 0xFFFFFF;
   return rgb == hex_rgb;

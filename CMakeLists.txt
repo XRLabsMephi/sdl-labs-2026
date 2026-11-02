@@ -53,6 +53,14 @@ add_library(graphics_lab_core STATIC
     src/world/player.h
     src/world/sprite.h
     src/world/tile.h
+
+    src/render/texture.cc
+    src/render/texture.h
+
+    src/effects/fog.h
+
+        src/sprite/sprite_renderer.cc
+    src/sprite/sprite_renderer.h
 )
 
 target_include_directories(graphics_lab_core PUBLIC
