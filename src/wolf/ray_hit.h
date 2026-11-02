@@ -16,8 +16,8 @@ struct RayHit {
   bool hit = false;
 
   // Параметр t в формуле position + t * ray_direction.
-  // Равен глубине вдоль направления камеры для лучей direction + plane * camera_x,
-  // если direction единичный, а plane перпендикулярен ему.
+  // Равен глубине вдоль направления камеры для лучей direction + plane *
+  // camera_x, если direction единичный, а plane перпендикулярен ему.
   // Направления отдельных лучей не нормализуем.
   double depth = std::numeric_limits<double>::infinity();
 
@@ -25,6 +25,14 @@ struct RayHit {
   int cell_y = -1;
   TileId wall_id = 0;
   WallSide side = WallSide::kNone;
+
+  // Горизонтальная координата текстуры в [0, 1), уже с поправкой зеркальности.
+  // Столбец текстуры определяется как floor(wall_u * texture_width).
+  double wall_u = 0.0;
+
+  // Идентификатор текстуры из типа найденной стены.
+  // До появления TileType::texture_id используется идентификатор типа стены.
+  int texture_id = 0;
 };
 
 #endif  // WOLF_RAY_HIT_H_

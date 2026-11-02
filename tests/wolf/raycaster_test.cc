@@ -19,9 +19,21 @@ void ExpectMissColumns(const std::vector<WallColumn>& columns,
     EXPECT_TRUE(std::isinf(column.ray_hit.depth));
     EXPECT_GT(column.ray_hit.depth, 0.0);
     EXPECT_EQ(column.ray_hit.side, WallSide::kNone);
+    EXPECT_DOUBLE_EQ(column.ray_hit.wall_u, 0.0);
+    EXPECT_EQ(column.ray_hit.texture_id, 0);
     EXPECT_DOUBLE_EQ(column.projected_height, 0.0);
     EXPECT_EQ(column.draw_start, 0);
     EXPECT_EQ(column.draw_end, 0);
+  }
+}
+
+template <typename TileTypeT>
+void ExpectTextureIdMatchesTile(const RayHit& hit, const TileTypeT& tile_type) {
+  // Один тест работает до и после добавления texture_id участником №1.
+  if constexpr (requires { tile_type.texture_id; }) {
+    EXPECT_EQ(hit.texture_id, tile_type.texture_id);
+  } else {
+    EXPECT_EQ(hit.texture_id, tile_type.id);
   }
 }
 
@@ -352,6 +364,158 @@ TEST_F(RaycasterTest, AcceptsRotatedCamera) {
   EXPECT_EQ(columns[1].ray_hit.cell_y, 5);
   EXPECT_NEAR(columns[1].ray_hit.depth, 1.875, 1e-6);
   EXPECT_NEAR(columns[1].projected_height, 160.0, 1e-4);
+}
+
+TEST_F(RaycasterTest, ComputesWallUAndTextureIdForAllWallDirections) {
+  struct Case {
+    Vec2f position;
+    Vec2f direction;
+    double wall_u;
+  };
+  const Case cases[] = {
+      {{1.5f, 1.25f}, {1.0f, 0.0f}, 0.75},
+      {{1.5f, 1.25f}, {-1.0f, 0.0f}, 0.25},
+      {{1.25f, 1.5f}, {0.0f, -1.0f}, 0.75},
+      {{1.25f, 1.5f}, {0.0f, 1.0f}, 0.25},
+  };
+  for (const Case& test_case : cases) {
+    const RayHit hit =
+        raycaster_.CastRay(map_, test_case.position, test_case.direction);
+    ASSERT_TRUE(hit.hit);
+    EXPECT_DOUBLE_EQ(hit.wall_u, test_case.wall_u);
+    ExpectTextureIdMatchesTile(hit, map_.GetTileType(hit.cell_x, hit.cell_y));
+  }
+}
+
+TEST_F(RaycasterTest, ComputesWallUFromObliqueHitPoint) {
+  const RayHit hit = raycaster_.CastRay(map_, {3.5f, 3.25f}, {1.0f, 0.25f});
+  ASSERT_TRUE(hit.hit);
+  EXPECT_EQ(hit.side, WallSide::kX);
+  EXPECT_DOUBLE_EQ(hit.depth, 1.5);
+  // Точка попадания имеет y = 3.625; после отражения wall_u = 0.375.
+  EXPECT_DOUBLE_EQ(hit.wall_u, 0.375);
+}
+
+TEST_F(RaycasterTest, KeepsWallUContinuousWithinOneFace) {
+  const float positions[] = {3.125f, 3.25f, 3.5f, 3.75f, 3.875f};
+  const double expected_u[] = {0.875, 0.75, 0.5, 0.25, 0.125};
+  for (int i = 0; i < 5; ++i) {
+    SCOPED_TRACE(i);
+    const RayHit hit =
+        raycaster_.CastRay(map_, {3.5f, positions[i]}, {1.0f, 0.0f});
+    ASSERT_TRUE(hit.hit);
+    EXPECT_EQ(hit.cell_x, 5);
+    EXPECT_EQ(hit.cell_y, 3);
+    EXPECT_DOUBLE_EQ(hit.wall_u, expected_u[i]);
+  }
+}
+
+TEST_F(RaycasterTest, RepeatsWallUAtCellBoundaries) {
+  const RayHit first = raycaster_.CastRay(map_, {3.5f, 3.125f}, {1.0f, 0.0f});
+  const RayHit next = raycaster_.CastRay(map_, {3.5f, 4.125f}, {1.0f, 0.0f});
+  ASSERT_TRUE(first.hit);
+  ASSERT_TRUE(next.hit);
+  EXPECT_EQ(first.cell_y, 3);
+  EXPECT_EQ(next.cell_y, 4);
+  EXPECT_DOUBLE_EQ(first.wall_u, 0.875);
+  EXPECT_DOUBLE_EQ(next.wall_u, first.wall_u);
+}
+
+TEST_F(RaycasterTest, KeepsMirroredSeamsInsideTexture) {
+  const RayHit hits[] = {
+      raycaster_.CastRay(map_, {3.5f, 3.0f}, {1.0f, 0.0f}),
+      raycaster_.CastRay(map_, {3.0f, 3.5f}, {0.0f, -1.0f}),
+  };
+  for (const RayHit& hit : hits) {
+    ASSERT_TRUE(hit.hit);
+    EXPECT_GE(hit.wall_u, 0.0);
+    EXPECT_LT(hit.wall_u, 1.0);
+    EXPECT_DOUBLE_EQ(hit.wall_u, std::nextafter(1.0, 0.0));
+    EXPECT_EQ(static_cast<int>(std::floor(hit.wall_u * 64)), 63);
+  }
+}
+
+TEST_F(RaycasterTest, KeepsUnmirroredSeamsAtZero) {
+  const RayHit hits[] = {
+      raycaster_.CastRay(map_, {3.5f, 3.0f}, {-1.0f, 0.0f}),
+      raycaster_.CastRay(map_, {3.0f, 3.5f}, {0.0f, 1.0f}),
+  };
+  for (const RayHit& hit : hits) {
+    ASSERT_TRUE(hit.hit);
+    EXPECT_DOUBLE_EQ(hit.wall_u, 0.0);
+  }
+}
+
+TEST_F(RaycasterTest, ReturnsDefaultTextureDataForMiss) {
+  map_.GetTile(5, 1).type_id = 0;
+  const RayHit hit = raycaster_.CastRay(map_, {1.5f, 1.5f}, {1.0f, 0.0f});
+  EXPECT_FALSE(hit.hit);
+  EXPECT_DOUBLE_EQ(hit.wall_u, 0.0);
+  EXPECT_EQ(hit.texture_id, 0);
+}
+
+TEST_F(RaycasterTest, FillsDepthBufferWithPerpendicularDepth) {
+  std::vector<double> depths(1, -42.0);
+  const auto columns = raycaster_.CastColumns(map_, {3.5f, 3.5f}, {1.0f, 0.0f},
+                                              {0.0f, 0.5f}, 4, 300, depths);
+  ASSERT_EQ(columns.size(), 4u);
+  ASSERT_EQ(depths.size(), columns.size());
+  for (std::size_t x = 0; x < columns.size(); ++x) {
+    EXPECT_DOUBLE_EQ(depths[x], 1.5);
+    EXPECT_DOUBLE_EQ(depths[x], columns[x].ray_hit.depth);
+    EXPECT_DOUBLE_EQ(columns[x].projected_height, 200.0);
+  }
+}
+
+TEST_F(RaycasterTest, MarksMissingWallWithNoHitDepth) {
+  map_.GetTile(5, 3).type_id = 0;
+  std::vector<double> depths;
+  const auto columns = raycaster_.CastColumns(map_, {3.5f, 3.5f}, {1.0f, 0.0f},
+                                              {0.0f, 0.5f}, 4, 300, depths);
+  ASSERT_EQ(columns.size(), 4u);
+  const std::vector<double> expected = {1.5, 2.0, 1e9, 2.0};
+  EXPECT_EQ(depths, expected);
+  EXPECT_FALSE(columns[2].ray_hit.hit);
+}
+
+TEST_F(RaycasterTest, ResizesAndOverwritesDepthBuffer) {
+  std::vector<double> depths(20, -42.0);
+  auto columns = raycaster_.CastColumns(map_, {3.5f, 3.5f}, {1.0f, 0.0f},
+                                        {0.0f, 0.5f}, 8, 300, depths);
+  ASSERT_EQ(columns.size(), 8u);
+  EXPECT_EQ(depths, std::vector<double>(8, 1.5));
+
+  columns = raycaster_.CastColumns(map_, {3.5f, 3.5f}, {0.0f, 0.0f},
+                                   {0.0f, 0.5f}, 2, 300, depths);
+  ExpectMissColumns(columns, 2);
+  EXPECT_EQ(depths, std::vector<double>(2, Raycaster::kNoHitDepth));
+
+  columns = raycaster_.CastColumns(map_, {3.5f, 3.5f}, {1.0f, 0.0f},
+                                   {0.0f, 0.5f}, 0, 300, depths);
+  EXPECT_TRUE(columns.empty());
+  EXPECT_TRUE(depths.empty());
+}
+
+TEST_F(RaycasterTest, PreservesRawZeroDepthInBuffer) {
+  std::vector<double> depths;
+  const auto columns = raycaster_.CastColumns(map_, {1.0f, 1.5f}, {-1.0f, 0.0f},
+                                              {0.0f, -0.5f}, 4, 300, depths);
+  ASSERT_EQ(columns.size(), 4u);
+  ASSERT_EQ(depths.size(), 4u);
+  for (std::size_t x = 0; x < columns.size(); ++x) {
+    ASSERT_TRUE(columns[x].ray_hit.hit);
+    EXPECT_DOUBLE_EQ(depths[x], 0.0);
+    EXPECT_EQ(columns[x].draw_start, 0);
+    EXPECT_EQ(columns[x].draw_end, 300);
+  }
+}
+
+TEST_F(RaycasterTest, FillsMissDepthsForInvalidCameraAndHeight) {
+  std::vector<double> depths(4, -42.0);
+  const auto columns = raycaster_.CastColumns(map_, {3.5f, 3.5f}, {1.0f, 0.0f},
+                                              {0.0f, 0.5f}, 4, 0, depths);
+  ExpectMissColumns(columns, 4);
+  EXPECT_EQ(depths, std::vector<double>(4, Raycaster::kNoHitDepth));
 }
 
 }  // namespace

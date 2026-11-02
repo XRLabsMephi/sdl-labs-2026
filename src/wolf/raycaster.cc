@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstddef>
 #include <limits>
 
 #include "world/map.h"
@@ -27,6 +28,17 @@ bool IsValidCamera(const Vec2f& direction, const Vec2f& camera_plane) {
          std::abs(dir_x * plane_x + dir_y * plane_y) <=
              kCameraTolerance * plane_length &&
          dir_x * plane_y - dir_y * plane_x > 0.0;
+}
+
+template <typename TileTypeT>
+int GetWallTextureId(const TileTypeT& tile_type) {
+  // Участник №1 добавит texture_id в TileType. До этого сохраняем совместимость
+  // с картами ЛР-1: идентификатор стены одновременно задаёт её текстуру.
+  if constexpr (requires { tile_type.texture_id; }) {
+    return tile_type.texture_id;
+  } else {
+    return tile_type.id;
+  }
 }
 
 }  // namespace
@@ -101,6 +113,18 @@ RayHit Raycaster::CastRay(const Map& map, const Vec2f& position,
       result.cell_y = cell_y;
       result.wall_id = map.GetTile(cell_x, cell_y).type_id;
       result.side = side;
+      result.texture_id = GetWallTextureId(map.GetTileType(cell_x, cell_y));
+
+      // Координата вдоль вертикальной грани — y, вдоль горизонтальной — x.
+      const double wall_coord =
+          side == WallSide::kX ? pos_y + depth * dir_y : pos_x + depth * dir_x;
+      result.wall_u = wall_coord - std::floor(wall_coord);
+      if ((side == WallSide::kX && dir_x > 0.0) ||
+          (side == WallSide::kY && dir_y < 0.0)) {
+        // На зеркальном шве 1 - 0 равно 1. Берём ближайшее число меньше 1.
+        // Тогда floor(wall_u * texture_width) остаётся внутри текстуры.
+        result.wall_u = std::min(1.0 - result.wall_u, std::nextafter(1.0, 0.0));
+      }
       return result;
     }
   }
@@ -149,6 +173,22 @@ std::vector<WallColumn> Raycaster::CastColumns(
     const Vec2f ray_direction = direction + camera_plane * camera_x;
     const RayHit ray_hit = CastRay(map, position, ray_direction);
     columns[x] = ProjectWall(ray_hit, screen_height);
+  }
+  return columns;
+}
+
+std::vector<WallColumn> Raycaster::CastColumns(
+    const Map& map, const Vec2f& position, const Vec2f& direction,
+    const Vec2f& camera_plane, int screen_width, int screen_height,
+    std::vector<double>& out_depth_buffer) const {
+  std::vector<WallColumn> columns = CastColumns(
+      map, position, direction, camera_plane, screen_width, screen_height);
+  out_depth_buffer.assign(columns.size(), kNoHitDepth);
+  for (std::size_t x = 0; x < columns.size(); ++x) {
+    if (columns[x].ray_hit.hit) {
+      // Ограничение глубины для проекции не должно менять результат depth-test.
+      out_depth_buffer[x] = columns[x].ray_hit.depth;
+    }
   }
   return columns;
 }
