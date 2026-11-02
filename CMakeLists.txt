@@ -203,4 +203,14 @@ if(BUILD_TESTING)
     set_target_properties(lab02_rendering_tests PROPERTIES CXX_EXTENSIONS OFF)
     add_test(NAME wolf_lab02_rendering COMMAND lab02_rendering_tests)
 
+    add_executable(lab02_scene_tests tests/wolf/render/Lab02SceneTests.cpp)
+    target_link_libraries(lab02_scene_tests PRIVATE wolf_render wolf_resources)
+    target_compile_options(lab02_scene_tests PRIVATE -Wall -Wextra -Wpedantic)
+    set_target_properties(lab02_scene_tests PROPERTIES
+            CXX_EXTENSIONS OFF
+            RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+    )
+    add_dependencies(lab02_scene_tests wolf_assets)
+    add_test(NAME wolf_lab02_scene COMMAND lab02_scene_tests)
+
 endif()

@@ -89,7 +89,7 @@ bool SDLCALL watchWindow(void* userdata, SDL_Event* event)
         request.destroyedBeforeQuit = window && SDL_WasInit(SDL_INIT_VIDEO) != 0;
         request.presenterDestroyed = window && SDL_GetRenderer(window) == nullptr;
         request.diagnosticsShown = window &&
-            SDL_strstr(SDL_GetWindowTitle(window), "Wolf Lab 1 | pos 1.50, 1.50") &&
+            SDL_strstr(SDL_GetWindowTitle(window), "Wolf Lab 2 | pos 1.50, 1.50") &&
             SDL_strstr(SDL_GetWindowTitle(window), "dir 1.00, 0.00");
     }
     return true;
