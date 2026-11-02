@@ -2,6 +2,7 @@
 
 #include <SDL3/SDL.h>
 
+#include <algorithm>
 #include <stdexcept>
 
 void SdlWindowDeleter::operator()(SDL_Window* window) const noexcept {
@@ -20,9 +21,18 @@ Application::Application(Config config)
     : config_(config),
       is_running_(true),
       map_(Map::FromFile(config_.map_file)),
-      frame_buffer_(config_.width, config_.height) {
+      frame_buffer_(config_.width, config_.height),
+      depth_buffer_(static_cast<size_t>(std::max(0, config_.width)), 1e9) {
   InitSdl();
   InitPlayerSpawn();
+
+  // Инициализируем текстуры по умолчанию, если они есть на диске
+  texture_store_.TryLoad(1, "assets/wolf/textures/wall01.bmp");
+  texture_store_.TryLoad(2, "assets/wolf/textures/wall02.bmp");
+  texture_store_.TryLoad(3, "assets/wolf/textures/wall03.bmp");
+  texture_store_.TryLoad(10, "assets/wolf/sprites/barrel.bmp");
+  texture_store_.TryLoad(11, "assets/wolf/sprites/lamp.bmp");
+  texture_store_.TryLoad(12, "assets/wolf/sprites/medkit.bmp");
 }
 
 Application::~Application() {
@@ -141,8 +151,46 @@ Color Application::ResolveWallColor(const RayHit& hit) const {
   return wall_color;
 }
 
+void Application::DrawWallColumn(int x, const WallColumn& col) {
+  if (!col.ray_hit.hit || col.draw_start >= col.draw_end) {
+    return;
+  }
+
+  const int cell_x = col.ray_hit.cell_x;
+  const int cell_y = col.ray_hit.cell_y;
+
+  if (map_.InBounds(cell_x, cell_y) && map_.HasTexture(cell_x, cell_y)) {
+    const Texture& tex = map_.GetTexture(cell_x, cell_y);
+    int tex_x = static_cast<int>(col.ray_hit.wall_u * tex.width);
+    tex_x = std::clamp(tex_x, 0, tex.width - 1);
+
+    const double line_height =
+        col.projected_height > 0.0 ? col.projected_height : 1.0;
+    const double wall_top = (config_.height - line_height) / 2.0;
+
+    for (int y = col.draw_start; y < col.draw_end; ++y) {
+      const double norm_y = (y - wall_top) / line_height;
+      int tex_y = static_cast<int>(norm_y * tex.height);
+      tex_y = std::clamp(tex_y, 0, tex.height - 1);
+
+      Color c = tex.Sample(tex_x, tex_y);
+      if (col.ray_hit.side == WallSide::kY) {
+        const uint32_t val = c.GetValue();
+        const uint8_t r = static_cast<uint8_t>(((val >> 24) & 0xFF) * 0.75f);
+        const uint8_t g = static_cast<uint8_t>(((val >> 16) & 0xFF) * 0.75f);
+        const uint8_t b = static_cast<uint8_t>(((val >> 8) & 0xFF) * 0.75f);
+        const uint8_t a = static_cast<uint8_t>(val & 0xFF);
+        c = Color(r, g, b, a);
+      }
+      frame_buffer_.SetPixel(x, y, c);
+    }
+  } else {
+    frame_buffer_.DrawVerticalLine(x, col.draw_start, col.draw_end,
+                                   ResolveWallColor(col.ray_hit));
+  }
+}
+
 void Application::Run() {
-  // Constant fixed-step update every frame (no delta-time calculation)
   constexpr float kFixedDt = 0.016f;
 
   while (is_running_) {
@@ -153,19 +201,16 @@ void Application::Run() {
 
     controller_.Update(player_, map_, input, kFixedDt);
 
-    // Ceiling (dark slate) and floor (dark gray)
+    // Очистка кадра (потолок и пол)
     frame_buffer_.Clear(Color(50, 50, 60), Color(30, 30, 30));
 
+    // Трассировка столбцов с заполнением буфера глубины для спрайтов
     const auto columns = raycaster_.CastColumns(
         map_, player_.position, player_.direction, player_.camera_plane,
-        config_.width, config_.height);
+        config_.width, config_.height, depth_buffer_);
 
     for (int x = 0; x < config_.width; ++x) {
-      const auto& col = columns[x];
-      if (col.ray_hit.hit && col.draw_start < col.draw_end) {
-        frame_buffer_.DrawVerticalLine(x, col.draw_start, col.draw_end,
-                                       ResolveWallColor(col.ray_hit));
-      }
+      DrawWallColumn(x, columns[static_cast<size_t>(x)]);
     }
 
     presenter_->Present(frame_buffer_);
