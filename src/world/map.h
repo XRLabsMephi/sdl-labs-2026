@@ -1,8 +1,10 @@
 #pragma once
 
+#include "world/sprite.h"
 #include "world/tile.h"
 
 #include <cassert>
+#include <cstddef>
 #include <string>
 #include <vector>
 
@@ -51,6 +53,27 @@ public:
     return GetTileType(x, y).texture_path;
   }
 
+  // Управление предметами сцены (Sprite)
+  void AddSprite(const Sprite &sprite) {
+    sprites_.push_back(sprite);
+  }
+
+  void ClearSprites() noexcept {
+    sprites_.clear();
+  }
+
+  const std::vector<Sprite> &GetSprites() const noexcept {
+    return sprites_;
+  }
+
+  std::vector<Sprite> &GetSprites() noexcept {
+    return sprites_;
+  }
+
+  size_t GetSpriteCount() const noexcept {
+    return sprites_.size();
+  }
+
 private:
   TileRegistry tile_registry_;
 
@@ -58,6 +81,7 @@ private:
   int height_;
 
   std::vector<Tile> tiles_;
+  std::vector<Sprite> sprites_;
 
   Map() : width_(0), height_(0) {}
 };

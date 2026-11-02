@@ -217,3 +217,61 @@ TEST_F(MapTest, LoadsMixedColorsAndTextures) {
   EXPECT_EQ(map.GetTexture(1, 0).width, 2);
   EXPECT_EQ(map.GetTexture(1, 0).Sample(0, 0).GetValue(), Color::kBlue.GetValue());
 }
+
+TEST_F(MapTest, SpriteConstructorsAndEquality) {
+  Sprite s1(Vec2f{1.0f, 2.0f}, 5, 1.5);
+  Sprite s2(1.0f, 2.0f, 5, 1.5);
+  Sprite s3(1.0f, 2.0f, 6, 1.5);
+
+  EXPECT_EQ(s1, s2);
+  EXPECT_FALSE(s1 == s3);
+  EXPECT_EQ(s1.position.x(), 1.0f);
+  EXPECT_EQ(s1.position.y(), 2.0f);
+  EXPECT_EQ(s1.texture_id, 5);
+  EXPECT_DOUBLE_EQ(s1.scale, 1.5);
+}
+
+TEST_F(MapTest, ProgrammaticSpriteManagement) {
+  Map map = Map::FromFile(test_data_dir + "/valid_numeric.map");
+  EXPECT_EQ(map.GetSpriteCount(), 0u);
+  EXPECT_TRUE(map.GetSprites().empty());
+
+  map.AddSprite(Sprite(1.5f, 1.5f, 10, 1.0));
+  map.AddSprite(Sprite(2.5f, 2.5f, 11, 0.8));
+
+  EXPECT_EQ(map.GetSpriteCount(), 2u);
+  EXPECT_EQ(map.GetSprites().size(), 2u);
+  EXPECT_EQ(map.GetSprites()[0].texture_id, 10);
+  EXPECT_EQ(map.GetSprites()[1].texture_id, 11);
+
+  map.ClearSprites();
+  EXPECT_EQ(map.GetSpriteCount(), 0u);
+}
+
+TEST_F(MapTest, LoadsMapWithSpritesSection) {
+  const std::filesystem::path map_path = temp_dir_ / "with_sprites.map";
+  std::ofstream out(map_path);
+  out << "1\n";
+  out << "1 FF0000\n";
+  out << "2 2\n";
+  out << "1 1\n";
+  out << "1 0\n";
+  out << "2\n";
+  out << "1.5 1.5 10 1.0\n";
+  out << "2.5 3.0 11 0.75\n";
+  out.close();
+
+  Map map = Map::FromFile(map_path.string());
+  EXPECT_EQ(map.GetSpriteCount(), 2u);
+
+  const auto& sprites = map.GetSprites();
+  EXPECT_FLOAT_EQ(sprites[0].position.x(), 1.5f);
+  EXPECT_FLOAT_EQ(sprites[0].position.y(), 1.5f);
+  EXPECT_EQ(sprites[0].texture_id, 10);
+  EXPECT_DOUBLE_EQ(sprites[0].scale, 1.0);
+
+  EXPECT_FLOAT_EQ(sprites[1].position.x(), 2.5f);
+  EXPECT_FLOAT_EQ(sprites[1].position.y(), 3.0f);
+  EXPECT_EQ(sprites[1].texture_id, 11);
+  EXPECT_DOUBLE_EQ(sprites[1].scale, 0.75);
+}

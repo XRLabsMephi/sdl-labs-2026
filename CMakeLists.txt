@@ -51,6 +51,7 @@ add_library(graphics_lab_core STATIC
     src/world/map.cc
     src/world/map.h
     src/world/player.h
+    src/world/sprite.h
     src/world/tile.h
 )
 

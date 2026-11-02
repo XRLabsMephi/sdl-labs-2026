@@ -156,5 +156,26 @@ Map Map::FromFile(const std::string& filename) {
     }
   }
 
+  // Опциональная секция спрайтов в конце файла карты
+  int sprite_count = 0;
+  if (file >> sprite_count && sprite_count > 0) {
+    for (int i = 0; i < sprite_count; ++i) {
+      std::string sprite_line;
+      while (std::getline(file, sprite_line) && sprite_line.empty()) {
+      }
+      if (!sprite_line.empty()) {
+        std::istringstream siss(sprite_line);
+        float sx = 0.0f;
+        float sy = 0.0f;
+        int tex_id = 0;
+        double scale = 1.0;
+        if (siss >> sx >> sy >> tex_id) {
+          siss >> scale;
+          map.sprites_.emplace_back(Vec2f{sx, sy}, tex_id, scale);
+        }
+      }
+    }
+  }
+
   return map;
 }
