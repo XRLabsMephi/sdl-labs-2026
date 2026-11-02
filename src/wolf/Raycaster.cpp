@@ -86,13 +86,13 @@ void Raycaster::render(const Map& map, const Player& player, FrameBuffer& frame)
         else if (hit.wallId == 3) color = makeColor(50, 50, 200);
         else if (hit.wallId == 4) color = makeColor(200, 200, 50);
         else color = makeColor(200, 200, 200);
-        // if (hit.side == HitSide::Y) {
-        //     color = makeColor(
-        //         static_cast<std::uint8_t>((color >> 16 & 255) / 2),
-        //         static_cast<std::uint8_t>((color >> 8 & 255) / 2),
-        //         static_cast<std::uint8_t>((color & 255) / 2)
-        //     );
-        // }
+        if (hit.side == HitSide::Y) {
+            color = makeColor(
+                static_cast<std::uint8_t>((color >> 16 & 255) / 2),
+                static_cast<std::uint8_t>((color >> 8 & 255) / 2),
+                static_cast<std::uint8_t>((color & 255) / 2)
+            );
+        }
         for (int y = start; y <= finish; y++) {
             frame.setPixel(x, y, color);
         }
