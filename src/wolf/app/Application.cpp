@@ -4,8 +4,8 @@
 #include "wolf/input/PlayerController.hpp"
 #include "wolf/raycast/Raycaster.hpp"
 #include "wolf/render/FrameBuffer.hpp"
+#include "wolf/render/SceneRenderer.hpp"
 #include "wolf/render/SdlPresenter.hpp"
-#include "wolf/render/SoftwareRenderer.hpp"
 #include "wolf/world/SceneResources.hpp"
 
 #include <SDL3/SDL.h>
@@ -69,7 +69,7 @@ namespace wolf {
         std::string diagnosticsTitle(const Player& player) {
             std::ostringstream title;
             title << std::fixed << std::setprecision(2)
-                  << "Wolf Lab 1"
+                  << "Wolf Lab 2"
                   << " | pos " << player.position.x << ", " << player.position.y
                   << " | dir " << player.direction.x << ", " << player.direction.y
                   << " | WASD, arrows/Q/E, Esc";
@@ -92,7 +92,7 @@ namespace wolf {
             }
             scene_ = loadDefaultScene(defaultResourceDirectory());
             const std::unique_ptr<SDL_Window, decltype(&SDL_DestroyWindow)> window(
-                SDL_CreateWindow("Wolf Lab 1", 960, 600, SDL_WINDOW_RESIZABLE),
+                SDL_CreateWindow("Wolf Lab 2", 960, 600, SDL_WINDOW_RESIZABLE),
                 SDL_DestroyWindow
             );
             if (!window) {
@@ -110,6 +110,9 @@ namespace wolf {
         FrameBuffer frame(480, 300);
         Raycaster raycaster;
         SdlPresenter presenter(window, frame.width(), frame.height());
+        const TextureLookup textures = [this](int id) -> const Texture& {
+            return scene_.textures.get(id);
+        };
         Uint64 previousTime = SDL_GetTicksNS();
         constexpr Uint64 targetFrameTime = 1'000'000'000 / 60;
         while (true) {
@@ -121,7 +124,7 @@ namespace wolf {
             PlayerController::update(scene_.player, scene_.map, input, dt);
             if (!(SDL_GetWindowFlags(&window) & SDL_WINDOW_MINIMIZED)) {
                 raycaster.castFrame(scene_.map, scene_.player, frame.width(), frame.height());
-                SoftwareRenderer::drawFrame(frame, raycaster.columns());
+                SceneRenderer::drawFrame(frame, raycaster, scene_.player, scene_.sprites, textures);
                 presenter.present(frame);
                 updateTitle(window, scene_.player);
             }
