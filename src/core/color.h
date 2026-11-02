@@ -5,27 +5,37 @@
 
 class Color {
 public:
-    // По умолчанию черный
     constexpr Color() : rgba_(MakeRgba(0, 0, 0, 255)) {}
 
-    // Основной конструктор для задания цвета (RGBA)
     constexpr Color(uint8_t r, uint8_t g, uint8_t b, uint8_t a = 255)
-        : rgba_(MakeRgba(r, g, b, a)) {}
+            : rgba_(MakeRgba(r, g, b, a)) {}
 
-    // Геттер сырого значения для FrameBuffer
+    // Конструктор из сырого 32-битного числа (нужен при чтении из Texture)
+    explicit constexpr Color(uint32_t raw_rgba) : rgba_(raw_rgba) {}
+
     constexpr uint32_t GetValue() const { return rgba_; }
 
-    static const Color kRed;
-    static const Color kGreen;
-    static const Color kBlue;
+    // Геттеры отдельных каналов (нужны для расчета тумана и проверки прозрачности)
+    constexpr uint8_t GetR() const { return static_cast<uint8_t>((rgba_ >> 24) & 0xFF); }
+    constexpr uint8_t GetG() const { return static_cast<uint8_t>((rgba_ >> 16) & 0xFF); }
+    constexpr uint8_t GetB() const { return static_cast<uint8_t>((rgba_ >> 8) & 0xFF); }
+    constexpr uint8_t GetA() const { return static_cast<uint8_t>(rgba_ & 0xFF); }
+
+    constexpr bool operator==(const Color& other) const {
+        return rgba_ == other.rgba_;
+    }
+    constexpr bool operator!=(const Color& other) const {
+        return rgba_ != other.rgba_;
+    }
+
     static const Color kBlack;
     static const Color kWhite;
-
+    static const Color kFog;
+    static const Color kMagentaKey;  // Частый цвет-ключ для прозрачности в BMP
 
 private:
     uint32_t rgba_;
 
-    // Упаковка в 32 бита: формат RGBA8888
     static constexpr uint32_t MakeRgba(uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
         return (static_cast<uint32_t>(r) << 24) |
                (static_cast<uint32_t>(g) << 16) |
@@ -34,11 +44,10 @@ private:
     }
 };
 
-inline constexpr Color Color::kRed{255, 0, 0};
-inline constexpr Color Color::kGreen{0, 255, 0};
-inline constexpr Color Color::kBlue{0, 0, 255};
+
 inline constexpr Color Color::kBlack{0, 0, 0};
 inline constexpr Color Color::kWhite{255, 255, 255};
+inline constexpr Color Color::kFog{40, 40, 45};
+inline constexpr Color Color::kMagentaKey{255, 0, 255};
 
-
-#endif  // SOFTWAREGRAPHICSLABS_CORE_COLOR_H_
+#endif
