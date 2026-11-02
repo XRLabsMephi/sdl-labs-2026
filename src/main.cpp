@@ -1,7 +1,6 @@
-#include <iostream>
+#include "wolf/app/Application.hpp"
 
-int main()
-{
-    std::cout << "Software Graphics Labs\n";
-    return 0;
+int main() {
+    Application app;
+    return app.run();
 }
