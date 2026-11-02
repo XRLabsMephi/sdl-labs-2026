@@ -6,11 +6,22 @@
 
 namespace wolf {
 
-void SceneRenderer::drawFrame(FrameBuffer& frame, const Raycaster& raycaster,
-                              const Player& player, std::span<const Sprite> sprites,
-                              const TextureLookup& textures, const FogSettings& fog) {
-    TexturedWallRenderer::drawFrame(frame, raycaster.columns(), textures, fog);
-    SpriteRenderer::drawSprites(frame, player, sprites, raycaster.depthBuffer(), textures, fog);
-}
+    void SceneRenderer::drawFrame(FrameBuffer& frame,
+                                  const Raycaster& raycaster,
+                                  const Player& player,
+                                  std::span<const Sprite> sprites,
+                                  const TextureLookup& textures,
+                                  const FogSettings& fog) {
+        TexturedWallRenderer::drawFrame(frame,
+                                        raycaster.columns(),
+                                        textures,
+                                        fog);
+        SpriteRenderer::drawSprites(frame,
+                                    player,
+                                    sprites,
+                                    raycaster.depthBuffer(),
+                                    textures,
+                                    fog);
+    }
 
-} // namespace wolf
+}
