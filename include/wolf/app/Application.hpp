@@ -1,8 +1,6 @@
 #pragma once
 
-#include "wolf/input/PlayerController.hpp"
-#include "wolf/world/Map.hpp"
-#include "wolf/world/Player.hpp"
+#include "wolf/world/Scene.hpp"
 
 struct SDL_Window;
 
@@ -10,14 +8,15 @@ namespace wolf {
 
     class Application {
         public:
-            Application();
+            Application() = default;
             int run();
+
+            [[nodiscard]] const Scene& scene() const noexcept { return scene_; }
 
         private:
             void runLoop(SDL_Window& window);
 
-            Map map_;
-            Player player_;
+            Scene scene_;
     };
 
 }

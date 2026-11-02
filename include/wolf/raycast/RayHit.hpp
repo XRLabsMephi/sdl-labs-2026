@@ -4,6 +4,13 @@
 
 namespace wolf {
 
+    namespace {
+
+        constexpr double INF = std::numeric_limits<double>::infinity();
+        constexpr double minDepth = 1e-6;
+
+    }
+
     enum class WallSide {
         West,
         East,
@@ -17,11 +24,12 @@ namespace wolf {
 
     struct RayHit {
         bool hit = false;
-        double depth = std::numeric_limits<double>::infinity();
+        double depth = INF;
         int mapX = 0;
         int mapY = 0;
         int wallId = 0;
         WallSide side = WallSide::West;
+        double wallU = 0.0;
     };
 
 }
