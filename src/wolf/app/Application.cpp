@@ -1,6 +1,7 @@
 #include "wolf/app/Application.hpp"
 
 #include "wolf/core/Color.hpp"
+#include "wolf/effects/Fog.hpp"
 #include "wolf/input/PlayerController.hpp"
 #include "wolf/raycast/Raycaster.hpp"
 #include "wolf/render/FrameBuffer.hpp"
@@ -77,6 +78,7 @@ int Application::run() {
         SdlPresenter presenter(frame.width(), frame.height());
         Raycaster raycaster;
         SpriteRenderer spriteRenderer;
+        const Fog fog;
         Uint64 previous = SDL_GetTicksNS();
         while (true) {
             const Uint64 start = SDL_GetTicksNS();
@@ -87,8 +89,8 @@ int Application::run() {
                 break;
             }
             controller.update(player, map, input, dt);
-            raycaster.render(map, player, frame, &textures);
-            spriteRenderer.render(sprites, player, textures, raycaster.depthBuffer(), frame);
+            raycaster.render(map, player, frame, &textures, &fog);
+            spriteRenderer.render(sprites, player, textures, raycaster.depthBuffer(), frame, &fog);
             presenter.present(frame);
             constexpr Uint64 frameTime = 1000000000 / 120;
             const Uint64 elapsed = SDL_GetTicksNS() - start;

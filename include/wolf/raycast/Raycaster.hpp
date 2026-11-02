@@ -11,12 +11,13 @@ class Map;
 class FrameBuffer;
 class TextureStore;
 struct Player;
+struct Fog;
 
 class Raycaster {
 public:
     RayHit castRay(const Map& map, Vec2 origin, Vec2 direction) const;
     void render(const Map& map, const Player& player, FrameBuffer& frame,
-                const TextureStore* textures = nullptr);
+                const TextureStore* textures = nullptr, const Fog* fog = nullptr);
     const std::vector<double>& depthBuffer() const;
 
 private:

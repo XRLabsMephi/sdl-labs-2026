@@ -1,6 +1,7 @@
 #include "wolf/raycast/Raycaster.hpp"
 
 #include "wolf/core/Color.hpp"
+#include "wolf/effects/Fog.hpp"
 #include "wolf/render/FrameBuffer.hpp"
 #include "wolf/texture/TextureStore.hpp"
 #include "wolf/world/Map.hpp"
@@ -63,7 +64,7 @@ RayHit Raycaster::castRay(const Map& map, Vec2 origin, Vec2 direction) const {
 }
 
 void Raycaster::render(const Map& map, const Player& player, FrameBuffer& frame,
-                       const TextureStore* textures) {
+                       const TextureStore* textures, const Fog* fog) {
     constexpr auto ceiling = rgb(47, 55, 70);
     constexpr auto floor = rgb(76, 70, 60);
     constexpr std::array colors{
@@ -72,6 +73,15 @@ void Raycaster::render(const Map& map, const Player& player, FrameBuffer& frame,
     };
     frame.clear(ceiling);
     frame.fillRows(frame.height() / 2, frame.height(), floor);
+    if (fog) {
+        for (int y = 0; y < frame.height(); ++y) {
+            const double distance = std::abs(y + 0.5 - frame.height() * 0.5);
+            const double depth = distance > 0.0 ? frame.height() / (2.0 * distance)
+                : std::numeric_limits<double>::infinity();
+            const auto color = y < frame.height() / 2 ? ceiling : floor;
+            frame.fillRows(y, y + 1, fog->apply(color, depth));
+        }
+    }
     depthBuffer_.assign(frame.width(), std::numeric_limits<double>::infinity());
 
     for (int x = 0; x < frame.width(); ++x) {
@@ -98,11 +108,13 @@ void Raycaster::render(const Map& map, const Player& player, FrameBuffer& frame,
                 const int textureY = static_cast<int>((y + 0.5 - top) * texture.height / wallHeight);
                 auto color = texture.sample(textureX, textureY);
                 if (hit.side == WallSide::Y) color = darken(color);
+                if (fog) color = fog->apply(color, hit.depth);
                 frame.setPixel(x, y, color);
             }
         } else {
             auto color = colors[(hit.wallId - 1) % colors.size()];
             if (hit.side == WallSide::Y) color = darken(color);
+            if (fog) color = fog->apply(color, hit.depth);
             frame.verticalLine(x, begin, end, color);
         }
     }

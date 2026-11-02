@@ -1,6 +1,7 @@
 #include "wolf/sprite/SpriteRenderer.hpp"
 
 #include "wolf/core/Color.hpp"
+#include "wolf/effects/Fog.hpp"
 #include "wolf/render/FrameBuffer.hpp"
 #include "wolf/texture/TextureStore.hpp"
 #include "wolf/world/Player.hpp"
@@ -15,7 +16,7 @@ namespace wolf {
 
 void SpriteRenderer::render(std::span<const Sprite> sprites, const Player& player,
                              const TextureStore& textures, std::span<const double> wallDepth,
-                             FrameBuffer& frame) const {
+                             FrameBuffer& frame, const Fog* fog) const {
     if (wallDepth.size() != static_cast<std::size_t>(frame.width())) {
         throw std::invalid_argument("Размер буфера глубины не совпадает с шириной кадра");
     }
@@ -61,8 +62,9 @@ void SpriteRenderer::render(std::span<const Sprite> sprites, const Player& playe
             const int textureX = static_cast<int>((x + 0.5 - left) * texture.width / width);
             for (int y = beginY; y < endY; ++y) {
                 const int textureY = static_cast<int>((y + 0.5 - top) * texture.height / height);
-                const auto color = texture.sample(textureX, textureY);
+                auto color = texture.sample(textureX, textureY);
                 if ((color >> 24) == 0) continue;
+                if (fog) color = fog->apply(color, depth);
                 const auto background = frame.data()[static_cast<std::size_t>(y) * frame.width() + x];
                 frame.setPixel(x, y, blend(color, background));
             }
