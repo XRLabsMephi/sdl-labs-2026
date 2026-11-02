@@ -13,6 +13,7 @@ struct RayHit {
     int mapY = 0;
     int wallId = 0;
     WallSide side = WallSide::X;
+    double wallU = 0.0;
 };
 
 }

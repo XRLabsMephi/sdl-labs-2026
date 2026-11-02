@@ -2,6 +2,7 @@
 
 #include "wolf/core/Color.hpp"
 #include "wolf/render/FrameBuffer.hpp"
+#include "wolf/texture/TextureStore.hpp"
 #include "wolf/world/Map.hpp"
 #include "wolf/world/Player.hpp"
 
@@ -53,12 +54,16 @@ RayHit Raycaster::castRay(const Map& map, Vec2 origin, Vec2 direction) const {
             const double depth = side == WallSide::X
                 ? (mapX - origin.x + (1 - stepX) * 0.5) / direction.x
                 : (mapY - origin.y + (1 - stepY) * 0.5) / direction.y;
-            return {true, depth, mapX, mapY, wallId, side};
+            const double coordinate = side == WallSide::X
+                ? origin.y + depth * direction.y : origin.x + depth * direction.x;
+            const double wallU = coordinate - std::floor(coordinate);
+            return {true, depth, mapX, mapY, wallId, side, wallU};
         }
     }
 }
 
-void Raycaster::render(const Map& map, const Player& player, FrameBuffer& frame) {
+void Raycaster::render(const Map& map, const Player& player, FrameBuffer& frame,
+                       const TextureStore* textures) {
     constexpr auto ceiling = rgb(47, 55, 70);
     constexpr auto floor = rgb(76, 70, 60);
     constexpr std::array colors{
@@ -82,11 +87,24 @@ void Raycaster::render(const Map& map, const Player& player, FrameBuffer& frame)
         const double bottom = (frame.height() + wallHeight) * 0.5;
         const int begin = static_cast<int>(std::clamp(top, 0.0, double(frame.height())));
         const int end = static_cast<int>(std::clamp(bottom, 0.0, double(frame.height())));
-        auto color = colors[(hit.wallId - 1) % colors.size()];
-        if (hit.side == WallSide::Y) {
-            color = darken(color);
+        if (textures) {
+            const Texture& texture = textures->get(hit.wallId);
+            int textureX = static_cast<int>(hit.wallU * texture.width);
+            if ((hit.side == WallSide::X && direction.x > 0.0)
+                || (hit.side == WallSide::Y && direction.y < 0.0)) {
+                textureX = texture.width - 1 - textureX;
+            }
+            for (int y = begin; y < end; ++y) {
+                const int textureY = static_cast<int>((y + 0.5 - top) * texture.height / wallHeight);
+                auto color = texture.sample(textureX, textureY);
+                if (hit.side == WallSide::Y) color = darken(color);
+                frame.setPixel(x, y, color);
+            }
+        } else {
+            auto color = colors[(hit.wallId - 1) % colors.size()];
+            if (hit.side == WallSide::Y) color = darken(color);
+            frame.verticalLine(x, begin, end, color);
         }
-        frame.verticalLine(x, begin, end, color);
     }
 }
 

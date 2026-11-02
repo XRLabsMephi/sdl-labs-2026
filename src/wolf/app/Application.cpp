@@ -4,6 +4,7 @@
 #include "wolf/raycast/Raycaster.hpp"
 #include "wolf/render/FrameBuffer.hpp"
 #include "wolf/render/SdlPresenter.hpp"
+#include "wolf/texture/TextureStore.hpp"
 #include "wolf/world/Map.hpp"
 #include "wolf/world/Player.hpp"
 
@@ -49,7 +50,12 @@ int Application::run() {
         if (!base) {
             throw std::runtime_error(SDL_GetError());
         }
-        const Map map = Map::load(std::filesystem::path(base) / "assets/wolf/maps/map01.txt");
+        const auto assets = std::filesystem::path(base) / "assets/wolf";
+        const Map map = Map::load(assets / "maps/map01.txt");
+        TextureStore textures;
+        for (int id = 1; id <= 4; ++id) {
+            textures.load(id, assets / "textures" / ("wall0" + std::to_string(id) + ".bmp"));
+        }
         Player player;
         PlayerController controller;
         if (!controller.canOccupy(map, player.position)) {
@@ -68,7 +74,7 @@ int Application::run() {
                 break;
             }
             controller.update(player, map, input, dt);
-            raycaster.render(map, player, frame);
+            raycaster.render(map, player, frame, &textures);
             presenter.present(frame);
             constexpr Uint64 frameTime = 1000000000 / 120;
             const Uint64 elapsed = SDL_GetTicksNS() - start;

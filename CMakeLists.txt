@@ -30,6 +30,7 @@ if(WOLF_BUILD_APP)
     add_library(wolf_app
         src/wolf/app/Application.cpp
         src/wolf/render/SdlPresenter.cpp
+        src/wolf/texture/TextureStore.cpp
     )
     target_link_libraries(wolf_app PUBLIC wolf_core SDL3::SDL3)
     wolf_target(wolf_app)
