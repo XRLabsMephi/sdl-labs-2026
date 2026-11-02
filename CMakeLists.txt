@@ -23,6 +23,34 @@ add_library(wolf_core
 target_include_directories(wolf_core PUBLIC include)
 wolf_target(wolf_core)
 
-add_executable(graphics_lab src/main.cpp)
-target_link_libraries(graphics_lab PRIVATE wolf_core)
-wolf_target(graphics_lab)
+option(WOLF_BUILD_APP "Собрать приложение SDL3" ON)
+
+if(WOLF_BUILD_APP)
+    find_package(SDL3 3.2 REQUIRED CONFIG)
+    add_library(wolf_app
+        src/wolf/app/Application.cpp
+        src/wolf/render/SdlPresenter.cpp
+    )
+    target_link_libraries(wolf_app PUBLIC wolf_core SDL3::SDL3)
+    wolf_target(wolf_app)
+
+    add_executable(graphics_lab src/wolf/main.cpp)
+    target_link_libraries(graphics_lab PRIVATE wolf_app)
+    wolf_target(graphics_lab)
+
+    add_custom_target(wolf_assets ALL
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+            "${CMAKE_CURRENT_SOURCE_DIR}/assets"
+            "$<TARGET_FILE_DIR:graphics_lab>/assets"
+    )
+    add_dependencies(graphics_lab wolf_assets)
+
+    if(WIN32 AND TARGET SDL3::SDL3-shared)
+        add_custom_command(TARGET graphics_lab POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                "$<TARGET_FILE:SDL3::SDL3-shared>"
+                "$<TARGET_FILE_DIR:graphics_lab>"
+        )
+    endif()
+endif()
+
