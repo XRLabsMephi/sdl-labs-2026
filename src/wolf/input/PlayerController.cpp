@@ -1,6 +1,7 @@
 #include "wolf/input/PlayerController.hpp"
 
 #include <cmath>
+#include <iostream>
 
 namespace input {
     PlayerController::PlayerController(double moveSpeed, double turnSpeed, double radius)
@@ -8,6 +9,19 @@ namespace input {
 
     void PlayerController::update(const InputState &input, world::Player &player,
                                   const world::Map &map, double dt) {
+
+        // Unstuck
+        {
+            core::Vec2 ppos = player.position();
+            if (!canStand(ppos, map)) {
+                std::cerr << "Stuck: " << ppos.x << ' ' << ppos.y << std::endl;
+                core::Vec2 newPos = findClosestFreePos(ppos, map);
+                std::cerr << "New pos: " << newPos.x << ' ' << newPos.y << std::endl;
+                player.setPosition(newPos);
+                return;
+            }
+        }
+
         double rotation = 0.0;
         if (input.isSet(InputState::kTurnLeft)) {
             rotation -= turnSpeed_ * dt;
@@ -62,12 +76,33 @@ namespace input {
 
         for (const auto &c : corners) {
             core::Vec2 check = pos + c;
-            int cx = (int)std::floor(check.x);
-            int cy = (int)std::floor(check.y);
+            int cx = (int) check.x;
+            int cy = (int) check.y;
             if (map.isSolid(cx, cy)) {
                 return false;
             }
         }
         return true;
+    }
+
+    core::Vec2 PlayerController::findClosestFreePos(core::Vec2 pos, const world::Map &map) const {
+        double minDist = std::numeric_limits<double>::max();
+        size_t mapWidth = map.width();
+        size_t mapHeight = map.width();
+
+        core::Vec2 res;
+        for (size_t i = 0; i < mapHeight; i++) {
+            for (size_t j = 0; j < mapWidth; j++) {
+                core::Vec2 cand = core::Vec2(i, j);
+                if (canStand(cand, map)) {
+                    double curDist = (cand - pos).length();
+                    if (curDist < minDist) {
+                        minDist = curDist;
+                        res = cand;
+                    }
+                }
+            }
+        }
+        return res;
     }
 }

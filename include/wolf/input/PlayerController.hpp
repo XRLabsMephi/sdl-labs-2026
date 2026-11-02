@@ -13,7 +13,8 @@ namespace input {
                     const world::Map &map, double dt);
 
     private:
-        [[nodiscard]] bool canStand(core::Vec2 pos, const world::Map &map) const;
+        bool canStand(core::Vec2 pos, const world::Map &map) const;
+        core::Vec2 findClosestFreePos(core::Vec2 pos, const world::Map &map) const;
 
         double moveSpeed_;
         double turnSpeed_;
