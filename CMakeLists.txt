@@ -19,7 +19,7 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(SDL3)
 
 add_executable(graphics_lab
-    src/main.cpp
+        src/main.cpp
         src/wolf/core/Vec2.cpp
         include/wolf/core/Vec2.hpp
         include/wolf/core/Color.hpp
@@ -41,26 +41,21 @@ add_executable(graphics_lab
         include/wolf/texture/Texture.hpp
         include/wolf/texture/TextureStore.hpp
         src/wolf/texture/TextureStore.cpp
-        include/wolf/texture/Texture.hpp
-        include/wolf/texture/TextureStore.hpp
-        src/wolf/texture/TextureStore.cpp
+        include/wolf/sprite/Sprite.hpp
 )
 
 target_include_directories(graphics_lab PRIVATE include)
-
 target_link_libraries(graphics_lab PRIVATE SDL3::SDL3)
 
-target_compile_features(graphics_lab PRIVATE cxx_std_20)
-
 target_compile_options(graphics_lab PRIVATE
-    -Wall
-    -Wextra
-    -Wpedantic
+        -Wall
+        -Wextra
+        -Wpedantic
 )
 
 set_target_properties(graphics_lab PROPERTIES
-    CXX_EXTENSIONS OFF
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+        CXX_EXTENSIONS OFF
+        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
 )
 
 add_executable(test
@@ -70,9 +65,11 @@ add_executable(test
         src/wolf/render/FrameBuffer.cpp
         src/wolf/core/Vec2.cpp
         src/wolf/Raycaster.cpp
+        src/wolf/texture/TextureStore.cpp
 )
 
 target_include_directories(test PRIVATE include)
+target_link_libraries(test PRIVATE SDL3::SDL3)
 target_compile_features(test PRIVATE cxx_std_20)
 
 add_custom_command(TARGET graphics_lab POST_BUILD
