@@ -1,8 +1,52 @@
 #include "map.h"
 
+#include <cctype>
+#include <filesystem>
 #include <fstream>
 #include <sstream>
 #include <stdexcept>
+
+#include "render/texture_store.h"
+
+namespace {
+
+bool TryParseHexColor(const std::string& token, uint32_t& out_color) {
+  if (token.find('.') != std::string::npos ||
+      token.find('/') != std::string::npos ||
+      token.find('\\') != std::string::npos) {
+    return false;
+  }
+
+  std::string hex_str = token;
+  if (hex_str.rfind("0x", 0) == 0 || hex_str.rfind("0X", 0) == 0) {
+    hex_str = hex_str.substr(2);
+  }
+
+  if (hex_str.length() != 6 && hex_str.length() != 8) {
+    return false;
+  }
+
+  for (char c : hex_str) {
+    if (!std::isxdigit(static_cast<unsigned char>(c))) {
+      return false;
+    }
+  }
+
+  try {
+    size_t idx = 0;
+    const unsigned long val = std::stoul(hex_str, &idx, 16);
+    if (idx == hex_str.length()) {
+      out_color = static_cast<uint32_t>(val);
+      return true;
+    }
+  } catch (...) {
+    return false;
+  }
+
+  return false;
+}
+
+}  // namespace
 
 Map Map::FromFile(const std::string& filename) {
   std::ifstream file(filename);
@@ -23,15 +67,41 @@ Map Map::FromFile(const std::string& filename) {
 
   for (int i = 0; i < tile_type_count; ++i) {
     TileType tile_type;
-    uint32_t raw_color = 0;
-    if (!(file >> tile_type.id >> std::hex >> raw_color)) {
+    std::string token;
+    if (!(file >> tile_type.id >> token)) {
       throw std::runtime_error("Failed to read tile type definition at index " +
                                std::to_string(i));
     }
-    const uint8_t r = static_cast<uint8_t>((raw_color >> 16) & 0xFF);
-    const uint8_t g = static_cast<uint8_t>((raw_color >> 8) & 0xFF);
-    const uint8_t b = static_cast<uint8_t>(raw_color & 0xFF);
-    tile_type.color = Color(r, g, b);
+
+    uint32_t raw_color = 0;
+    if (TryParseHexColor(token, raw_color)) {
+      const uint8_t r = static_cast<uint8_t>((raw_color >> 16) & 0xFF);
+      const uint8_t g = static_cast<uint8_t>((raw_color >> 8) & 0xFF);
+      const uint8_t b = static_cast<uint8_t>(raw_color & 0xFF);
+      tile_type.color = Color(r, g, b);
+      tile_type.texture = TextureStore::CreateSolid(1, 1, tile_type.color);
+      tile_type.has_texture = false;
+    } else {
+      tile_type.texture_path = token;
+
+      std::string resolved_path = token;
+      if (!std::filesystem::exists(resolved_path)) {
+        const std::filesystem::path map_dir =
+            std::filesystem::path(filename).parent_path();
+        if (!map_dir.empty()) {
+          const std::filesystem::path candidate = map_dir / token;
+          if (std::filesystem::exists(candidate)) {
+            resolved_path = candidate.string();
+          }
+        }
+      }
+
+      tile_type.texture = TextureStore::LoadFromFile(resolved_path);
+      tile_type.has_texture = true;
+      tile_type.color = tile_type.texture.Sample(tile_type.texture.width / 2,
+                                                 tile_type.texture.height / 2);
+    }
+
     tile_type.is_solid = (tile_type.id != 0);
     map.tile_registry_.Register(tile_type);
   }

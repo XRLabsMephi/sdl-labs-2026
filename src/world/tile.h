@@ -4,9 +4,11 @@
 #include <ostream>
 #include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "core/color.h"
+#include "render/texture.h"
 
 inline constexpr bool operator==(const Color& lhs, const Color& rhs) {
   return lhs.GetValue() == rhs.GetValue();
@@ -29,8 +31,19 @@ using TileId = int;
 
 struct TileType {
   TileId id = 0;
-  Color color;
+  Color color = Color::kBlack;
   bool is_solid = false;
+  std::string texture_path = "";
+  Texture texture = {};
+  bool has_texture = false;
+
+  [[nodiscard]] bool HasTexture() const noexcept {
+    return has_texture && texture.IsValid();
+  }
+
+  [[nodiscard]] const Texture& GetTexture() const noexcept {
+    return texture;
+  }
 };
 
 class TileRegistry {
@@ -58,5 +71,17 @@ struct Tile {
 
   const TileType& GetType(const TileRegistry& registry) const {
     return registry.Get(type_id);
+  }
+
+  bool HasTexture(const TileRegistry& registry) const {
+    return GetType(registry).HasTexture();
+  }
+
+  const Texture& GetTexture(const TileRegistry& registry) const {
+    return GetType(registry).GetTexture();
+  }
+
+  const std::string& GetTexturePath(const TileRegistry& registry) const {
+    return GetType(registry).texture_path;
   }
 };

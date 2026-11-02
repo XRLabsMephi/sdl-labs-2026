@@ -38,6 +38,19 @@ public:
     return GetTileType(x, y).is_solid;
   }
 
+  bool HasTexture(int x, int y) const {
+    if (!InBounds(x, y)) return false;
+    return GetTileType(x, y).HasTexture();
+  }
+
+  const Texture &GetTexture(int x, int y) const {
+    return GetTileType(x, y).GetTexture();
+  }
+
+  const std::string &GetTexturePath(int x, int y) const {
+    return GetTileType(x, y).texture_path;
+  }
+
 private:
   TileRegistry tile_registry_;
 

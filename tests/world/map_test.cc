@@ -1,7 +1,12 @@
 #include "world/map.h"
 
 #include <gtest/gtest.h>
+
+#include <filesystem>
+#include <fstream>
 #include <string>
+
+#include "render/texture_store.h"
 
 #ifndef TEST_DATA_DIR
 #define TEST_DATA_DIR "tests/test_data"
@@ -13,8 +18,19 @@
 
 class MapTest : public ::testing::Test {
  protected:
+  void SetUp() override {
+    temp_dir_ = std::filesystem::temp_directory_path() / "map_test_tmp";
+    std::filesystem::create_directories(temp_dir_);
+  }
+
+  void TearDown() override {
+    std::error_code ec;
+    std::filesystem::remove_all(temp_dir_, ec);
+  }
+
   const std::string test_data_dir = TEST_DATA_DIR;
   const std::string project_root_dir = PROJECT_ROOT_DIR;
+  std::filesystem::path temp_dir_;
 };
 
 TEST_F(MapTest, ThrowsOnNonExistentFile) {
@@ -42,6 +58,7 @@ TEST_F(MapTest, LoadsTemplateMap) {
     EXPECT_TRUE(map.IsWall(x, 0));
     EXPECT_EQ(map.GetTileType(x, 0).color, 0xFFF5F5);
     EXPECT_TRUE(map.GetTileType(x, 0).is_solid);
+    EXPECT_FALSE(map.HasTexture(x, 0));
   }
 
   // Row 1: "2    4" - West wall (2: F7D6D0), empty spaces (0), East wall (4: 4A4A4A)
@@ -131,4 +148,72 @@ TEST_F(MapTest, FlyweightPatternIntegrity) {
 
   // Address in registry should be identical (shared intrinsic state)
   EXPECT_EQ(&type_at_0_0, &type_at_2_2);
+}
+
+TEST_F(MapTest, LoadsMapWithTexturePath) {
+  const std::filesystem::path bmp_path = temp_dir_ / "brick.bmp";
+  Texture brick(4, 4, Color::kRed);
+  ASSERT_TRUE(TextureStore::SaveToBmp(brick, bmp_path.string()));
+
+  const std::filesystem::path map_path = temp_dir_ / "textured.map";
+  std::ofstream out(map_path);
+  out << "1\n";
+  out << "1 " << bmp_path.string() << "\n";
+  out << "2 2\n";
+  out << "1 1\n";
+  out << "1 0\n";
+  out.close();
+
+  Map map = Map::FromFile(map_path.string());
+  EXPECT_EQ(map.GetWidth(), 2);
+  EXPECT_EQ(map.GetHeight(), 2);
+
+  EXPECT_TRUE(map.HasTexture(0, 0));
+  EXPECT_TRUE(map.GetTileType(0, 0).HasTexture());
+  EXPECT_EQ(map.GetTexturePath(0, 0), bmp_path.string());
+  EXPECT_EQ(map.GetTexture(0, 0).width, 4);
+  EXPECT_EQ(map.GetTexture(0, 0).height, 4);
+  EXPECT_EQ(map.GetTexture(0, 0).Sample(0, 0).GetValue(), Color::kRed.GetValue());
+
+  // Empty tile (0) has no texture
+  EXPECT_FALSE(map.HasTexture(1, 1));
+}
+
+TEST_F(MapTest, ThrowsOnMissingTextureFile) {
+  const std::filesystem::path map_path = temp_dir_ / "missing_tex.map";
+  std::ofstream out(map_path);
+  out << "1\n";
+  out << "1 non_existent_texture_file_98765.bmp\n";
+  out << "2 2\n";
+  out << "1 1\n";
+  out << "1 1\n";
+  out.close();
+
+  EXPECT_THROW((void)Map::FromFile(map_path.string()), std::runtime_error);
+}
+
+TEST_F(MapTest, LoadsMixedColorsAndTextures) {
+  const std::filesystem::path bmp_path = temp_dir_ / "stone.bmp";
+  Texture stone(2, 2, Color::kBlue);
+  ASSERT_TRUE(TextureStore::SaveToBmp(stone, bmp_path.string()));
+
+  const std::filesystem::path map_path = temp_dir_ / "mixed.map";
+  std::ofstream out(map_path);
+  out << "2\n";
+  out << "1 FF0000\n";
+  out << "2 " << bmp_path.string() << "\n";
+  out << "2 2\n";
+  out << "1 2\n";
+  out << "0 0\n";
+  out.close();
+
+  Map map = Map::FromFile(map_path.string());
+  // Tile 1: Color
+  EXPECT_FALSE(map.HasTexture(0, 0));
+  EXPECT_EQ(map.GetTileType(0, 0).color, 0xFF0000);
+
+  // Tile 2: Texture
+  EXPECT_TRUE(map.HasTexture(1, 0));
+  EXPECT_EQ(map.GetTexture(1, 0).width, 2);
+  EXPECT_EQ(map.GetTexture(1, 0).Sample(0, 0).GetValue(), Color::kBlue.GetValue());
 }
