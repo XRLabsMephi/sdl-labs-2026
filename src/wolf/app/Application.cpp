@@ -1,9 +1,11 @@
 #include "wolf/app/Application.hpp"
 
+#include "wolf/core/Color.hpp"
 #include "wolf/input/PlayerController.hpp"
 #include "wolf/raycast/Raycaster.hpp"
 #include "wolf/render/FrameBuffer.hpp"
 #include "wolf/render/SdlPresenter.hpp"
+#include "wolf/sprite/SpriteRenderer.hpp"
 #include "wolf/texture/TextureStore.hpp"
 #include "wolf/world/Map.hpp"
 #include "wolf/world/Player.hpp"
@@ -15,6 +17,7 @@
 #include <filesystem>
 #include <iostream>
 #include <stdexcept>
+#include <vector>
 
 namespace wolf {
 
@@ -56,6 +59,15 @@ int Application::run() {
         for (int id = 1; id <= 4; ++id) {
             textures.load(id, assets / "textures" / ("wall0" + std::to_string(id) + ".bmp"));
         }
+        textures.load(101, assets / "sprites/barrel.bmp", rgb(255, 0, 255));
+        textures.load(102, assets / "sprites/lamp.bmp", rgb(255, 0, 255));
+        textures.load(103, assets / "sprites/crate.bmp", rgb(255, 0, 255));
+        const std::vector<Sprite> sprites{
+            {{4.0, 2.8}, 101, 0.75}, {{6.0, 3.3}, 103, 0.65},
+            {{7.2, 1.6}, 102, 1.1}, {{9.5, 5.65}, 101, 0.8},
+            {{12.0, 5.8}, 103, 0.7}, {{13.5, 9.0}, 102, 1.0},
+            {{3.0, 8.0}, 101, 0.8}
+        };
         Player player;
         PlayerController controller;
         if (!controller.canOccupy(map, player.position)) {
@@ -64,6 +76,7 @@ int Application::run() {
         FrameBuffer frame(640, 400);
         SdlPresenter presenter(frame.width(), frame.height());
         Raycaster raycaster;
+        SpriteRenderer spriteRenderer;
         Uint64 previous = SDL_GetTicksNS();
         while (true) {
             const Uint64 start = SDL_GetTicksNS();
@@ -75,6 +88,7 @@ int Application::run() {
             }
             controller.update(player, map, input, dt);
             raycaster.render(map, player, frame, &textures);
+            spriteRenderer.render(sprites, player, textures, raycaster.depthBuffer(), frame);
             presenter.present(frame);
             constexpr Uint64 frameTime = 1000000000 / 120;
             const Uint64 elapsed = SDL_GetTicksNS() - start;

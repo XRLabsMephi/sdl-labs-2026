@@ -19,6 +19,7 @@ add_library(wolf_core
     src/wolf/input/PlayerController.cpp
     src/wolf/render/FrameBuffer.cpp
     src/wolf/raycast/Raycaster.cpp
+    src/wolf/sprite/SpriteRenderer.cpp
 )
 target_include_directories(wolf_core PUBLIC include)
 wolf_target(wolf_core)
