@@ -45,6 +45,7 @@ add_executable(graphics_lab
         include/wolf/texture/TextureStore.hpp
         include/wolf/sprite/Sprite.hpp
         include/wolf/sprite/SpriteRenderer.hpp
+        test/render_check.cpp
 )
 
 target_include_directories(graphics_lab PRIVATE include)
@@ -89,3 +90,20 @@ add_custom_target(copy_resources
 )
 
 add_dependencies(graphics_lab copy_resources)
+
+add_executable(render_check
+        test/render_check.cpp
+        src/wolf/core/Vec2.cpp
+        src/wolf/core/Color.cpp
+        src/wolf/world/Map.cpp
+        src/wolf/render/FrameBuffer.cpp
+        src/wolf/Raycaster.cpp
+        src/wolf/texture/TextureStore.cpp
+        src/wolf/sprite/SpriteRenderer.cpp
+)
+
+target_include_directories(render_check PRIVATE include)
+
+target_link_libraries(render_check PRIVATE SDL3::SDL3)
+
+target_compile_features(render_check PRIVATE cxx_std_20)
