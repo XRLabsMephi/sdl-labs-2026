@@ -38,6 +38,12 @@ add_executable(graphics_lab
         src/wolf/render/SdlPresenter.cpp
         include/wolf/app/Application.hpp
         src/wolf/app/Application.cpp
+        include/wolf/texture/Texture.hpp
+        include/wolf/texture/TextureStore.hpp
+        src/wolf/texture/TextureStore.cpp
+        include/wolf/texture/Texture.hpp
+        include/wolf/texture/TextureStore.hpp
+        src/wolf/texture/TextureStore.cpp
 )
 
 target_include_directories(graphics_lab PRIVATE include)
