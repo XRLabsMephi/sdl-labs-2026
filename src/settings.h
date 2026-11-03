@@ -13,8 +13,8 @@
 
 namespace settings {
 	constexpr double map_scale      = 100;
-	constexpr double rotation_scale = 60;
-	constexpr double moving_scale   = 120;
+	constexpr double rotation_scale = 180;
+	constexpr double moving_scale   = 240;
 	constexpr double screenWidth	= 800;
 	constexpr double screenHeight   = 600;
 }

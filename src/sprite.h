@@ -1,8 +1,9 @@
 #pragma once
 
 enum class SpriteType {
-	Steak,
-	Barrel
+	food,
+	grass,
+	teleport
 };
 
 struct Sprite {
@@ -11,4 +12,5 @@ struct Sprite {
 	int textureId;
 	double scale;
 	SpriteType type;
+	double elevation = 0.0;
 };

@@ -34,6 +34,10 @@ add_executable(graphics_lab
 		src/sprite_renderer.cpp
 		src/sprite.h
 		src/sprite.cpp
+		src/map_generator.h
+		src/map_generator.cpp
+		src/interface.h
+		src/interface.cpp
 )
 
 target_link_libraries(graphics_lab PRIVATE SDL3::SDL3-static)

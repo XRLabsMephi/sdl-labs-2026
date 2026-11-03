@@ -40,9 +40,16 @@ public:
 	double get_X();
 	double get_Y();
 
+	int get_score();
+	void add_score(int delt);
+
+	void set_cords(std::pair<int, int> new_cords);
+
 private:
 	double x, y; // нынешнее положение
 	double A; // нынешнее направление
 
 	double r; // радиус круга, описывающий игрока
+
+	int score = 0;
 };

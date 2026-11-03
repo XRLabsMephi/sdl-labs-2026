@@ -28,8 +28,8 @@ void SpriteRenderer::draw(
 	double spriteWidth = spriteHeight
 		* static_cast<double>(texture.width()) / texture.height();
 
-	double bottomY = frameBuffer.height() / 2.0
-		+ 0.5 * settings::map_scale * projectionDistance / depth;
+	double bottomY = (frameBuffer.height() / 2.0
+		+ 0.5 * settings::map_scale * projectionDistance / depth);
 
 	double topY = bottomY - spriteHeight;
 	double left = screenX - spriteWidth / 2.0;

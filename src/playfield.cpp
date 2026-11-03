@@ -1,6 +1,9 @@
 #include "playfield.h"
 
 #include <fstream>
+#include <string>
+#include <vector>
+#include <iostream>
 
 /*
 	файл с реализацией функций из playfield.h
@@ -68,41 +71,111 @@ void Playfield::set_rectangle(int _x1, int _y1, int _x2, int _y2, int tp) {
 	}
 }
 
-void Playfield::load_map(std::string file) {
-	field = std::vector<std::vector<int>>(h, std::vector<int>(w, 0));
-	boards.clear();
-	sprites.clear();
-	std::ifstream f(file);
-	if (f.is_open()) {
-		int index = 0;
-		std::string line;
-		while (index < h && std::getline(f, line)) {
-			for (int i = 0; i < w && i < line.size(); i++) {
-				if (line[i] >= '1' && line[i] <= '3') {
-					set_rectangle(i + 1, index + 1, i + 1, index + 1, line[i] - '0');
-				} else if (line[i] == '4') {
-					sprites.push_back({
-						(i + 0.5) * k,
-						(index + 0.5) * k,
-						6,
-						0.4,
-						SpriteType::Steak
-					});
-				} else if (line[i] == '5') {
-					sprites.push_back({
-						(i + 0.5) * k,
-						(index + 0.5) * k,
-						7,
-						0.8,
-						SpriteType::Barrel
-					});
-				} else if (line[i] == 'P') {
-					player_coords = {i, index};
-				}
-			}
-			index++;
-		}
-	}
+void Playfield::load_map(const std::string& file) {
+    std::ifstream f(file);
+    if (!f.is_open()) {
+        std::cerr << "! Ошибка: не удалось открыть файл карты :< " << file << "\n";
+        return;
+    }
+
+    // сгружаем файл в вектор
+    std::vector<std::string> lines;
+    std::string line;
+    int max_width = 0;
+
+    while (std::getline(f, line)) {
+
+        // хотим знать самую длинную строку
+        if (static_cast<int>(line.length()) > max_width) {
+            max_width = static_cast<int>(line.length());
+        }
+        lines.push_back(line);
+    }
+
+    if (lines.empty()) {
+        std::cerr << "! Ошибка: файл карты пуст ! </3 \n";
+        return;
+    }
+
+    // Задаем новые размеры карты на основе прочитанных данных
+    w = max_width;
+    h = static_cast<int>(lines.size());
+
+    // Выделяем память под карту заново
+    field = std::vector<std::vector<int>>(w, std::vector<int>(h, 0));
+    boards.clear();
+    sprites.clear();
+    teleports.clear();
+    max_food = 0;
+
+    // Ставим игрока в безопасное место, если в файле нет 'P'
+    player_coords = { -1, -1 };
+    std::pair<int, int> last_not_wall = { -1, -1 };
+    // 4. Разбираем карту
+    for (int y = 0; y < h; ++y) {
+        const std::string& current_line = lines[y];
+
+        for (int x = 0; x < w; ++x) {
+            // Если строка короче, чем max_width, добиваем её пустотой (0)
+            char c = (x < static_cast<int>(current_line.length())) ? current_line[x] : ' ';
+
+            // Безопасная проверка символов
+            if (c >= '1' && c <= '3') {
+                int wall_id = c - '0';
+                field[x][y] = wall_id;  // Записываем в логическую карту
+                set_rectangle(x + 1, y + 1, x + 1, y + 1, wall_id);  // Записываем в коллизии
+            }
+            else {
+                last_not_wall = { x, y };
+                if (c == '4') {
+                    max_food++;
+                    field[x][y] = 0; // Пустая клетка
+                    sprites.push_back({
+                        (x + 0.5) * k,
+                        (y + 0.5) * k,
+                        6,
+                        0.4,
+                        SpriteType::food
+                        });
+                }
+                else if (c == '5') {
+                    field[x][y] = 0;
+                    sprites.push_back({
+                        (x + 0.5) * k,
+                        (y + 0.5) * k,
+                        7,
+                        0.8,
+                        SpriteType::grass
+                        });
+                }
+                else if (c == 'P') {
+                    field[x][y] = 0;
+                    player_coords = { x, y };
+                }
+                else if (c == 'E') {
+                    field[x][y] = 0;
+                    sprites.push_back({
+                        (x + 0.5) * k,
+                        (y + 0.5) * k,
+                        8,
+                        0.8,
+                        SpriteType::teleport
+                        });
+                    teleports.push_back(sprites.back());
+                }
+                else {
+                    // Любой другой символ (пробел, точка, мусор) считаем пустым местом
+                    field[x][y] = 0;
+                }
+            }
+        }
+    }
+    if (player_coords == std::pair<int, int>{-1, -1}&& last_not_wall != std::pair<int, int>{-1, -1}) {
+        player_coords = last_not_wall;
+    }
+    else if (player_coords == std::pair<int, int>{-1, -1}) {
+        std::cerr << "! Ошибка: карта не содержит ни 1 возможной позиции для нахождения игрока\nТак нельзя жить ! :c\n";
+    }
 }
 
 std::pair<int, int> Playfield::get_player_coords() {
@@ -127,4 +200,11 @@ int Playfield::getHight() {
 }
 int Playfield::getWidth() {
 	return w;
+}
+int Playfield::getMax_food() {
+    return max_food;
+}
+
+std::pair<int, int> Playfield::getPlayer_coords() {
+    return player_coords;
 }

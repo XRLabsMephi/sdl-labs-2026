@@ -15,6 +15,8 @@
 #include "raytracer.h"
 #include "sprite.h"
 #include "sprite_renderer.h"
+#include "map_generator.h"
+#include "interface.h"
 
 Application::Application() = default;
 
@@ -35,13 +37,14 @@ static Color toColor(std::uint32_t argb, double brightness) {
 	const auto r = static_cast<std::uint8_t>(((argb >> 16) & 255) * brightness);
 	const auto g = static_cast<std::uint8_t>(((argb >> 8) & 255) * brightness);
 	const auto b = static_cast<std::uint8_t>((argb & 255) * brightness);
-	return Color{r, g, b, 255};
+	const auto a = static_cast<std::uint8_t>((argb >> 24) & 255);
+	return Color{r, g, b, a};
 }
 
 int Application::run() {
 	//базовое игровое поле
-	Playfield play_field(30, 30, settings::map_scale);
-	play_field.load_map("src/map.txt");
+	Playfield play_field(1, 1, settings::map_scale);
+	play_field.load_map("levels/hub.txt");
 	play_field.print();
 
 	if (!SDL_Init(SDL_INIT_VIDEO)) {
@@ -71,6 +74,9 @@ int Application::run() {
 	textures_[5].loadFromFile("textures/skybox.bmp");
 	textures_[6].loadFromFile("textures/sprite01.bmp");
 	textures_[7].loadFromFile("textures/sprite02.bmp");
+	textures_[8].loadFromFile("textures/teleport_lock.bmp");
+	//textures_[8].loadFromFile("textures/teleport_half_lock.bmp");
+	//textures_[8].loadFromFile("textures/teleport_full_unlock.bmp");
 
 	/* 
 		Область видимости нужна, чтобы frameBuffer и presenter
@@ -87,9 +93,17 @@ int Application::run() {
 		Player main_pl(
 			(x + 0.5) * settings::map_scale,
 			(y + 0.5) * settings::map_scale,
-			std::numbers::pi / 4,
+			-std::numbers::pi / 2,
 			0.2
 		);
+
+		int cnt = 0;
+		
+		//таймер для логики main game loop
+
+		bool isTimerRunning = false;
+		double timeRemaining = 0.0;
+		const double LEVEL_TIME_LIMIT = 20.0;
 
 		Uint64 previousTime = SDL_GetTicksNS();
 		//основной цикл для отрисовки
@@ -151,11 +165,72 @@ int Application::run() {
 				if (keys[SDL_SCANCODE_LSHIFT]) main_pl.back(play_field, deltaTime);
 			}
 
-			std::erase_if(play_field.sprites, [&](const Sprite& sprite) {
-				return sprite.type == SpriteType::Steak &&
-					std::hypot(sprite.x - main_pl.get_X(), sprite.y - main_pl.get_Y())
-					< 0.4 * settings::map_scale;
-			});
+
+			//логика поднятия предметов (в тупую, ибо их мало < 20, условно говоря)
+			{
+				// проверили на поднятие
+				size_t found = std::erase_if(play_field.sprites, [&](const Sprite& sprite) {
+					return sprite.type == SpriteType::food &&
+						std::hypot(sprite.x - main_pl.get_X(), sprite.y - main_pl.get_Y())
+						< 0.4 * settings::map_scale;
+					});
+
+				main_pl.add_score(found);
+
+				if (main_pl.get_score() == play_field.getMax_food()) {
+					textures_[8].loadFromFile("textures/teleport_full_unlock.bmp");
+				}
+				else if (main_pl.get_score() * 2 >= play_field.getMax_food()) {
+					textures_[8].loadFromFile("textures/teleport_half_lock.bmp");
+				}
+
+				for (auto& teleport : play_field.teleports) {
+					if (std::hypot(teleport.x - main_pl.get_X(), teleport.y - main_pl.get_Y()) 
+						< 0.4 * settings::map_scale) {
+						if (main_pl.get_score() == play_field.getMax_food()) {
+							std::cout << "You should be moved to next lvl !\n";
+							main_pl.add_score(-1e9);
+							cnt++;
+							auto new_map = generate_map(20, 20, 15, 0, 1);
+
+							save_map_to_file("levels/generated.txt", new_map);
+
+							play_field.load_map("levels/generated.txt");
+
+							play_field.print();
+							textures_[8].loadFromFile("textures/teleport_lock.bmp");
+							main_pl.set_cords(play_field.getPlayer_coords());
+
+							timeRemaining = LEVEL_TIME_LIMIT;
+							isTimerRunning = true;
+						}
+						else {
+							std::cout << "You collected " << main_pl.get_score() << " food out of " << play_field.getMax_food() << '\n';
+						}
+					}
+				}
+
+				if (isTimerRunning) {
+					timeRemaining -= deltaTime;
+
+					if (timeRemaining <= 0.0) {
+						timeRemaining = 0.0;
+						isTimerRunning = false;
+
+						std::cout << "gg, you lost, your score : " << cnt << '\n';
+
+						play_field.load_map("levels/hub.txt");
+						main_pl.set_cords({5, 5});
+
+						main_pl.add_score(-1e9);
+						textures_[8].loadFromFile("textures/teleport_lock.bmp");
+					}
+				}
+			}
+
+
+
+			
 
 			int screenWidth = frameBuffer.width();
 			int screenHeight = frameBuffer.height();
@@ -177,106 +252,110 @@ int Application::run() {
 				screenWidth,
 				std::numeric_limits<double>::infinity()
 			);
-			//хотим красивый скайбокс
-			const Texture& skyTex = textures_[5];
-			if (skyTex.valid()) {
-				// Мы рисуем небо только в верхней половине экрана (над горизонтом)
-				const int horizon = screenHeight / 2;
 
-				for (int x = 0; x < screenWidth; ++x) {
-					//Вычисляем угол луча для текущего столбца
-					double cameraX = 2.0 * x / screenWidth - 1.0;
-					double rayAngle = main_pl.get_A() + std::atan(cameraX * std::tan(FOV / 2.0));
+			//построение задника
+			{
+				//хотим красивый скайбокс
+				const Texture& skyTex = textures_[5];
+				if (skyTex.valid()) {
+					// Мы рисуем небо только в верхней половине экрана (над горизонтом)
+					const int horizon = screenHeight / 2;
 
-					//Переводим угол в координату X на текстуре
-					//Ограничиваем угол от 0 до 2*PI (полный круг)
-					double normAngle = std::fmod(rayAngle, 2.0 * std::numbers::pi);
-					if (normAngle < 0) normAngle += 2.0 * std::numbers::pi;
+					for (int x = 0; x < screenWidth; ++x) {
+						//Вычисляем угол луча для текущего столбца
+						double cameraX = 2.0 * x / screenWidth - 1.0;
+						double rayAngle = main_pl.get_A() + std::atan(cameraX * std::tan(FOV / 2.0));
 
-					// Вычисляем столбец текстуры
-					int texX = static_cast<int>((normAngle / (2.0 * std::numbers::pi)) * skyTex.width());
-					if (texX < 0) texX = 0;
-					if (texX >= skyTex.width()) texX = skyTex.width() - 1;
+						//Переводим угол в координату X на текстуре
+						//Ограничиваем угол от 0 до 2*PI (полный круг)
+						double normAngle = std::fmod(rayAngle, 2.0 * std::numbers::pi);
+						if (normAngle < 0) normAngle += 2.0 * std::numbers::pi;
 
-					//Рисуем столбец неба сверху вниз
-					for (int y = 0; y < horizon; ++y) {
-						// Растягиваем текстуру по высоте
-						int texY = static_cast<int>((static_cast<double>(y) / horizon) * skyTex.height());
-						if (texY < 0) texY = 0;
-						if (texY >= skyTex.height()) texY = skyTex.height() - 1;
-						frameBuffer.setPixel(x, y, toColor(skyTex.sample(texX, texY), 1.0));
-					}
-				}
-			}
-
-			// Хотим кароч красивый пол
-			const Texture& floorTex = textures_[4];
-			const double FOV_half = FOV / 2.0;
-			const double leftAngle = main_pl.get_A() - FOV_half;
-			const double rightAngle = main_pl.get_A() + FOV_half;
-
-			// Направления крайних лучей экрана
-			const double rayDirX0 = std::cos(leftAngle);
-			const double rayDirY0 = std::sin(leftAngle);
-			const double rayDirX1 = std::cos(rightAngle);
-			const double rayDirY1 = std::sin(rightAngle);
-
-			if (floorTex.valid()) {
-				// Идем по строкам: от горизонта вниз (пол) и от горизонта вверх (потолок)
-				for (int y = (screenHeight / 2) + 1e-9; y < screenHeight; ++y) {
-					// Расстояние от горизонта
-					//if (screenHeight / 2 - y == 0) continue; // Сама линия горизонта, чтобы не делить на 0
-
-					// Расстояние до пола/потолка для этой строки
-					double rowDistance = (0.5 * settings::map_scale * projectionDistance) / abs(
-						screenHeight / 2 - y);
-
-					double rayDist = rowDistance / std::cos(FOV / 2.0);
-
-					// Шаг текстуры вдоль строки
-					double stepX = rayDist * (rayDirX1 - rayDirX0) / screenWidth;
-					double stepY = rayDist * (rayDirY1 - rayDirY0) / screenWidth;
-
-					// Начальные координаты в мире для левого края экрана
-					double floorX = main_pl.get_X() + rayDist * rayDirX0;
-					double floorY = main_pl.get_Y() + rayDist * rayDirY0;
-
-					//затухание в соответствии с расстоянием 
-					double brightness = 1.0 - rayDist / (35.0 * settings::map_scale);
-					if (brightness < 0.0) brightness = 0.0;
-					if (brightness > 1.0) brightness = 1.0;
-
-					//повышаем контрастность
-					brightness = std::pow(brightness, 3);
-
-					for (int x = 0; x < screenWidth; x++) {
-						// Получаем координаты внутри клетки (0.0 - 1.0)
-						double texU = floorX / settings::map_scale;
-						texU -= std::floor(texU);
-						double texV = floorY / settings::map_scale;
-						texV -= std::floor(texV);
-
-						int texX = static_cast<int>(texU * floorTex.width());
-						int texY = static_cast<int>(texV * floorTex.height());
-
-						// Защита от выхода за границы
+						// Вычисляем столбец текстуры
+						int texX = static_cast<int>((normAngle / (2.0 * std::numbers::pi)) * skyTex.width());
 						if (texX < 0) texX = 0;
-						if (texX >= floorTex.width()) texX = floorTex.width() - 1;
-						if (texY < 0) texY = 0;
-						if (texY >= floorTex.height()) texY = floorTex.height() - 1;
+						if (texX >= skyTex.width()) texX = skyTex.width() - 1;
 
-						frameBuffer.setPixel(x, y, toColor(floorTex.sample(texX, texY), brightness));
-
-						// Шагаем к следующему пикселю строки
-						floorX += stepX;
-						floorY += stepY;
+						//Рисуем столбец неба сверху вниз
+						for (int y = 0; y < horizon; ++y) {
+							// Растягиваем текстуру по высоте
+							int texY = static_cast<int>((static_cast<double>(y) / horizon) * skyTex.height());
+							if (texY < 0) texY = 0;
+							if (texY >= skyTex.height()) texY = skyTex.height() - 1;
+							frameBuffer.setPixel(x, y, toColor(skyTex.sample(texX, texY), 1.0));
+						}
 					}
 				}
-			}
-			else {
-				// Fallback, если текстура пола не загрузилась
-				frameBuffer.fillRect(0, screenHeight / 2, screenWidth, screenHeight / 2,
-				                     Color{255, 0, 0, 255});
+
+				// Хотим кароч красивый пол
+				const Texture& floorTex = textures_[4];
+				const double FOV_half = FOV / 2.0;
+				const double leftAngle = main_pl.get_A() - FOV_half;
+				const double rightAngle = main_pl.get_A() + FOV_half;
+
+				// Направления крайних лучей экрана
+				const double rayDirX0 = std::cos(leftAngle);
+				const double rayDirY0 = std::sin(leftAngle);
+				const double rayDirX1 = std::cos(rightAngle);
+				const double rayDirY1 = std::sin(rightAngle);
+
+				if (floorTex.valid()) {
+					// Идем по строкам: от горизонта вниз (пол) и от горизонта вверх (потолок)
+					for (int y = (screenHeight / 2) + 1e-9; y < screenHeight; ++y) {
+						// Расстояние от горизонта
+						//if (screenHeight / 2 - y == 0) continue; // Сама линия горизонта, чтобы не делить на 0
+
+						// Расстояние до пола/потолка для этой строки
+						double rowDistance = (0.5 * settings::map_scale * projectionDistance) / abs(
+							screenHeight / 2 - y);
+
+						double rayDist = rowDistance / std::cos(FOV / 2.0);
+
+						// Шаг текстуры вдоль строки
+						double stepX = rayDist * (rayDirX1 - rayDirX0) / screenWidth;
+						double stepY = rayDist * (rayDirY1 - rayDirY0) / screenWidth;
+
+						// Начальные координаты в мире для левого края экрана
+						double floorX = main_pl.get_X() + rayDist * rayDirX0;
+						double floorY = main_pl.get_Y() + rayDist * rayDirY0;
+
+						//затухание в соответствии с расстоянием 
+						double brightness = 1.0 - rayDist / (35.0 * settings::map_scale);
+						if (brightness < 0.0) brightness = 0.0;
+						if (brightness > 1.0) brightness = 1.0;
+
+						//повышаем контрастность
+						brightness = std::pow(brightness, 3);
+
+						for (int x = 0; x < screenWidth; x++) {
+							// Получаем координаты внутри клетки (0.0 - 1.0)
+							double texU = floorX / settings::map_scale;
+							texU -= std::floor(texU);
+							double texV = floorY / settings::map_scale;
+							texV -= std::floor(texV);
+
+							int texX = static_cast<int>(texU * floorTex.width());
+							int texY = static_cast<int>(texV * floorTex.height());
+
+							// Защита от выхода за границы
+							if (texX < 0) texX = 0;
+							if (texX >= floorTex.width()) texX = floorTex.width() - 1;
+							if (texY < 0) texY = 0;
+							if (texY >= floorTex.height()) texY = floorTex.height() - 1;
+
+							frameBuffer.setPixel(x, y, toColor(floorTex.sample(texX, texY), brightness));
+
+							// Шагаем к следующему пикселю строки
+							floorX += stepX;
+							floorY += stepY;
+						}
+					}
+				}
+				else {
+					// Fallback, если текстура пола не загрузилась
+					frameBuffer.fillRect(0, screenHeight / 2, screenWidth, screenHeight / 2,
+						Color{ 255, 0, 0, 255 });
+				}
 			}
 
 			//для каждого луча при надобности отрисовываем столкновение со стенкой
@@ -325,7 +404,7 @@ int Application::run() {
 				for (int y = y0; y < y1; ++y) {
 					int texY = static_cast<int>(texPos) % tex.height();
 					texPos += texStep;
-
+					if ((tex.sample(texX, texY) >> 24) < 128) continue;
 					frameBuffer.setPixel(i, y, toColor(tex.sample(texX, texY), brightness));
 				}
 				depthBuffer_[i] = hit.depth;
@@ -348,6 +427,10 @@ int Application::run() {
 					texture
 				);
 			}
+
+			// в последнюю очередь дорисовываем интерфейс 
+			draw_interface(frameBuffer, (timeRemaining != 0 ? timeRemaining / LEVEL_TIME_LIMIT : 0));
+
 			//готовый кадр отдаём презентеру
 			presenter.present(frameBuffer);
 		}

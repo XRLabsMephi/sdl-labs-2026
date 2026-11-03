@@ -19,6 +19,6 @@ private:
 	SDL_Window* window = nullptr;
 	SDL_Renderer* renderer = nullptr;
 
-	std::array<Texture, 8> textures_;
+	std::array<Texture, 16> textures_;
 	std::vector<double> depthBuffer_;
 };

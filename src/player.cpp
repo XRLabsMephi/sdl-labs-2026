@@ -77,3 +77,15 @@ void Player::right(Playfield& pf, double deltaTime) {
 double Player::get_A() { return A; }
 double Player::get_X() { return x; }
 double Player::get_Y() { return y; }
+
+void Player::set_cords(std::pair<int, int> new_cords) {
+	x = std::max((double)0, (new_cords.first + 0.5) * settings::map_scale);
+	y = std::max((double)0, (new_cords.second + 0.5) * settings::map_scale);
+}
+
+int Player::get_score() { return score; }
+
+void Player::add_score(int delt) { 
+	score += delt;
+	score = std::max(score, 0);
+}
