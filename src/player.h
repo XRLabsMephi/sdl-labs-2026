@@ -36,6 +36,8 @@ public:
 	//направо
 	void right(Playfield& pf, double deltaTime);
 
+
+
 	double get_A();
 	double get_X();
 	double get_Y();

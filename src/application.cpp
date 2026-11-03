@@ -64,6 +64,9 @@ int Application::run() {
 		SDL_Quit();
 		return 1;
 	}
+	if (!SDL_SetWindowRelativeMouseMode(window, true)) {
+		std::cerr << SDL_GetError() << '\n';
+	}
 	SDL_SetWindowResizable(window, true);
 
 	//загружаем текстуры (пока мало - ручками)
@@ -120,6 +123,10 @@ int Application::run() {
 				if (event.type == SDL_EVENT_QUIT) {
 					running = false;
 				}
+				if (event.type == SDL_EVENT_MOUSE_MOTION) {
+					double mouseSensitivity = 0.0025;
+					main_pl.turn_right(event.motion.xrel*0.002);
+				}
 				if (event.type == SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED) {
 					int width, height;
 					if (SDL_GetWindowSizeInPixels(window, &width, &height)
@@ -150,12 +157,6 @@ int Application::run() {
 				main_pl.right(play_field, deltaTime);
 				if (keys[SDL_SCANCODE_LSHIFT]) main_pl.right(play_field, deltaTime);
 			}
-			if (keys[SDL_SCANCODE_LEFT]) {
-				main_pl.turn_left(deltaTime);
-			}
-			if (keys[SDL_SCANCODE_RIGHT]) {
-				main_pl.turn_right(deltaTime);
-			}
 			if (keys[SDL_SCANCODE_W]) {
 				main_pl.forward(play_field, deltaTime);
 				if (keys[SDL_SCANCODE_LSHIFT]) main_pl.forward(play_field, deltaTime);
@@ -172,7 +173,7 @@ int Application::run() {
 				size_t found = std::erase_if(play_field.sprites, [&](const Sprite& sprite) {
 					return sprite.type == SpriteType::food &&
 						std::hypot(sprite.x - main_pl.get_X(), sprite.y - main_pl.get_Y())
-						< 0.4 * settings::map_scale;
+						< 0.6 * settings::map_scale;
 					});
 
 				main_pl.add_score(found);
