@@ -2,11 +2,16 @@
 #include "TextureStorage.h"
 
 namespace render {
-    class TextureStorageInflator {
-    public:
-        TextureStorageInflator(const TextureStorageInflator &) = delete;
-        TextureStorageInflator &operator =(const TextureStorageInflator &) = delete;
+    namespace fs = std::filesystem;
 
-        static void inflateStorage(TextureStorage& storage, const std::string& mapping_file);
+    class TextureStorageInflator {
+        fs::path mapping_file_path_;
+
+        static std::vector<TextureStorage::TextureEntry> parseMapping(std::istream &stream, const fs::path &base_dir);
+
+    public:
+        explicit TextureStorageInflator(fs::path mapping_file_path);
+
+        void inflate(TextureStorage &storage) const;
     };
 }

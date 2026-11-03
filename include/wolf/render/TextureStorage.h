@@ -2,7 +2,6 @@
 #include <filesystem>
 #include <string>
 #include <unordered_map>
-#include <unordered_set>
 #include <vector>
 
 #include "Texture.h"
@@ -11,7 +10,7 @@ namespace render {
     class TextureStorage {
         size_t max_id_ = 0;
         std::vector<Texture> textures_;
-        std::unordered_set<size_t> used;
+        std::vector<bool> used_;
 
         /**
          * @brief Tries to load a Texture.
@@ -63,10 +62,22 @@ namespace render {
         void addFromEntries(const std::vector<TextureEntry>& entries);
 
         /**
+         * @brief Resets the storage with the given size
+         * @param size the size of reset storage
+         */
+        void reset(size_t size);
+
+        /**
          * @brief Resizes the storage, filling new slots with placeholders
          * @param size new size of storage
          */
         void resize(size_t size);
+
+        /**
+         * Checks if given id is used
+         * @return true if id is used by some texture
+         */
+        [[nodiscard]] bool contains(size_t id) const noexcept;
 
         /**
          * @param id id of texture
@@ -77,11 +88,11 @@ namespace render {
         /**
          * @return max ID used by this storage
          */
-        size_t maxId() const { return max_id_; }
+        [[nodiscard]] size_t maxId() const { return max_id_; }
 
         /**
          * @return The size of the storage
          */
-        size_t size() const { return textures_.size(); }
+        [[nodiscard]] size_t size() const { return textures_.size(); }
     };
 }

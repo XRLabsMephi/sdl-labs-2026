@@ -6,7 +6,7 @@
 #include "debug/Logger.h"
 
 namespace {
-    const char* component = "TEX STRG";
+    constexpr const char* component = "TEX STRG";
 }
 
 namespace render {
@@ -18,9 +18,10 @@ namespace render {
             throw std::out_of_range(
                 std::format("texture id {} out of range (size {})", id, textures_.size()));
         }
-        if (!used.insert(id).second) {
+        if (used_[id]) {
             throw std::invalid_argument(std::format("duplicate id {} assigning", id));
         }
+        used_[id] = true;
         textures_[id] = std::move(texture);
     }
 
@@ -40,9 +41,18 @@ namespace render {
         }
     }
 
-    void TextureStorage::resize(size_t size) {
-        textures_.resize(size, Texture::empty);
+    void TextureStorage::reset(size_t size) {
+        textures_.assign(size, Texture::empty);
+        used_.assign(size, false);
     }
+
+    void TextureStorage::resize(size_t size) {
+        max_id_ = size - 1;
+        textures_.resize(size, Texture::empty);
+        used_.resize(size);
+    }
+
+    bool TextureStorage::contains(size_t id) const noexcept { return id < used_.size() && used_[id]; }
 
     const Texture & TextureStorage::getOrEmpty(size_t id) noexcept {
         return id > max_id_ ? Texture::empty : textures_[id];

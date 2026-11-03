@@ -46,8 +46,8 @@ namespace render {
                 );
         }
 
-        width = loaded->w;
-        height = loaded->h;
+        width = surface->w;
+        height = surface->h;
         pixels.resize(static_cast<size_t>(width) * height);
 
         //TODO implement tiling loading
@@ -65,9 +65,5 @@ namespace render {
 
     Texture Texture::createFromFile(const std::string &filename){
         return Texture(filename);
-    }
-
-    Uint32* Texture::column(const int x) {
-        return &pixels[x * height];
     }
 }

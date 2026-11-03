@@ -20,14 +20,14 @@ namespace render {
 
         static Texture createFromFile(const std::string &filename);
 
-        Uint32 pixel(int x, int y) const { return pixels[x * height + y]; }
+        [[nodiscard]] Uint32 pixel(int x, int y) const { return pixels[x * height + y]; }
 
-        inline Uint32 *column(int x);
+        Uint32 *column(int x){ return &pixels[x * height]; }
 
         static const Texture empty;
 
     private:
-        constexpr Texture(int w, int h, core::Color color)
+        Texture(int w, int h, core::Color color)
             : width(w)
               , height(h)
               , pixels(static_cast<size_t>(width) * height, color.toUint32_t()) {

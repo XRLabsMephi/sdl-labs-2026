@@ -17,7 +17,7 @@ namespace core {
          * @brief Converts current color into single 32-bit number
          * @return uint32_t representation of color
          */
-        uint32_t toUint32_t() const {
+        [[nodiscard]] uint32_t toUint32_t() const {
             return toUint32_t(*this);
         }
 
