@@ -17,7 +17,7 @@ namespace core {
          * @brief Converts current color into single 32-bit number
          * @return uint32_t representation of color
          */
-        [[nodiscard]] uint32_t toUint32_t() const {
+        [[nodiscard]] Uint32 toUint32_t() const {
             return toUint32_t(*this);
         }
 
@@ -25,18 +25,18 @@ namespace core {
          * @brief Converts given color into single 32-bit number
          * @return uint32_t representation of color
          */
-        static uint32_t toUint32_t(const Color &color) {
-            return static_cast<uint32_t>(color.a_) << 24
-                 | static_cast<uint32_t>(color.r_) << 16
-                 | static_cast<uint32_t>(color.g_) << 8
-                 | static_cast<uint32_t>(color.b_);
+        static Uint32 toUint32_t(const Color &color) {
+            return static_cast<Uint32>(color.a_) << 24
+                 | static_cast<Uint32>(color.r_) << 16
+                 | static_cast<Uint32>(color.g_) << 8
+                 | static_cast<Uint32>(color.b_);
         }
 
         /**
          * @brief Converts single 32-bit number into color
          * @return Color from this 32-bit number
          */
-        static Color fromUint32_t(uint32_t rgba) {
+        static Color fromUint32_t(Uint32 rgba) {
             return {
                 static_cast<Uint8>(rgba >> 24),
                 static_cast<Uint8>(rgba >> 16 & 255),
@@ -76,7 +76,7 @@ namespace core {
         }
 
         /**
-         * @brief Multiplies R, G, B components of color by scalar
+         * @brief Applies multiplication of R, G, B components by scalar to this color
          * @param scalar number to multiply by
          * @return reference to updated itself (for chaining)
          */
