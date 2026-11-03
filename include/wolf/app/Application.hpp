@@ -19,8 +19,8 @@ namespace wolf {
         bool init();
         int run_loop();
 
-        static constexpr int width_ = 640;
-        static constexpr int height_ = 480;
+        static constexpr int width_ = 1600;
+        static constexpr int height_ = 1200;
 
         SDL_Window* window_ = nullptr;
         SDL_Renderer* renderer_ = nullptr;
