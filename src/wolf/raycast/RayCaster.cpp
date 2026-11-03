@@ -39,7 +39,7 @@ void RayCaster::drawByRayHit(const RayHit& ray_hit, std::pair<double, double> co
     int y0 = static_cast<int>(P_H * (1 - SC_RAY_DEPTH_rel)); //bottom border of wall projection in pixels(can be negative)
     int y1 = static_cast<int>(P_H + SC_RAY_DEPTH_rel * (W_H - P_H)); //top border of wall projection in pixels(can be more than frame_height_)
 
-    auto get_draw_params = [&](int color_id) -> render::DrawCallParams{
+    auto get_draw_params = [&](int color_id) -> core::Color{
         core::Color color;
         double brightness = 1.0;
         switch (color_id){
@@ -49,7 +49,7 @@ void RayCaster::drawByRayHit(const RayHit& ray_hit, std::pair<double, double> co
                 double brightness_procent = ray_hit.face_index_ == IntersectionSide::Vertical ?
                                             cos_vertical_horizontal.first : cos_vertical_horizontal.second;
                 //for smooth changing
-                brightness = (1-minimal_brightness) * brightness_procent + minimal_brightness;
+                brightness = (1 - minimal_brightness) * brightness_procent + minimal_brightness;
                 break;
                 }
             case 0:
@@ -59,10 +59,8 @@ void RayCaster::drawByRayHit(const RayHit& ray_hit, std::pair<double, double> co
             default: break;
         }
 
-        color.r_ = static_cast<Uint8>(color.r_ * brightness);
-        color.g_ = static_cast<Uint8>(color.g_ * brightness);
-        color.b_ = static_cast<Uint8>(color.b_ * brightness);
-        return {.tex_id = ray_hit.wall_id_, .tex_x = -1, .depth = depth, .color = color};
+        color.multiplyColorsByScalar(brightness);
+        return color;
     };
 
     frame_buffer_.vline(column, 0, std::min(y0, P_H), get_draw_params(2));
