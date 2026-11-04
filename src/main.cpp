@@ -51,6 +51,7 @@ struct RayTrace
     double rayDirX = 0.0, rayDirY = 0.0;
     double hitX = 0.0, hitY = 0.0;
     double depth = 0.0;
+    int side = 0;
     std::vector<DDAStep> steps;
 };
 
@@ -79,8 +80,11 @@ RayTrace buildTrace(const Player& player, int rayIndex, double fovDegrees)
 
     int mapX = static_cast<int>(std::floor(player.x)), mapY = static_cast<int>(std::floor(player.y));
 
-    const double deltaDistX = std::abs(1.0 / ((std::abs(trace.rayDirX) < 1e-9) ? 1e-9 : trace.rayDirX));
-    const double deltaDistY = std::abs(1.0 / ((std::abs(trace.rayDirY) < 1e-9) ? 1e-9 : trace.rayDirY));
+    const double safeRayDirX = std::abs(trace.rayDirX) < 1e-9 ? 1e-9 : trace.rayDirX;
+    const double safeRayDirY = std::abs(trace.rayDirY) < 1e-9 ? 1e-9 : trace.rayDirY;
+
+    const double deltaDistX = std::abs(1.0 / safeRayDirX);
+    const double deltaDistY = std::abs(1.0 / safeRayDirY);
 
     int stepX, stepY;
     double sideDistX, sideDistY;
@@ -144,17 +148,18 @@ RayTrace buildTrace(const Player& player, int rayIndex, double fovDegrees)
 
     if (side == 0)
     {
-        trace.depth = (mapX - player.x + (1 - stepX) / 2.0) / trace.rayDirX;
+        trace.depth = (mapX - player.x + (1 - stepX) / 2.0) / safeRayDirX;
     }
     else
     {
-        trace.depth = (mapY - player.y + (1 - stepY) / 2.0) / trace.rayDirY;
+        trace.depth = (mapY - player.y + (1 - stepY) / 2.0) / safeRayDirY;
     }
 
     trace.depth = std::max(0.0001, trace.depth);
 
     trace.hitX = player.x + trace.rayDirX * trace.depth;
     trace.hitY = player.y + trace.rayDirY * trace.depth;
+    trace.side = side;
 
     return trace;
 }
@@ -170,7 +175,7 @@ void fillRect(SDL_Renderer* renderer, float x, float y, float w, float h)
     SDL_RenderFillRect(renderer, &rect);
 }
 
-void drawMap(SDL_Renderer* renderer, const Player& player, const RayTrace& trace, int visibleSteps)
+void drawMap(SDL_Renderer* renderer, const Player& player, const RayTrace& trace, int visibleSteps, double fov, int selectedRay)
 {
     constexpr float CELL = 44.0f;
     constexpr float OFFSET_X = 40.0f;
@@ -193,6 +198,25 @@ void drawMap(SDL_Renderer* renderer, const Player& player, const RayTrace& trace
         }
     }
 
+    const float px = OFFSET_X + static_cast<float>(player.x * CELL);
+    const float py = OFFSET_Y + static_cast<float>(player.y * CELL);
+
+    setColor(renderer, 59, 130, 246, 35);
+
+    for (int ray = 0; ray < RAYS; ++ray)
+    {
+        if (ray == selectedRay)
+        {
+            continue;
+        }
+
+        const RayTrace rayTrace = buildTrace(player, ray, fov);
+        const float hitX = OFFSET_X + static_cast<float>(rayTrace.hitX * CELL);
+        const float hitY = OFFSET_Y + static_cast<float>(rayTrace.hitY * CELL);
+
+        SDL_RenderLine(renderer, px, py, hitX, hitY);
+    }
+
     const int count = std::min(visibleSteps, static_cast<int>(trace.steps.size()));
 
     for (int i = 0; i < count; ++i)
@@ -208,17 +232,8 @@ void drawMap(SDL_Renderer* renderer, const Player& player, const RayTrace& trace
             setColor(renderer, 245, 158, 11, 70);
         }
 
-        fillRect(
-            renderer,
-            OFFSET_X + step.mapX * CELL + 4,
-            OFFSET_Y + step.mapY * CELL + 4,
-            CELL - 8,
-            CELL - 8
-        );
+        fillRect(renderer, OFFSET_X + step.mapX * CELL + 4, OFFSET_Y + step.mapY * CELL + 4, CELL - 8, CELL - 8);
     }
-
-    const float px = OFFSET_X + static_cast<float>(player.x * CELL);
-    const float py = OFFSET_Y + static_cast<float>(player.y * CELL);
 
     float targetX = px;
     float targetY = py;
@@ -246,14 +261,7 @@ void drawMap(SDL_Renderer* renderer, const Player& player, const RayTrace& trace
     fillRect(renderer, px - 6, py - 6, 12, 12);
 
     setColor(renderer, 20, 30, 45);
-
-    SDL_RenderLine(
-        renderer,
-        px,
-        py,
-        px + static_cast<float>(std::cos(player.angle) * CELL),
-        py + static_cast<float>(std::sin(player.angle) * CELL)
-    );
+    SDL_RenderLine(renderer, px, py, px + static_cast<float>(std::cos(player.angle) * CELL), py + static_cast<float>(std::sin(player.angle) * CELL));
 }
 
 int main()
@@ -267,16 +275,9 @@ int main()
     SDL_Window* window = nullptr;
     SDL_Renderer* renderer = nullptr;
 
-    if (!SDL_CreateWindowAndRenderer(
-            "Raycaster - Step 2 DDA",
-            SCREEN_W,
-            SCREEN_H,
-            0,
-            &window,
-            &renderer))
+    if (!SDL_CreateWindowAndRenderer("Raycaster - Step 3 Rays", SCREEN_W, SCREEN_H, 0, &window, &renderer))
     {
         std::cerr << SDL_GetError() << '\n';
-
         SDL_Quit();
         return 1;
     }
@@ -358,49 +359,18 @@ int main()
 
         title << std::fixed
               << std::setprecision(3)
-              << "Step 2 DDA"
+              << "Step 3 Rays"
               << " | Ray " << selectedRay
-              << " | Step " << ddaStep << "/" << trace.steps.size();
-
-        if (ddaStep > 0)
-        {
-            const DDAStep& step = trace.steps[ddaStep - 1];
-
-            title << " | sideDistX=" << step.sideDistX
-                  << " sideDistY=" << step.sideDistY
-                  << " | cell=(" << step.mapX << "," << step.mapY << ")"
-                  << " | ";
-
-            if (step.sideDistX < step.sideDistY)
-            {
-                title << "X smaller -> X step";
-            }
-            else
-            {
-                title << "Y smaller -> Y step";
-            }
-
-            if (step.wall)
-            {
-                title << " | WALL -> STOP";
-            }
-            else
-            {
-                title << " | EMPTY";
-            }
-        }
-        else
-        {
-            title << " | RIGHT/SPACE = next DDA step"
-                  << " | UP/DOWN = ray";
-        }
+              << " | DDA " << ddaStep << "/" << trace.steps.size()
+              << " | Depth=" << trace.depth
+              << " | Hit=(" << trace.hitX << "," << trace.hitY << ")";
 
         SDL_SetWindowTitle(window, title.str().c_str());
 
         setColor(renderer, 244, 247, 251);
         SDL_RenderClear(renderer);
 
-        drawMap(renderer, player, trace, ddaStep);
+        drawMap(renderer, player, trace, ddaStep, fov, selectedRay);
 
         SDL_RenderPresent(renderer);
         SDL_Delay(16);
