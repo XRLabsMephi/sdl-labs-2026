@@ -45,7 +45,7 @@ add_executable(graphics_lab
         include/wolf/texture/TextureStore.hpp
         include/wolf/sprite/Sprite.hpp
         include/wolf/sprite/SpriteRenderer.hpp
-        test/render_check.cpp
+        include/wolf/effects/Fog.hpp
 )
 
 target_include_directories(graphics_lab PRIVATE include)
@@ -65,7 +65,16 @@ set_target_properties(graphics_lab PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
 )
 
-add_executable(test
+add_custom_target(copy_resources
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${CMAKE_SOURCE_DIR}/resources"
+        "$<TARGET_FILE_DIR:graphics_lab>/resources"
+        VERBATIM
+)
+
+add_dependencies(graphics_lab copy_resources)
+
+add_executable(test EXCLUDE_FROM_ALL
         test/test.cpp
         src/wolf/core/Vec2.cpp
         src/wolf/core/Color.cpp
@@ -82,16 +91,7 @@ target_link_libraries(test PRIVATE SDL3::SDL3)
 
 target_compile_features(test PRIVATE cxx_std_20)
 
-add_custom_target(copy_resources
-        COMMAND ${CMAKE_COMMAND} -E copy_directory
-        "${CMAKE_SOURCE_DIR}/resources"
-        "$<TARGET_FILE_DIR:graphics_lab>/resources"
-        VERBATIM
-)
-
-add_dependencies(graphics_lab copy_resources)
-
-add_executable(render_check
+add_executable(render_check EXCLUDE_FROM_ALL
         test/render_check.cpp
         src/wolf/core/Vec2.cpp
         src/wolf/core/Color.cpp
