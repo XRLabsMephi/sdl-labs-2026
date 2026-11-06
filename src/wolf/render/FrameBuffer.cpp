@@ -33,6 +33,12 @@ FrameBuffer::FrameBuffer(int width, int height, TextureStorage &storage)
     zbuf_.assign(width_, std::numeric_limits<float>::infinity());
 }
 
+void FrameBuffer::set_fog_params(Color fog_color, float min_fog_depth, float max_fog_depth) {
+    fog_color_ = fog_color.toUint32_t();
+    fog_min_depth_ = min_fog_depth;
+    fog_max_depth = max_fog_depth;
+}
+
 buf_size_t FrameBuffer::width() const { return width_; }
 
 buf_size_t FrameBuffer::height() const { return height_; }
@@ -95,55 +101,91 @@ namespace {
     }
 }
 
+Uint8 FrameBuffer::calc_fog_factor(float depth) const {
+    if (depth >= fog_max_depth) { return 255; }
+    if (depth > fog_min_depth_) {
+        return static_cast<Uint8>(255.0 * (depth - fog_min_depth_) / (fog_max_depth - fog_min_depth_));
+    }
+    return 0;
+}
+
 void FrameBuffer::vline(int x, int y0, int y1, const DrawCallParams &params) {
     if (x < 0 || x >= int_width_) return;
+    if (params.depth >= zbuf_[x]) return;
 
-    const auto &[id,
-        tex_x,
-        tex_y0,
-        step,
-        depth,
-        brightness,
-        alpha] = params;
-    if (zbuf_[x] < depth) return;
-    if (step <= 0) return;
-    if (tex_y0 < 0) return;
-
+    const auto &[id, tex_x, tex_y0, step,
+        depth, brightness,alpha] = params;
+    if (step <= 0 || tex_y0 < 0 || alpha == 0) return;
     if (y0 > y1) std::swap(y0, y1);
 
-    int tex_y_offset = 0;
-    if (y0 < 0) {
-        tex_y_offset = -y0 * step;
-        y0 = 0;
-    }
+    int clipping_offset = 0;
+    if (y0 < 0) { clipping_offset = -y0 * step, y0 = 0; }
     y1 = min(y1, int_height_ - 1);
     if (y0 > y1) return;
 
+    Uint8 fog_factor = calc_fog_factor(depth);
+
     const Texture &tex = storage_.get(id);
-    if (tex_x < 0 || tex_x >= tex.width || tex.height == 0) return;
+    if (tex_x < 0 || tex_x >= tex.width) return;
 
     const Uint32 *tex_col = tex.column(tex_x);
     Uint32 *col = &buffer_[x * height_];
 
     const Uint8 *lut = core::DIM[brightness].data();
+    //step is fixed precision number in 16.16 format
+    for (int y = y0, tex_y = tex_y0 + clipping_offset; y <= y1; ++y, tex_y += step) {
+        int tex_y_clamped = std::clamp(tex_y >> 16, 0, tex.height - 1); // converting 16.16 back to integer
 
-    if (alpha == 255) {
-        //opaque draw
-        //step is fixed precision number in 16.16 format
-        for (int y = y0, tex_y = tex_y0 + tex_y_offset; y <= y1; ++y, tex_y += step) {
-            int clamped_tex_y = tex_y >> 16;
-            clamped_tex_y = clamped_tex_y >= tex.height ? tex.height - 1 : clamped_tex_y;
-            //need to get rid of fraction part in tex_y
-            col[y] = apply_brightness(lut, tex_col[clamped_tex_y]);
-        }
-        zbuf_[x] = depth;
-    } else {
-        //blend mode draw
-        for (int y = y0, tex_y = tex_y0 + tex_y_offset; y <= y1; ++y, tex_y += step) {
-            int clamped_tex_y = tex_y >> 16;
-            clamped_tex_y = clamped_tex_y >= tex.height ? tex.height - 1 : clamped_tex_y;
-            col[y] = blend_argb(apply_brightness(lut, tex_col[clamped_tex_y]), col[y], alpha);
-        }
+        Uint32 texel = tex_col[tex_y_clamped];
+
+        Uint32 lit_texel = apply_brightness(lut, texel);
+        Uint32 fogged_texel = fog_factor != 255 ? blend_argb(fog_color_, lit_texel, fog_factor) : fog_color_;
+
+        if (alpha == 255) {
+            col[y] = fogged_texel;
+        } else { col[y] = blend_argb(fogged_texel, col[y], alpha); }
+    }
+    if (alpha == 255)  zbuf_[x] = depth;
+}
+
+void FrameBuffer::vline_sprite(int x, int y0, int y1, const DrawCallParams &params) {
+    if (x < 0 || x >= int_width_) return;
+    if (params.depth >= zbuf_[x]) return;
+
+    const auto &[id, tex_x, tex_y0, step,
+        depth, brightness,alpha] = params;
+    if (alpha == 0 || step <= 0 || tex_y0 < 0) return;
+    if (y0 > y1) std::swap(y0, y1); // guaranteeing y0 < y1
+
+    int clipping_offset = 0; // if we need to offset tex_
+    if (y0 < 0) {
+        clipping_offset = -y0 * step, y0 = 0;
+    }
+    y1 = min(y1, int_height_ - 1); // top bound clip
+    if (y0 > y1) return;
+
+    Uint8 fog_factor = calc_fog_factor(depth);
+
+    const Texture &tex = storage_.get(id);
+    if (tex_x < 0 || tex_x >= tex.width) return;
+
+    const Uint32 *tex_col = tex.column(tex_x);
+    Uint32 *col = &buffer_[x * height_];
+
+    const Uint8 *lut = core::DIM[brightness].data();
+    //step is fixed precision number in 16.16 format
+    for (int y = y0, tex_y = tex_y0 + clipping_offset; y <= y1; ++y, tex_y += step) {
+        int tex_y_clamped = std::clamp(tex_y >> 16, 0, tex.height - 1); // converting 16.16 back to integer
+
+        Uint32 texel = tex_col[tex_y_clamped];
+        if ((texel & 0xFF000000) == 0) continue;
+
+        Uint32 lit_texel = apply_brightness(lut, texel);
+        Uint32 fogged_texel = fog_factor != 255 ? blend_argb(fog_color_, lit_texel, fog_factor) : fog_color_;
+
+        if (alpha == 255) {
+            col[y] = fogged_texel;
+        } else { col[y] = blend_argb(fogged_texel, col[y], alpha); }
     }
 }
 

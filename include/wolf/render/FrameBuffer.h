@@ -34,11 +34,21 @@ namespace render {
         int int_height_; /**< Integer version of buffer height. Internal-use only */
         vector<Uint32> buffer_; /**< flat column-major buffer*/
         vector<float> zbuf_; /**< depth buffer for fine z-test*/
+        Uint32 fog_color_ = 0; /**< Uint32 representation of fog applied to the whole scene*/
+        float fog_min_depth_ = std::numeric_limits<float>::infinity(); /**< minimum depth to start applying the fog*/
+        float fog_max_depth = std::numeric_limits<float>::infinity(); /**< minimum depth of maximum fog intensity*/
 
         TextureStorage &storage_;
 
+        Uint8 calc_fog_factor(float depth) const;
+
     public:
         FrameBuffer(int32_t width, int32_t height, TextureStorage &storage);
+
+        /**
+         * @brief Sets the fog parameters: color and factor
+         */
+        void set_fog_params(Color fog_color, float min_fog_depth, float max_fog_depth);
 
         /**
          * @brief Returns width of the buffer
@@ -102,6 +112,15 @@ namespace render {
          * @param params draw call parameters (see @c DrawCallParams)
          */
         void vline(int x, int y0, int y1, const DrawCallParams &params);
+
+        /**
+         * @brief Draws vertical line
+         * @param x x coordinate
+         * @param y0 start y coordinate
+         * @param y1 end y coordinate
+         * @param params draw call parameters (see @c DrawCallParams)
+         */
+        void vline_sprite(int x, int y0, int y1, const DrawCallParams &params);
 
         /**
          * @brief Draws horizontal line
