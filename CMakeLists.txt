@@ -21,31 +21,38 @@ FetchContent_MakeAvailable(SDL3)
 add_executable(graphics_lab
         src/main.cpp
         src/wolf/core/Vec2.cpp
+        src/wolf/core/Color.cpp
+        src/wolf/world/Map.cpp
+        src/wolf/render/FrameBuffer.cpp
+        src/wolf/Raycaster.cpp
+        src/wolf/input/PlayerController.cpp
+        src/wolf/render/SdlPresenter.cpp
+        src/wolf/app/Application.cpp
+        src/wolf/texture/TextureStore.cpp
+        src/wolf/sprite/SpriteRenderer.cpp
         include/wolf/core/Vec2.hpp
         include/wolf/core/Color.hpp
-        src/wolf/world/Map.cpp
-        src/wolf/core/Color.cpp
-        include/wolf/render/FrameBuffer.hpp
-        src/wolf/render/FrameBuffer.cpp
+        include/wolf/world/Map.hpp
         include/wolf/world/Player.hpp
+        include/wolf/render/FrameBuffer.hpp
+        include/wolf/render/SdlPresenter.hpp
         include/wolf/raycast/RayHit.hpp
         include/wolf/raycast/Raycaster.hpp
-        src/wolf/Raycaster.cpp
         include/wolf/input/InputState.hpp
         include/wolf/input/PlayerController.hpp
-        src/wolf/input/PlayerController.cpp
-        include/wolf/render/SdlPresenter.hpp
-        src/wolf/render/SdlPresenter.cpp
         include/wolf/app/Application.hpp
-        src/wolf/app/Application.cpp
         include/wolf/texture/Texture.hpp
         include/wolf/texture/TextureStore.hpp
-        src/wolf/texture/TextureStore.cpp
         include/wolf/sprite/Sprite.hpp
+        include/wolf/sprite/SpriteRenderer.hpp
+        test/render_check.cpp
 )
 
 target_include_directories(graphics_lab PRIVATE include)
+
 target_link_libraries(graphics_lab PRIVATE SDL3::SDL3)
+
+target_compile_features(graphics_lab PRIVATE cxx_std_20)
 
 target_compile_options(graphics_lab PRIVATE
         -Wall
@@ -60,20 +67,43 @@ set_target_properties(graphics_lab PROPERTIES
 
 add_executable(test
         test/test.cpp
-        src/wolf/world/Map.cpp
-        src/wolf/core/Color.cpp
-        src/wolf/render/FrameBuffer.cpp
         src/wolf/core/Vec2.cpp
+        src/wolf/core/Color.cpp
+        src/wolf/world/Map.cpp
+        src/wolf/render/FrameBuffer.cpp
         src/wolf/Raycaster.cpp
         src/wolf/texture/TextureStore.cpp
+        src/wolf/sprite/SpriteRenderer.cpp
 )
 
 target_include_directories(test PRIVATE include)
+
 target_link_libraries(test PRIVATE SDL3::SDL3)
+
 target_compile_features(test PRIVATE cxx_std_20)
 
-add_custom_command(TARGET graphics_lab POST_BUILD
+add_custom_target(copy_resources
         COMMAND ${CMAKE_COMMAND} -E copy_directory
         "${CMAKE_SOURCE_DIR}/resources"
         "$<TARGET_FILE_DIR:graphics_lab>/resources"
+        VERBATIM
 )
+
+add_dependencies(graphics_lab copy_resources)
+
+add_executable(render_check
+        test/render_check.cpp
+        src/wolf/core/Vec2.cpp
+        src/wolf/core/Color.cpp
+        src/wolf/world/Map.cpp
+        src/wolf/render/FrameBuffer.cpp
+        src/wolf/Raycaster.cpp
+        src/wolf/texture/TextureStore.cpp
+        src/wolf/sprite/SpriteRenderer.cpp
+)
+
+target_include_directories(render_check PRIVATE include)
+
+target_link_libraries(render_check PRIVATE SDL3::SDL3)
+
+target_compile_features(render_check PRIVATE cxx_std_20)

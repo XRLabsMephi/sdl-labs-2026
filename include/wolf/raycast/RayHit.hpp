@@ -8,9 +8,9 @@ enum class HitSide {
 struct RayHit {
     bool hit = false;
     double depth = 0.0;
+    double wallU = 0.0;
     int mapX = 0;
     int mapY = 0;
     int wallId = 0;
     HitSide side = HitSide::X;
-    double wallX = 0.0;
 };

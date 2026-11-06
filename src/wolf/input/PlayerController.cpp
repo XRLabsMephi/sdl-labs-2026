@@ -28,6 +28,8 @@ void PlayerController::rotate(Player& player, double angle) const {
 }
 
 void PlayerController::update(Player& player, const Map& map, const InputState& input, double dt) const {
+    if (!std::isfinite(dt) || dt <= 0.0) return;
+    if (dt > 0.05) dt = 0.05;
     double step = moveSpeed * dt;
     if (input.forward) {
         move(player, map, player.direction.x * step, player.direction.y * step);
