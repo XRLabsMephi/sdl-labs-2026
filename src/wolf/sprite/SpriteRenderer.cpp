@@ -12,6 +12,7 @@ namespace {
         std::size_t width = static_cast<std::size_t>(texture->width);
         return texture->pixels.size() / width == static_cast<std::size_t>(texture->height) && texture->pixels.size() % width == 0;
     }
+
     struct ProjectedSprite {
         const Texture* texture;
         double depth;
@@ -28,6 +29,7 @@ namespace {
     Color blend(Color source, Color background) {
         unsigned alpha = (source >> 24) & 255;
         unsigned inverse = 255 - alpha;
+
         unsigned red = (((source >> 16) & 255) * alpha + ((background >> 16) & 255) * inverse + 127) / 255;
         unsigned green = (((source >> 8) & 255) * alpha + ((background >> 8) & 255) * inverse + 127) / 255;
         unsigned blue = ((source & 255) * alpha + (background & 255) * inverse + 127) / 255;
@@ -36,7 +38,7 @@ namespace {
     }
 }
 
-void SpriteRenderer::render(const std::vector<Sprite>& sprites, const Player& player, FrameBuffer& frame, const TextureStore& textures, const std::vector<double>& depthBuffer) const {
+void SpriteRenderer::render(const std::vector<Sprite>& sprites, const Player& player, FrameBuffer& frame, const TextureStore& textures, const std::vector<double>& depthBuffer, const Fog& fog) const {
     if (depthBuffer.size() != static_cast<std::size_t>(frame.width())) throw std::invalid_argument("Depth buffer width does not match framebuffer");
 
     double determinant = player.cameraPlane.x * player.direction.y - player.direction.x * player.cameraPlane.y;
@@ -70,7 +72,9 @@ void SpriteRenderer::render(const std::vector<Sprite>& sprites, const Player& pl
 
         projected.push_back({texture, depth, left, top, width, height});
     }
+
     std::sort(projected.begin(), projected.end(), fartherFirst);
+
     for (const ProjectedSprite& sprite : projected) {
         int startX = static_cast<int>(std::floor(std::max(0.0, sprite.left)));
         int endX = static_cast<int>(std::ceil(std::min(static_cast<double>(frame.width()), sprite.left + sprite.width)));
@@ -91,6 +95,9 @@ void SpriteRenderer::render(const std::vector<Sprite>& sprites, const Player& pl
                 unsigned alpha = (color >> 24) & 255;
 
                 if (alpha == 0) continue;
+
+                color = fog.apply(color, sprite.depth);
+
                 if (alpha < 255) color = blend(color, frame.data()[static_cast<std::size_t>(y) * frame.width() + x]);
 
                 frame.setPixel(x, y, color);

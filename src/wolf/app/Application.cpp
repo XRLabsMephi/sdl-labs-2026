@@ -1,4 +1,5 @@
 #include "wolf/app/Application.hpp"
+#include "wolf/effects/Fog.hpp"
 #include "wolf/texture/TextureStore.hpp"
 #include "wolf/input/InputState.hpp"
 #include "wolf/input/PlayerController.hpp"
@@ -9,12 +10,11 @@
 #include "wolf/world/Player.hpp"
 #include "wolf/sprite/Sprite.hpp"
 #include "wolf/sprite/SpriteRenderer.hpp"
-#include <vector>
-
 #include <SDL3/SDL.h>
 #include <iostream>
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 int Application::run() {
     if (!SDL_Init(SDL_INIT_VIDEO)) {
@@ -27,51 +27,70 @@ int Application::run() {
     try {
         const char* basePath = SDL_GetBasePath();
         if (!basePath) throw std::runtime_error(SDL_GetError());
+
         std::string mapPath = std::string(basePath) + "resources/map.txt";
         Map map;
+
         if (!map.loadFromFile(mapPath)) {
             throw std::runtime_error("Failed to load map: " + mapPath);
         }
+
         Player player;
         if (map.isWall(1, 1)) throw std::runtime_error("Player start cell must be empty");
+
         TextureStore textures;
-        for (int id = 1; id <= 4; id++) {
+
+        for (int id = 1; id <= 4; ++id) {
             std::string path = std::string(basePath) + "resources/wall" + std::to_string(id) + ".bmp";
+
             if (!textures.load(id, path)) {
                 throw std::runtime_error("Failed to load texture: " + path);
             }
         }
+
         std::string spritePath = std::string(basePath) + "resources/barrel.bmp";
+
         if (!textures.load(10, spritePath)) {
             throw std::runtime_error("Failed to load sprite: " + spritePath);
         }
+
         std::string boyPath = std::string(basePath) + "resources/boy.bmp";
+
         if (!textures.load(11, boyPath)) {
             throw std::runtime_error("Failed to load sprite: " + boyPath);
         }
+
         std::vector<Sprite> sprites = {
             {{4.5, 1.5}, 10, 0.8},
             {{8.5, 4.5}, 10, 1.0},
             {{6.5, 2.5}, 11, 1.2}
         };
+
         FrameBuffer frame(800, 600);
         SdlPresenter presenter(frame.width(), frame.height());
         Raycaster raycaster;
         SpriteRenderer spriteRenderer;
         PlayerController controller;
+        Fog fog{3.0, 10.0, makeColor(70, 100, 140)};
+
         bool running = true;
         Uint64 previousTime = SDL_GetTicksNS();
+
         while (running) {
             SDL_Event event;
+
             while (SDL_PollEvent(&event)) {
                 if (event.type == SDL_EVENT_QUIT || event.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED) running = false;
             }
+
             const bool* keys = SDL_GetKeyboardState(nullptr);
             if (keys[SDL_SCANCODE_ESCAPE]) running = false;
             if (!running) break;
+
             Uint64 currentTime = SDL_GetTicksNS();
             double deltaTime = static_cast<double>(currentTime - previousTime) / 1000000000.0;
             previousTime = currentTime;
+
             InputState input;
             input.forward = keys[SDL_SCANCODE_W] || keys[SDL_SCANCODE_UP];
             input.backward = keys[SDL_SCANCODE_S] || keys[SDL_SCANCODE_DOWN];
@@ -79,16 +98,19 @@ int Application::run() {
             input.right = keys[SDL_SCANCODE_D];
             input.rotateLeft = keys[SDL_SCANCODE_LEFT];
             input.rotateRight = keys[SDL_SCANCODE_RIGHT];
+
             controller.update(player, map, input, deltaTime);
-            raycaster.render(map, player, frame, textures);
-            spriteRenderer.render(sprites, player, frame, textures, raycaster.depthBuffer());
+            raycaster.render(map, player, frame, textures, fog);
+            spriteRenderer.render(sprites, player, frame, textures, raycaster.depthBuffer(), fog);
             presenter.present(frame);
+
             SDL_Delay(1);
         }
     } catch (const std::exception& error) {
         std::cerr << error.what() << '\n';
         result = 1;
     }
+
     SDL_Quit();
     return result;
 }

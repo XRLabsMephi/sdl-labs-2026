@@ -90,7 +90,7 @@ RayHit Raycaster::castRay(const Map& map, const Player& player, double cameraX) 
     }
 }
 
-void Raycaster::render(const Map& map, const Player& player, FrameBuffer& frame, const TextureStore& textures) {
+void Raycaster::render(const Map& map, const Player& player, FrameBuffer& frame, const TextureStore& textures, const Fog& fog) {
     Color ceilingColor = makeColor(70, 100, 140);
     Color floorColor = makeColor(90, 90, 90);
 
@@ -154,7 +154,8 @@ void Raycaster::render(const Map& map, const Player& player, FrameBuffer& frame,
                 blue /= 2;
             }
 
-            frame.setPixel(x, y, makeColor(red, green, blue));
+            Color wallColor = fog.apply(makeColor(red, green, blue), hit.depth);
+            frame.setPixel(x, y, wallColor);
         }
     }
 }
