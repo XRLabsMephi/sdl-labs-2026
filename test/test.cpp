@@ -8,6 +8,39 @@
 #include <iostream>
 #include <stdexcept>
 #include "wolf/sprite/Sprite.hpp"
+#include "wolf/world/Map.hpp"
+#include <fstream>
+#include <cmath>
+
+void testRayHit() {
+    const char* path = "test_map.txt";
+    {
+        std::ofstream file(path);
+        file << "5 5\n";
+        file << "1 1 1 1 1\n";
+        file << "1 0 0 0 1\n";
+        file << "1 0 0 0 1\n";
+        file << "1 0 0 0 1\n";
+        file << "1 1 1 1 1\n";
+    }
+    Map map;
+    assert(map.loadFromFile(path));
+    std::remove(path);
+    Player player;
+    player.position = {1.25, 1.75};
+    player.direction = {1.0, 0.0};
+    Raycaster raycaster;
+    RayHit hit = raycaster.castRay(map, player, 0.0);
+    assert(hit.hit);
+    assert(hit.side == HitSide::X);
+    assert(std::abs(hit.wallX - 0.75) < 1e-9);
+    player.direction = {0.0, 1.0};
+    hit = raycaster.castRay(map, player, 0.0);
+    assert(hit.hit);
+    assert(hit.side == HitSide::Y);
+    assert(std::abs(hit.wallX - 0.25) < 1e-9);
+    std::cout << "RayHit test passed\n";
+}
 
 void testTextureStore() {
     const char* path = "test_texture.bmp";
@@ -92,5 +125,6 @@ int main() {
     }
     testTextureStore();
     testSprite();
+    testRayHit();
     return 0;
 }

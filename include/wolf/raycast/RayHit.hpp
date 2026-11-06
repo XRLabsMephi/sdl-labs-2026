@@ -12,4 +12,5 @@ struct RayHit {
     int mapY = 0;
     int wallId = 0;
     HitSide side = HitSide::X;
+    double wallX = 0.0;
 };

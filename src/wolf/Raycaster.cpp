@@ -55,8 +55,14 @@ RayHit Raycaster::castRay(const Map& map, const Player& player, double cameraX) 
             hit.mapX = mapX;
             hit.mapY = mapY;
             hit.wallId = map.getCell(mapX, mapY);
-            if (hit.side == HitSide::X) hit.depth = sideDistX - deltaDistX;
-            else hit.depth = sideDistY - deltaDistY;
+            if (hit.side == HitSide::X) {
+                hit.depth = sideDistX - deltaDistX;
+                hit.wallX = player.position.y + hit.depth * direction.y;
+            } else {
+                hit.depth = sideDistY - deltaDistY;
+                hit.wallX = player.position.x + hit.depth * direction.x;
+            }
+            hit.wallX -= std::floor(hit.wallX);
             return hit;
         }
     }
