@@ -22,7 +22,7 @@ namespace render {
 
         [[nodiscard]] Uint32 pixel(int x, int y) const { return pixels[x * height + y]; }
 
-        Uint32 *column(int x){ return &pixels[x * height]; }
+        [[nodiscard]] const Uint32 *column(int x) const { return &pixels[x * height]; }
 
         static const Texture empty;
 

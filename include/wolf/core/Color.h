@@ -1,8 +1,19 @@
 #pragma once
 #include <SDL3/SDL_pixels.h>
 #include <algorithm>
+#include <array>
 
 namespace core {
+    constexpr auto make_dim_lut() {
+        std::array<std::array<Uint8, 256>, 256> t{};
+        for (int b = 0; b < 256; ++b)
+            for (int v = 0; v < 256; ++v)
+                t[b][v] = static_cast<Uint8>(v * b / 255);
+        return t;
+    }
+
+    inline constexpr auto DIM = make_dim_lut();
+
     struct Color {
         Uint8 r_; /**< R component, range [0, 255]*/
         Uint8 g_; /**< G component, range [0, 255]*/
@@ -38,10 +49,10 @@ namespace core {
          */
         static Color fromUint32_t(Uint32 rgba) {
             return {
-                static_cast<Uint8>(rgba >> 24),
                 static_cast<Uint8>(rgba >> 16 & 255),
                 static_cast<Uint8>(rgba >> 8 & 255),
-                static_cast<Uint8>(rgba & 255)
+                static_cast<Uint8>(rgba & 255),
+                static_cast<Uint8>(rgba >> 24)
             };
         }
 
@@ -51,7 +62,7 @@ namespace core {
          * @param percent [0, 100] percentage of transition between current and other.
          * @return resulting Color
          */
-        Color lerp(const Color &other, unsigned percent) const {
+        [[nodiscard]] Color lerp(const Color &other, unsigned percent) const {
             return lerp(*this, other, percent);
         }
 

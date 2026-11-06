@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include "TextureStorage.h"
 #include "core/Color.h"
 
 namespace render {
@@ -15,9 +16,11 @@ namespace render {
     struct DrawCallParams {
         int tex_id = -1; /**< ID of texture. Must be non-negative*/
         int tex_x = -1; /**< Column in texture. Must be non-negative*/
-        double depth = 0; /**< Depth of the object in the frame (z_buf value). Influences the color*/
-        double brightness = 0.0; /**< Dynamic shadowing coefficient*/
-        double alpha = 0.0; /**< Transparency of the texture column*/
+        int tex_y_start = 0; /**< Mapping from screen to texture coordinates in 16.16 fixed precision format.*/
+        int tex_step = 0; /**< Texture pixels step per screen pixel, in 16.16 fixed precision format*/
+        float depth = 0; /**< Depth of the object in the frame (z_buf value). Influences the color*/
+        Uint8 brightness = 0; /**< Dynamic shadowing coefficient*/
+        Uint8 alpha = 0; /**< Transparency of the texture column*/
     };
 
 
@@ -29,20 +32,23 @@ namespace render {
         buf_size_t height_; /**< Height of buffer in pixels */
         int int_width_; /**< Integer version of buffer width. Internal-use only */
         int int_height_; /**< Integer version of buffer height. Internal-use only */
-        vector<uint32_t> buffer_; /** < flat column-major buffer*/
+        vector<Uint32> buffer_; /**< flat column-major buffer*/
+        vector<float> zbuf_; /**< depth buffer for fine z-test*/
+
+        TextureStorage &storage_;
 
     public:
-        FrameBuffer(int32_t width, int32_t height);
+        FrameBuffer(int32_t width, int32_t height, TextureStorage &storage);
 
         /**
          * @brief Returns width of the buffer
          */
-        buf_size_t width() const;
+        [[nodiscard]] buf_size_t width() const;
 
         /**
          * @brief Returns width of the buffer
          */
-        buf_size_t height() const;
+        [[nodiscard]] buf_size_t height() const;
 
         /**
          * @return const pointer to the start of raw buffer data (column-major)
@@ -80,15 +86,6 @@ namespace render {
         void set(int x, int y, const DrawCallParams &params);
 
         /**
-         * @brief Draws point at given position
-         * @param x x coordinate
-         * @param y y coordinate
-         * @param size point size in pixels
-         * @param params draw call parameters (see @c DrawCallParams)
-         */
-        void point(int x, int y, int size, const DrawCallParams &params);
-
-        /**
         * @brief Draws vertical line
         * @param x x coordinate
         * @param y0 start y coordinate
@@ -111,7 +108,7 @@ namespace render {
          * @param y y coordinate
          * @param x0 start x coordinate
          * @param x1 end x coordinate
-         * @param params draw call parameters (see @c DrawCallParams)
+         * @param color color to apply
          */
         void hline(int y, int x0, int x1, Color color);
 
@@ -130,7 +127,7 @@ namespace render {
          * @param y0 top-left y coordinate
          * @param x1 bottom-right x coordinate
          * @param y1 bottom-right y coordinate
-         * @param params draw call parameters (see @c DrawCallParams)
+         * @param color color to apply
          */
         void rectangle(int x0, int y0, int x1, int y1, Color color);
 
@@ -142,6 +139,6 @@ namespace render {
          * @param y1 bottom-right y coordinate
          * @param params draw call parameters (see @c DrawCallParams)
          */
-        void rectangle(int x0, int y0, int x1, int y1, const DrawCallParams &params);
+        void rectangle(int x0, int y0, int x1, int y1, DrawCallParams &params);
     };
 }

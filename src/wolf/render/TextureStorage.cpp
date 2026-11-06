@@ -54,7 +54,12 @@ namespace render {
 
     bool TextureStorage::contains(size_t id) const noexcept { return id < used_.size() && used_[id]; }
 
-    const Texture & TextureStorage::getOrEmpty(size_t id) noexcept {
+    const Texture& TextureStorage::get(size_t id) {
+        return textures_[id];
+    }
+
+
+    const Texture& TextureStorage::getOrEmpty(size_t id) noexcept {
         return id > max_id_ ? Texture::empty : textures_[id];
     }
 
