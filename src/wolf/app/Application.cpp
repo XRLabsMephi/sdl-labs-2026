@@ -1,5 +1,5 @@
 #include "wolf/app/Application.hpp"
-
+#include "wolf/texture/TextureStore.hpp"
 #include "wolf/input/InputState.hpp"
 #include "wolf/input/PlayerController.hpp"
 #include "wolf/raycast/Raycaster.hpp"
@@ -7,6 +7,9 @@
 #include "wolf/render/SdlPresenter.hpp"
 #include "wolf/world/Map.hpp"
 #include "wolf/world/Player.hpp"
+#include "wolf/sprite/Sprite.hpp"
+#include "wolf/sprite/SpriteRenderer.hpp"
+#include <vector>
 
 #include <SDL3/SDL.h>
 #include <iostream>
@@ -31,9 +34,30 @@ int Application::run() {
         }
         Player player;
         if (map.isWall(1, 1)) throw std::runtime_error("Player start cell must be empty");
+        TextureStore textures;
+        for (int id = 1; id <= 4; id++) {
+            std::string path = std::string(basePath) + "resources/wall" + std::to_string(id) + ".bmp";
+            if (!textures.load(id, path)) {
+                throw std::runtime_error("Failed to load texture: " + path);
+            }
+        }
+        std::string spritePath = std::string(basePath) + "resources/barrel.bmp";
+        if (!textures.load(10, spritePath)) {
+            throw std::runtime_error("Failed to load sprite: " + spritePath);
+        }
+        std::string boyPath = std::string(basePath) + "resources/boy.bmp";
+        if (!textures.load(11, boyPath)) {
+            throw std::runtime_error("Failed to load sprite: " + boyPath);
+        }
+        std::vector<Sprite> sprites = {
+            {{4.5, 1.5}, 10, 0.8},
+            {{8.5, 4.5}, 10, 1.0},
+            {{6.5, 2.5}, 11, 1.2}
+        };
         FrameBuffer frame(800, 600);
         SdlPresenter presenter(frame.width(), frame.height());
         Raycaster raycaster;
+        SpriteRenderer spriteRenderer;
         PlayerController controller;
         bool running = true;
         Uint64 previousTime = SDL_GetTicksNS();
@@ -56,7 +80,8 @@ int Application::run() {
             input.rotateLeft = keys[SDL_SCANCODE_LEFT];
             input.rotateRight = keys[SDL_SCANCODE_RIGHT];
             controller.update(player, map, input, deltaTime);
-            raycaster.render(map, player, frame);
+            raycaster.render(map, player, frame, textures);
+            spriteRenderer.render(sprites, player, frame, textures, raycaster.depthBuffer());
             presenter.present(frame);
             SDL_Delay(1);
         }
