@@ -1,5 +1,5 @@
 #include "wolf/app/Application.hpp"
-
+#include "wolf/texture/TextureStore.hpp"
 #include "wolf/input/InputState.hpp"
 #include "wolf/input/PlayerController.hpp"
 #include "wolf/raycast/Raycaster.hpp"
@@ -31,6 +31,13 @@ int Application::run() {
         }
         Player player;
         if (map.isWall(1, 1)) throw std::runtime_error("Player start cell must be empty");
+        TextureStore textures;
+        for (int id = 1; id <= 4; id++) {
+            std::string path = std::string(basePath) + "resources/wall" + std::to_string(id) + ".bmp";
+            if (!textures.load(id, path)) {
+                throw std::runtime_error("Failed to load texture: " + path);
+            }
+        }
         FrameBuffer frame(800, 600);
         SdlPresenter presenter(frame.width(), frame.height());
         Raycaster raycaster;
@@ -56,7 +63,7 @@ int Application::run() {
             input.rotateLeft = keys[SDL_SCANCODE_LEFT];
             input.rotateRight = keys[SDL_SCANCODE_RIGHT];
             controller.update(player, map, input, deltaTime);
-            raycaster.render(map, player, frame);
+            raycaster.render(map, player, frame, textures);
             presenter.present(frame);
             SDL_Delay(1);
         }
