@@ -33,12 +33,12 @@ void testRayHit() {
     RayHit hit = raycaster.castRay(map, player, 0.0);
     assert(hit.hit);
     assert(hit.side == HitSide::X);
-    assert(std::abs(hit.wallX - 0.75) < 1e-9);
+    assert(std::abs(hit.wallU - 0.75) < 1e-9);
     player.direction = {0.0, 1.0};
     hit = raycaster.castRay(map, player, 0.0);
     assert(hit.hit);
     assert(hit.side == HitSide::Y);
-    assert(std::abs(hit.wallX - 0.25) < 1e-9);
+    assert(std::abs(hit.wallU - 0.25) < 1e-9);
     std::cout << "RayHit test passed\n";
 }
 
