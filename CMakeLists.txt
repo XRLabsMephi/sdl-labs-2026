@@ -20,6 +20,7 @@ set(HEADERS
         include/wolf/render/Texture.h
         include/wolf/render/TextureStorage.h
         include/wolf/render/TextureStorageInflator.h
+        include/wolf/render/Fog.h
 )
 
 set(SOURCES
