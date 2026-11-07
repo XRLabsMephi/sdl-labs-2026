@@ -109,6 +109,7 @@ void RayCaster::renderScene(){
     double tan_half_fov = tan(field_of_view / 2.0f);
 
     //Further, we turn camera direction by -pi/2 to get orthogonal vector and transform it to necessary for current fov length
+
     // the vector of half of virtual screen (where image is projected)
     Vector2 plane = Vector2{camera_direction.y, -camera_direction.x} * tan_half_fov;
 

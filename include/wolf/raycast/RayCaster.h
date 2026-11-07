@@ -45,7 +45,6 @@ namespace raycast{
         render::FrameBuffer& frame_buffer_;
         int frame_width_, frame_height_;
 
-        static constexpr int max_hits = 1;
         static constexpr double angle_eps = 1e-7f;
         static constexpr double eps = 1e-8f;
         static constexpr double pi = 3.1415926536;

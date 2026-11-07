@@ -17,7 +17,7 @@ constexpr int FRAME_HEIGHT = WINDOW_HEIGHT;
 
 constexpr SDL_WindowFlags WINDOW_FLAGS = 0;
 
-constexpr double NANOSECONDS_PER_SECOND = 1'000'000'000.0;
+constexpr double NANOSECONDS_PER_SECOND = 1e-9;
 
 constexpr double MOVE_SPEED = 3.0;
 constexpr double ROTATION_SPEED = 2.0;
@@ -240,7 +240,7 @@ void app::Application::run() {
             // Convert elapsed time from nanoseconds to seconds.
             const double deltaTime =
                 static_cast<double>(currentTime - previousTime)
-                / NANOSECONDS_PER_SECOND;
+                * NANOSECONDS_PER_SECOND;
 
             previousTime = currentTime;
 
@@ -326,9 +326,13 @@ void app::Application::processEvents() {
                 break;
 
             case SDL_EVENT_WINDOW_FOCUS_LOST:
-                if (event.window.windowID ==
-                    SDL_GetWindowID(window.get())) {
+                if (event.window.windowID == SDL_GetWindowID(window.get())) {
                     focused = false;
+
+                    if (!SDL_SetWindowRelativeMouseMode(window.get(), false)) {
+                        SDL_Log("Failed to release mouse: %s", SDL_GetError());
+                    }
+
                     input.reset();
                 }
                 break;
@@ -339,6 +343,24 @@ void app::Application::processEvents() {
                     focused = true;
                     input.reset();
                 }
+                break;
+
+            case SDL_EVENT_MOUSE_BUTTON_DOWN:
+                if (focused &&
+                    event.button.windowID == SDL_GetWindowID(window.get()) &&
+                    event.button.button == SDL_BUTTON_LEFT) {
+                    if (!SDL_SetWindowRelativeMouseMode(window.get(), true)) {
+                        SDL_Log("Failed to capture mouse: %s", SDL_GetError());
+                    }
+                    }
+                break;
+
+            case SDL_EVENT_MOUSE_MOTION:
+                if (focused &&
+                    event.motion.windowID == SDL_GetWindowID(window.get()) &&
+                    SDL_GetWindowRelativeMouseMode(window.get())) {
+                    input.handleEvent(event);
+                    }
                 break;
 
             default:

@@ -1,8 +1,19 @@
 #pragma once
 #include <SDL3/SDL_pixels.h>
 #include <algorithm>
+#include <array>
 
 namespace core {
+    constexpr auto make_dim_lut() {
+        std::array<std::array<Uint8, 256>, 256> t{};
+        for (int b = 0; b < 256; ++b)
+            for (int v = 0; v < 256; ++v)
+                t[b][v] = static_cast<Uint8>(v * b / 255);
+        return t;
+    }
+
+    inline constexpr auto DIM = make_dim_lut();
+
     struct Color {
         Uint8 r_; /**< R component, range [0, 255]*/
         Uint8 g_; /**< G component, range [0, 255]*/
@@ -17,31 +28,31 @@ namespace core {
          * @brief Converts current color into single 32-bit number
          * @return uint32_t representation of color
          */
-        uint32_t to_uint32_t() const {
-            return to_uint32_t(*this);
+        [[nodiscard]] Uint32 toUint32_t() const {
+            return toUint32_t(*this);
         }
 
         /**
          * @brief Converts given color into single 32-bit number
          * @return uint32_t representation of color
          */
-        static uint32_t to_uint32_t(const Color &color) {
-            return static_cast<uint32_t>(color.a_) << 24
-                 | static_cast<uint32_t>(color.r_) << 16
-                 | static_cast<uint32_t>(color.g_) << 8
-                 | static_cast<uint32_t>(color.b_);
+        static Uint32 toUint32_t(const Color &color) {
+            return static_cast<Uint32>(color.a_) << 24
+                 | static_cast<Uint32>(color.r_) << 16
+                 | static_cast<Uint32>(color.g_) << 8
+                 | static_cast<Uint32>(color.b_);
         }
 
         /**
          * @brief Converts single 32-bit number into color
          * @return Color from this 32-bit number
          */
-        static Color from_uint32_t(uint32_t rgba) {
+        static Color fromUint32_t(Uint32 rgba) {
             return {
-                static_cast<Uint8>(rgba >> 24),
                 static_cast<Uint8>(rgba >> 16 & 255),
                 static_cast<Uint8>(rgba >> 8 & 255),
-                static_cast<Uint8>(rgba & 255)
+                static_cast<Uint8>(rgba & 255),
+                static_cast<Uint8>(rgba >> 24)
             };
         }
 
@@ -51,7 +62,7 @@ namespace core {
          * @param percent [0, 100] percentage of transition between current and other.
          * @return resulting Color
          */
-        Color lerp(const Color &other, unsigned percent) const {
+        [[nodiscard]] Color lerp(const Color &other, unsigned percent) const {
             return lerp(*this, other, percent);
         }
 
@@ -72,6 +83,33 @@ namespace core {
                 mix(lhs.g_, rhs.g_),
                 mix(lhs.b_, rhs.b_),
                 mix(lhs.a_, rhs.a_)
+            };
+        }
+
+        /**
+         * @brief Applies multiplication of R, G, B components by scalar to this color
+         * @param scalar number to multiply by
+         * @return reference to updated itself (for chaining)
+         */
+        Color& multiplyColorsByScalar(double scalar) {
+            r_ = static_cast<Uint8>(std::clamp(r_ * scalar, 0.0, 255.0));
+            g_ = static_cast<Uint8>(std::clamp(g_ * scalar, 0.0, 255.0));
+            b_ = static_cast<Uint8>(std::clamp(b_ * scalar, 0.0, 255.0));
+            return *this;
+        }
+
+        /**
+         * @brief Multiplies R, G, B components of color by scalar and returns the result
+         * @param color the color to apply operation to
+         * @param scalar number to multiply by
+         * @return the result of multiplication
+         */
+        static Color multiplyColorsByScalar(const Color& color, double scalar) {
+            return {
+                static_cast<Uint8>(std::clamp(color.r_ * scalar, 0.0, 255.0)),
+                static_cast<Uint8>(std::clamp(color.g_ * scalar, 0.0, 255.0)),
+                static_cast<Uint8>(std::clamp(color.b_ * scalar, 0.0, 255.0)),
+                color.a_
             };
         }
 

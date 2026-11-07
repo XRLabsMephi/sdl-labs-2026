@@ -34,6 +34,22 @@ namespace core {
         inline static double length(const Vector2& v){
             return sqrt(v.x * v.x + v.y * v.y);
         }
+
+        static double dot(const Vector2& a, const Vector2& b) {
+            return a.x * b.x + a.y * b.y;
+        }
+
+        double dot(const Vector2& other) const {
+            return dot(*this, other);
+        }
+
+        static double cross(const Vector2& a, const Vector2& b) {
+            return a.x * b.y - a.y * b.x;
+        }
+
+        double cross(const Vector2& other) const {
+            return cross(*this, other);
+        }
     };
 
 }
