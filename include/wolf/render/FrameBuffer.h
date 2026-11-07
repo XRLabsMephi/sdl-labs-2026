@@ -1,6 +1,8 @@
 #pragma once
 
 #include <vector>
+
+#include "Fog.h"
 #include "TextureStorage.h"
 #include "core/Color.h"
 
@@ -14,15 +16,12 @@ namespace render {
     * @brief Contains parameters for texture draw call to @c FrameBuffer.
     */
     struct DrawCallParams {
-        int tex_id = -1; /**< ID of texture. Must be non-negative*/
-        int tex_x = -1; /**< Column in texture. Must be non-negative*/
+        Uint32* tex_col = nullptr; /**< Texture pixels column*/
         int tex_y_start = 0; /**< Mapping from screen to texture coordinates in 16.16 fixed precision format.*/
         int tex_step = 0; /**< Texture pixels step per screen pixel, in 16.16 fixed precision format*/
         float depth = 0; /**< Depth of the object in the frame (z_buf value). Influences the color*/
         Uint8 brightness = 0; /**< Dynamic shadowing coefficient*/
-        Uint8 alpha = 0; /**< Transparency of the texture column*/
     };
-
 
     /**
      * Pixel buffer for a single frame
@@ -33,17 +32,10 @@ namespace render {
         int int_width_; /**< Integer version of buffer width. Internal-use only */
         int int_height_; /**< Integer version of buffer height. Internal-use only */
         vector<Uint32> buffer_; /**< flat column-major buffer*/
-        vector<float> zbuf_; /**< depth buffer for fine z-test*/
-        Uint32 fog_color_ = 0; /**< Uint32 representation of fog applied to the whole scene*/
-        float fog_min_depth_ = std::numeric_limits<float>::infinity(); /**< minimum depth to start applying the fog*/
-        float fog_max_depth = std::numeric_limits<float>::infinity(); /**< minimum depth of maximum fog intensity*/
-
-        TextureStorage &storage_;
-
-        Uint8 calc_fog_factor(float depth) const;
+        Fog fog_;
 
     public:
-        FrameBuffer(int32_t width, int32_t height, TextureStorage &storage);
+        FrameBuffer(int32_t width, int32_t height);
 
         /**
          * @brief Sets the fog parameters: color and factor
@@ -111,16 +103,8 @@ namespace render {
          * @param y1 end y coordinate
          * @param params draw call parameters (see @c DrawCallParams)
          */
+        template<bool IsSprite>
         void vline(int x, int y0, int y1, const DrawCallParams &params);
-
-        /**
-         * @brief Draws vertical line
-         * @param x x coordinate
-         * @param y0 start y coordinate
-         * @param y1 end y coordinate
-         * @param params draw call parameters (see @c DrawCallParams)
-         */
-        void vline_sprite(int x, int y0, int y1, const DrawCallParams &params);
 
         /**
          * @brief Draws horizontal line
