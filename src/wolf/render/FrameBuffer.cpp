@@ -29,6 +29,13 @@ FrameBuffer::FrameBuffer(int width, int height)
     int_height_ = height;
 
     buffer_.assign(width_ * height_, 0);
+    zbuf_.assign(width_, std::numeric_limits<float>::infinity());
+}
+
+void FrameBuffer::set_fog_params(Color fog_color, float min_fog_depth, float max_fog_depth) {
+    fog_color_ = fog_color.toUint32_t();
+    fog_min_depth_ = min_fog_depth;
+    fog_max_depth = max_fog_depth;
 }
 
 void FrameBuffer::set_fog_params(Color fog_color, float min_fog_depth, float max_fog_depth) {
@@ -55,7 +62,7 @@ void FrameBuffer::set(int x, int y, const Color color) {
     buffer_[x * height_ + y] = static_cast<Uint32>(color);
 }
 
-void FrameBuffer::set(int x, int y, const DrawCallParams &params) {
+void FrameBuffer::set(int x, int y, const Color color) {
     if (x < 0 || y < 0 || x >= int_width_ || y >= int_height_) return;
 
     buffer_[x * height_ + y] = params.tex_col[y]; //TODO пересчитать через step

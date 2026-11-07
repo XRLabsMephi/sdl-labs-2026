@@ -35,7 +35,12 @@ namespace render {
         Fog fog_;
 
     public:
-        FrameBuffer(int32_t width, int32_t height);
+        FrameBuffer(int32_t width, int32_t height, TextureStorage &storage);
+
+        /**
+         * @brief Sets the fog parameters: color and factor
+         */
+        void set_fog_params(Color fog_color, float min_fog_depth, float max_fog_depth);
 
         /**
          * @brief Sets the fog parameters: color and factor
@@ -105,6 +110,24 @@ namespace render {
          */
         template<bool IsSprite>
         void vline(int x, int y0, int y1, const DrawCallParams &params);
+
+        /**
+         * @brief Draws vertical line
+         * @param x x coordinate
+         * @param y0 start y coordinate
+         * @param y1 end y coordinate
+         * @param params draw call parameters (see @c DrawCallParams)
+         */
+        void vline_sprite(int x, int y0, int y1, const DrawCallParams &params);
+
+        /**
+         * @brief Draws horizontal line
+         * @param y y coordinate
+         * @param x0 start x coordinate
+         * @param x1 end x coordinate
+         * @param color color to apply
+         */
+        void hline(int y, int x0, int x1, Color color);
 
         /**
          * @brief Draws horizontal line
