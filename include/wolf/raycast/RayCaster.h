@@ -9,6 +9,12 @@
 #include <world/Player.h>
 
 namespace raycast{
+
+    struct RayCasterSetting{
+
+    };
+
+
     using Vector2 = core::Vector2;
     //TODO documentation
     class RayCaster{
@@ -44,9 +50,7 @@ namespace raycast{
         static constexpr double eps = 1e-8f;
         static constexpr double pi = 3.1415926536;
 
-        //current count of hits
-        int hit_count = 0;
-        std::array<RayHit, max_hits> ray_cast_hits;
+        RayHit ray_cast_hit;
         //Cast a single ray with given nonzero direction and save information in array ray_cast_hits
         void castRay(Vector2 direction);
 
