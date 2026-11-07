@@ -1,5 +1,6 @@
 #include "sprite_renderer.h"
 #include "settings.h"
+#include "fog.h"
 #include <cmath>
 #include <algorithm>
 
@@ -69,7 +70,7 @@ void SpriteRenderer::draw(
 				255
 			};
 
-			frameBuffer.setPixel(x, y, color);
+			frameBuffer.setPixel(x, y, fog::apply(color, depth));
 		}
 	}
 }

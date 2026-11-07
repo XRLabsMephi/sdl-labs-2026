@@ -17,6 +17,7 @@
 #include "sprite_renderer.h"
 #include "map_generator.h"
 #include "interface.h"
+#include "fog.h"
 
 Application::Application() = default;
 
@@ -101,7 +102,7 @@ int Application::run() {
 		);
 
 		int cnt = 0;
-		
+
 		//таймер для логики main game loop
 
 		bool isTimerRunning = false;
@@ -125,7 +126,7 @@ int Application::run() {
 				}
 				if (event.type == SDL_EVENT_MOUSE_MOTION) {
 					double mouseSensitivity = 0.0025;
-					main_pl.turn_right(event.motion.xrel*0.002);
+					main_pl.turn_right(event.motion.xrel * 0.002);
 				}
 				if (event.type == SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED) {
 					int width, height;
@@ -144,7 +145,7 @@ int Application::run() {
 					}
 				}
 			}
-			
+
 			if (!running) break;
 			const bool* keys = SDL_GetKeyboardState(nullptr);
 
@@ -174,7 +175,7 @@ int Application::run() {
 					return sprite.type == SpriteType::food &&
 						std::hypot(sprite.x - main_pl.get_X(), sprite.y - main_pl.get_Y())
 						< 0.6 * settings::map_scale;
-					});
+				});
 
 				main_pl.add_score(found);
 
@@ -186,7 +187,7 @@ int Application::run() {
 				}
 
 				for (auto& teleport : play_field.teleports) {
-					if (std::hypot(teleport.x - main_pl.get_X(), teleport.y - main_pl.get_Y()) 
+					if (std::hypot(teleport.x - main_pl.get_X(), teleport.y - main_pl.get_Y())
 						< 0.4 * settings::map_scale) {
 						if (main_pl.get_score() == play_field.getMax_food()) {
 							std::cout << "You should be moved to next lvl !\n";
@@ -206,7 +207,8 @@ int Application::run() {
 							isTimerRunning = true;
 						}
 						else {
-							std::cout << "You collected " << main_pl.get_score() << " food out of " << play_field.getMax_food() << '\n';
+							std::cout << "You collected " << main_pl.get_score() << " food out of " << play_field.
+								getMax_food() << '\n';
 						}
 					}
 				}
@@ -229,9 +231,6 @@ int Application::run() {
 				}
 			}
 
-
-
-			
 
 			int screenWidth = frameBuffer.width();
 			int screenHeight = frameBuffer.height();
@@ -320,14 +319,6 @@ int Application::run() {
 						double floorX = main_pl.get_X() + rayDist * rayDirX0;
 						double floorY = main_pl.get_Y() + rayDist * rayDirY0;
 
-						//затухание в соответствии с расстоянием 
-						double brightness = 1.0 - rayDist / (35.0 * settings::map_scale);
-						if (brightness < 0.0) brightness = 0.0;
-						if (brightness > 1.0) brightness = 1.0;
-
-						//повышаем контрастность
-						brightness = std::pow(brightness, 3);
-
 						for (int x = 0; x < screenWidth; x++) {
 							// Получаем координаты внутри клетки (0.0 - 1.0)
 							double texU = floorX / settings::map_scale;
@@ -344,8 +335,8 @@ int Application::run() {
 							if (texY < 0) texY = 0;
 							if (texY >= floorTex.height()) texY = floorTex.height() - 1;
 
-							frameBuffer.setPixel(x, y, toColor(floorTex.sample(texX, texY), brightness));
-
+							frameBuffer.setPixel(
+								x, y, fog::apply(toColor(floorTex.sample(texX, texY), 1.0), rowDistance));
 							// Шагаем к следующему пикселю строки
 							floorX += stepX;
 							floorY += stepY;
@@ -355,7 +346,7 @@ int Application::run() {
 				else {
 					// Fallback, если текстура пола не загрузилась
 					frameBuffer.fillRect(0, screenHeight / 2, screenWidth, screenHeight / 2,
-						Color{ 255, 0, 0, 255 });
+					                     Color{255, 0, 0, 255});
 				}
 			}
 
@@ -375,14 +366,6 @@ int Application::run() {
 
 				int height = static_cast<int>(settings::map_scale * projectionDistance / hit.depth);
 				int yStart = static_cast<int>(screenHeight / 2.0 - height / 2.0);
-
-				//затухание в соответствии с расстоянием 
-				double brightness = 1.0 - hit.depth / (35.0 * settings::map_scale);
-				if (brightness < 0.0) brightness = 0.0;
-				if (brightness > 1.0) brightness = 1.0;
-
-				//повышаем контрастность
-				brightness = std::pow(brightness, 3);
 
 				const Texture& tex = textures_[hit.wallId];
 
@@ -406,7 +389,7 @@ int Application::run() {
 					int texY = static_cast<int>(texPos) % tex.height();
 					texPos += texStep;
 					if ((tex.sample(texX, texY) >> 24) < 128) continue;
-					frameBuffer.setPixel(i, y, toColor(tex.sample(texX, texY), brightness));
+					frameBuffer.setPixel(i, y, fog::apply(toColor(tex.sample(texX, texY), 1.0), hit.depth));
 				}
 				depthBuffer_[i] = hit.depth;
 			}
