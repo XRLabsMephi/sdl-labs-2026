@@ -68,7 +68,7 @@ void FrameBuffer::vline(int x, int y0, int y1, const DrawCallParams &params) {
     if (x < 0 || x >= int_width_) return;
 
     const auto &[tex_col, tex_y0, step, depth, brightness] = params;
-    if (step <= 0 || tex_y0 < 0) return;
+    if (!tex_col || step < 0 || tex_y0 < 0) return;
     if (y0 > y1) std::swap(y0, y1);
 
     int clipping_offset = 0;
@@ -97,6 +97,10 @@ template void render::FrameBuffer::vline<false>(
 
 template void render::FrameBuffer::vline<true>(
     int, int, int, const render::DrawCallParams&);
+
+void FrameBuffer::vline_sprite(int x, int y0, int y1, const DrawCallParams &params) {
+    vline<true>(x, y0, y1, params);
+}
 
 void FrameBuffer::hline(const int y, int x0, int x1, const Color color) {
     if (y < 0 || y >= int_height_) return;

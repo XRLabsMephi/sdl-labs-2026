@@ -9,6 +9,7 @@ set(HEADERS
         include/wolf/core/Vec2.h
         include/wolf/core/Color.h
         include/wolf/world/Map.h
+        include/wolf/world/Sprite.h
         include/wolf/world/Player.h
         include/wolf/render/FrameBuffer.h
         include/wolf/render/SdlPresenter.h
@@ -57,3 +58,12 @@ set_target_properties(graphics_lab PROPERTIES
     CXX_EXTENSIONS OFF
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
 )
+
+# Keep runtime assets beside the executable, including in multi-config builds.
+add_custom_target(graphics_lab_assets
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${CMAKE_CURRENT_SOURCE_DIR}/assets"
+        "$<TARGET_FILE_DIR:graphics_lab>/assets"
+    VERBATIM
+)
+add_dependencies(graphics_lab graphics_lab_assets)

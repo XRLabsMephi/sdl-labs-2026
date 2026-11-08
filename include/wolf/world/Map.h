@@ -1,5 +1,6 @@
 #pragma once
 #include <vector>
+#include <world/Sprite.h>
 #include "../core/Vec2.h"
 #include <string>
 #include <cstdint>
@@ -13,9 +14,14 @@ namespace world {
         int height = 0;
 
         core::Vector2 spawnPosition;
+        std::vector<Sprite> sprites;
 
     public:
         bool loadFromFile(const std::string& filename);
+
+        const std::vector<Sprite>& getSprites() const {
+            return sprites;
+        }
 
         int getWidth() const {
             return width;

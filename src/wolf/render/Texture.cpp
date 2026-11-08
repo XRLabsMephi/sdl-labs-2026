@@ -1,6 +1,10 @@
 #include "render/Texture.h"
 
+#include <algorithm>
+#include <cctype>
 #include <cstring>
+#include <format>
+#include <memory>
 #include <filesystem>
 #include <fstream>
 #include <SDL3/SDL_surface.h>
@@ -42,7 +46,7 @@ namespace render {
         if (!surface) {
             throw std::runtime_error(
                 std::format(
-                    "SDL_Surface from file \"{}\" conversion to RGBA8888 failed: {}", filename, SDL_GetError()
+                    "SDL_Surface from file \"{}\" conversion to ARGB8888 failed: {}", filename, SDL_GetError()
                     )
                 );
         }

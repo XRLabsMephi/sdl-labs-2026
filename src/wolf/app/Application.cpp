@@ -3,6 +3,7 @@
 #include <render/TextureStorageInflator.h>
 
 #include <exception>
+#include <filesystem>
 #include <iostream>
 #include <string>
 
@@ -15,6 +16,9 @@ constexpr int WINDOW_HEIGHT = 768;
 
 constexpr int FRAME_WIDTH = WINDOW_WIDTH;
 constexpr int FRAME_HEIGHT = WINDOW_HEIGHT;
+constexpr core::Color FOG_COLOR{72, 76, 84};
+constexpr float MIN_FOG_DEPTH = 2.0f;
+constexpr float MAX_FOG_DEPTH = 12.0f;
 
 constexpr SDL_WindowFlags WINDOW_FLAGS = 0;
 
@@ -75,11 +79,16 @@ bool app::Application::initialize(const std::string& mapFilename) {
     try {
         logging::info("APP", "Initializing application.");
 
-        if (!map.loadFromFile(mapFilename)) {
+        namespace fs = std::filesystem;
+        const char* base = SDL_GetBasePath();
+        const fs::path root = base ? fs::path(base) : fs::current_path();
+        const fs::path mapPath = root / mapFilename;
+
+        if (!map.loadFromFile(mapPath.string())) {
             reportError(
                 ApplicationError::MapLoading,
                 "Failed to load map.",
-                "Application::initialize File=\"" + mapFilename + "\""
+                "Application::initialize File=\"" + mapPath.string() + "\""
             );
 
             return false;
@@ -145,22 +154,23 @@ bool app::Application::initialize(const std::string& mapFilename) {
             );
         }
 
-        textureStorage = std::make_unique<render::TextureStorage>();
-        render::TextureStorageInflator("assets/textures/textures_mapping.txt").inflate(*textureStorage);
+        render::TextureStorageInflator("assets/textures/textures_mapping.txt").inflate(textureStorage);
 
         frameBuffer = std::make_unique<render::FrameBuffer>(
             FRAME_WIDTH,
             FRAME_HEIGHT
         );
 
-        // RayCaster stores references to the player, map and frame buffer.
+        frameBuffer->set_fog_params(FOG_COLOR, MIN_FOG_DEPTH, MAX_FOG_DEPTH);
+
+        // RayCaster borrows the player, map, frame buffer and textures.
         rayCaster = std::make_unique<raycast::RayCaster>(
             FRAME_WIDTH,
             FRAME_HEIGHT,
             player,
             map,
             *frameBuffer,
-            *textureStorage
+            textureStorage
         );
 
         // The presenter borrows the window; Application retains ownership.
@@ -259,7 +269,7 @@ void app::Application::run() {
             update(deltaTime);
 
             // Clear the previous frame before drawing the current scene.
-            frameBuffer->clear(core::Color{});
+            frameBuffer->clear(core::Color::black);
 
             rayCaster->renderScene();
 

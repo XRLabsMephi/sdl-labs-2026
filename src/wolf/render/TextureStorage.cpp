@@ -41,12 +41,13 @@ namespace render {
     }
 
     void TextureStorage::reset(size_t size) {
+        max_id_ = size == 0 ? 0 : size - 1;
         textures_.assign(size, Texture::empty);
         used_.assign(size, false);
     }
 
     void TextureStorage::resize(size_t size) {
-        max_id_ = size - 1;
+        max_id_ = size == 0 ? 0 : size - 1;
         textures_.resize(size, Texture::empty);
         used_.resize(size);
     }
@@ -59,7 +60,7 @@ namespace render {
 
 
     const Texture& TextureStorage::getOrEmpty(size_t id) const noexcept {
-        return id > max_id_ ? Texture::empty : textures_[id];
+        return contains(id) ? textures_[id] : Texture::empty;
     }
 
     Texture TextureStorage::loadOrEmpty(const std::string &filename) {
