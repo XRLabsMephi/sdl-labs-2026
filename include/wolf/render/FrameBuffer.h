@@ -1,9 +1,9 @@
 #pragma once
 
+#include <cstdint>
 #include <vector>
 
 #include "Fog.h"
-#include "TextureStorage.h"
 #include "core/Color.h"
 
 namespace render {
@@ -16,9 +16,9 @@ namespace render {
     * @brief Contains parameters for texture draw call to @c FrameBuffer.
     */
     struct DrawCallParams {
-        Uint32* tex_col = nullptr; /**< Texture pixels column*/
-        int tex_y_start = 0; /**< Mapping from screen to texture coordinates in 16.16 fixed precision format.*/
-        int tex_step = 0; /**< Texture pixels step per screen pixel, in 16.16 fixed precision format*/
+        const Uint32* tex_col = nullptr; /**< Texture pixels column*/
+        std::int64_t tex_y_start = 0; /**< Mapping from screen to texture coordinates in 16.16 fixed precision format.*/
+        std::int64_t tex_step = 0; /**< Texture pixels step per screen pixel, in 16.16 fixed precision format*/
         float depth = 0; /**< Depth of the object in the frame (z_buf value). Influences the color*/
         Uint8 brightness = 0; /**< Dynamic shadowing coefficient*/
     };
@@ -35,12 +35,7 @@ namespace render {
         Fog fog_;
 
     public:
-        FrameBuffer(int32_t width, int32_t height, TextureStorage &storage);
-
-        /**
-         * @brief Sets the fog parameters: color and factor
-         */
-        void set_fog_params(Color fog_color, float min_fog_depth, float max_fog_depth);
+        FrameBuffer(int32_t width, int32_t height);
 
         /**
          * @brief Sets the fog parameters: color and factor
@@ -119,15 +114,6 @@ namespace render {
          * @param params draw call parameters (see @c DrawCallParams)
          */
         void vline_sprite(int x, int y0, int y1, const DrawCallParams &params);
-
-        /**
-         * @brief Draws horizontal line
-         * @param y y coordinate
-         * @param x0 start x coordinate
-         * @param x1 end x coordinate
-         * @param color color to apply
-         */
-        void hline(int y, int x0, int x1, Color color);
 
         /**
          * @brief Draws horizontal line

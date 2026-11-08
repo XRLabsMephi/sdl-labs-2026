@@ -1,5 +1,6 @@
 #include "render/TextureStorage.h"
-#include "render/TextureStorage.h"
+
+#include <format>
 
 #include <ranges>
 
@@ -10,7 +11,8 @@ namespace {
 }
 
 namespace render {
-    TextureStorage::TextureStorage(size_t size) : max_id_(size - 1), textures_(size, Texture::empty){
+    TextureStorage::TextureStorage(size_t size) {
+        reset(size);
     }
 
     void TextureStorage::add(Texture texture, size_t id) {
@@ -42,25 +44,26 @@ namespace render {
     }
 
     void TextureStorage::reset(size_t size) {
+        max_id_ = size == 0 ? 0 : size - 1;
         textures_.assign(size, Texture::empty);
         used_.assign(size, false);
     }
 
     void TextureStorage::resize(size_t size) {
-        max_id_ = size - 1;
+        max_id_ = size == 0 ? 0 : size - 1;
         textures_.resize(size, Texture::empty);
         used_.resize(size);
     }
 
     bool TextureStorage::contains(size_t id) const noexcept { return id < used_.size() && used_[id]; }
 
-    const Texture& TextureStorage::get(size_t id) {
+    const Texture& TextureStorage::get(size_t id) const {
         return textures_[id];
     }
 
 
-    const Texture& TextureStorage::getOrEmpty(size_t id) noexcept {
-        return id > max_id_ ? Texture::empty : textures_[id];
+    const Texture& TextureStorage::getOrEmpty(size_t id) const noexcept {
+        return contains(id) ? textures_[id] : Texture::empty;
     }
 
     Texture TextureStorage::loadOrEmpty(const std::string &filename) {

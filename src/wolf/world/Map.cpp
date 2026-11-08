@@ -96,7 +96,37 @@ bool world::Map::loadFromFile(const std::string& filename) {
         return false;
     }
 
+    // Optional section: a sprite count followed by x, y, texture ID and scale.
+    std::vector<Sprite> newSprites;
+    file >> std::ws;
+    if (file.bad()) {
+        return false;
+    }
+    if (!file.eof()) {
+        int count = 0;
+        if (!(file >> count) || count < 0) {
+            return false;
+        }
+        for (int i = 0; i < count; ++i) {
+            Sprite sprite{};
+            if (!(file >> sprite.position.x >> sprite.position.y
+                       >> sprite.textureId >> sprite.scale) ||
+                !(sprite.position.x >= 0.0 && sprite.position.x < newWidth &&
+                  sprite.position.y >= 0.0 && sprite.position.y < newHeight) ||
+                sprite.textureId < 0 || !std::isfinite(sprite.scale) || sprite.scale <= 0.0 ||
+                newCells[static_cast<int>(sprite.position.y)][static_cast<int>(sprite.position.x)] != 0) {
+                return false;
+            }
+            newSprites.push_back(sprite);
+        }
+        file >> std::ws;
+        if (!file.eof() || file.bad()) {
+            return false;
+        }
+    }
+
     // Commit the validated map.
+    sprites = std::move(newSprites);
     cells = std::move(newCells);
     width = newWidth;
     height = newHeight;
