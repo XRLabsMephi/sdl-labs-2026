@@ -1,5 +1,6 @@
 #include <app/Application.h>
 #include <debug/Logger.h>
+#include <render/TextureStorageInflator.h>
 
 #include <exception>
 #include <iostream>
@@ -144,6 +145,9 @@ bool app::Application::initialize(const std::string& mapFilename) {
             );
         }
 
+        textureStorage = std::make_unique<render::TextureStorage>();
+        render::TextureStorageInflator("assets/textures/textures_mapping.txt").inflate(*textureStorage);
+
         frameBuffer = std::make_unique<render::FrameBuffer>(
             FRAME_WIDTH,
             FRAME_HEIGHT
@@ -155,7 +159,8 @@ bool app::Application::initialize(const std::string& mapFilename) {
             FRAME_HEIGHT,
             player,
             map,
-            *frameBuffer
+            *frameBuffer,
+            *textureStorage
         );
 
         // The presenter borrows the window; Application retains ownership.
@@ -254,7 +259,7 @@ void app::Application::run() {
             update(deltaTime);
 
             // Clear the previous frame before drawing the current scene.
-            frameBuffer->clear(render::DrawCallParams{});
+            frameBuffer->clear(core::Color{});
 
             rayCaster->renderScene();
 
@@ -269,7 +274,7 @@ void app::Application::run() {
             } else {
                 ++fpsFrameCount;
                 const Uint64 fpsCurrentTime = SDL_GetTicksNS();
-                const double fpsElapsedSeconds =static_cast<double>(fpsCurrentTime - fpsStartTime) / NANOSECONDS_PER_SECOND;
+                const double fpsElapsedSeconds =static_cast<double>(fpsCurrentTime - fpsStartTime) * NANOSECONDS_PER_SECOND;
                 if (fpsElapsedSeconds >= 1.0) {
                     const double fps = static_cast<double>(fpsFrameCount) / fpsElapsedSeconds;
                     std::cout << fps << std::endl;

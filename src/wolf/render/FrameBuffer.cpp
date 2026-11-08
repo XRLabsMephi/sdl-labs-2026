@@ -29,13 +29,6 @@ FrameBuffer::FrameBuffer(int width, int height)
     int_height_ = height;
 
     buffer_.assign(width_ * height_, 0);
-    zbuf_.assign(width_, std::numeric_limits<float>::infinity());
-}
-
-void FrameBuffer::set_fog_params(Color fog_color, float min_fog_depth, float max_fog_depth) {
-    fog_color_ = fog_color.toUint32_t();
-    fog_min_depth_ = min_fog_depth;
-    fog_max_depth = max_fog_depth;
 }
 
 void FrameBuffer::set_fog_params(Color fog_color, float min_fog_depth, float max_fog_depth) {
@@ -52,20 +45,10 @@ void FrameBuffer::clear(const Color color) {
     std::ranges::fill(buffer_, static_cast<Uint32>(color));
 }
 
-void FrameBuffer::clear(const DrawCallParams &params) {
-    //TODO
-}
-
 void FrameBuffer::set(int x, int y, const Color color) {
     if (x < 0 || y < 0 || x >= int_width_ || y >= int_height_) return;
 
     buffer_[x * height_ + y] = static_cast<Uint32>(color);
-}
-
-void FrameBuffer::set(int x, int y, const Color color) {
-    if (x < 0 || y < 0 || x >= int_width_ || y >= int_height_) return;
-
-    buffer_[x * height_ + y] = params.tex_col[y]; //TODO пересчитать через step
 }
 
 void FrameBuffer::vline(int x, int y0, int y1, const Color color) {
@@ -108,6 +91,12 @@ void FrameBuffer::vline(int x, int y0, int y1, const DrawCallParams &params) {
         col[y] = static_cast<Uint32>(Color::fromBits(fogged_texel).over(Color::fromBits(col[y])));
     }
 }
+
+template void render::FrameBuffer::vline<false>(
+    int, int, int, const render::DrawCallParams&);
+
+template void render::FrameBuffer::vline<true>(
+    int, int, int, const render::DrawCallParams&);
 
 void FrameBuffer::hline(const int y, int x0, int x1, const Color color) {
     if (y < 0 || y >= int_height_) return;

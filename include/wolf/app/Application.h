@@ -28,9 +28,11 @@ namespace app {
         world::Map map;
         world::Player player;
 
+
         input::InputState input;
         input::PlayerController playerController;
 
+        std::unique_ptr<render::TextureStorage> textureStorage;
         std::unique_ptr<render::FrameBuffer> frameBuffer;
         std::unique_ptr<raycast::RayCaster> rayCaster;
         std::unique_ptr<render::SdlPresenter> presenter;

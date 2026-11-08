@@ -1,12 +1,11 @@
 #pragma once
 #include <core/Vec2.h>
-#include <core/Color.h>
 namespace raycast{
     /**@brief storage for the side of hit\n
          *@c None = -1\n
          *@c Vertical = 0 : the side that is parallel to ordinate\n
          *@c Horizontal = 1 : the side that is parallel to abscissa**/
-    enum class IntersectionSide{None = -1, Vertical = 0, Horizontal = 1}; // возможно стоит переименовать
+    enum class IntersectionSide{None = -1, Vertical = 0, Horizontal = 1};
     using Vector2 = core::Vector2;
     //Data class for ray hit
     struct RayHit {

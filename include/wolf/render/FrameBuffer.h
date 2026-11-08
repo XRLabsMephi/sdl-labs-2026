@@ -16,10 +16,10 @@ namespace render {
     * @brief Contains parameters for texture draw call to @c FrameBuffer.
     */
     struct DrawCallParams {
-        Uint32* tex_col = nullptr; /**< Texture pixels column*/
+        const Uint32* tex_col = nullptr; /**< Texture pixels column*/
         int tex_y_start = 0; /**< Mapping from screen to texture coordinates in 16.16 fixed precision format.*/
         int tex_step = 0; /**< Texture pixels step per screen pixel, in 16.16 fixed precision format*/
-        float depth = 0; /**< Depth of the object in the frame (z_buf value). Influences the color*/
+        double depth = 0; /**< Depth of the object in the frame (z_buf value). Influences the color*/
         Uint8 brightness = 0; /**< Dynamic shadowing coefficient*/
     };
 
@@ -35,7 +35,7 @@ namespace render {
         Fog fog_;
 
     public:
-        FrameBuffer(int32_t width, int32_t height, TextureStorage &storage);
+        FrameBuffer(int32_t width, int32_t height);
 
         /**
          * @brief Sets the fog parameters: color and factor
@@ -45,8 +45,6 @@ namespace render {
         /**
          * @brief Sets the fog parameters: color and factor
          */
-        void set_fog_params(Color fog_color, float min_fog_depth, float max_fog_depth);
-
         /**
          * @brief Returns width of the buffer
          */
@@ -69,12 +67,6 @@ namespace render {
         void clear(Color color);
 
         /**
-         * @brief Fills whole buffer
-         * @param params draw call parameters (see @c DrawCallParams)
-         */
-        void clear(const DrawCallParams &params);
-
-        /**
          * @brief Colors single pixel at point
          * @param x x coordinate
          * @param y y coordinate
@@ -82,15 +74,6 @@ namespace render {
          * @attention Points outside buffer rejects
          */
         void set(int x, int y, Color color);
-
-        /**
-         * @brief Colors single pixel at point
-         * @param x x coordinate
-         * @param y y coordinate
-         * @param params draw call parameters (see @c DrawCallParams)
-         * @attention Points outside buffer rejects
-         */
-        void set(int x, int y, const DrawCallParams &params);
 
         /**
         * @brief Draws vertical line
@@ -119,15 +102,6 @@ namespace render {
          * @param params draw call parameters (see @c DrawCallParams)
          */
         void vline_sprite(int x, int y0, int y1, const DrawCallParams &params);
-
-        /**
-         * @brief Draws horizontal line
-         * @param y y coordinate
-         * @param x0 start x coordinate
-         * @param x1 end x coordinate
-         * @param color color to apply
-         */
-        void hline(int y, int x0, int x1, Color color);
 
         /**
          * @brief Draws horizontal line

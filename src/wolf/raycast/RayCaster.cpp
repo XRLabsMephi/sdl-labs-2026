@@ -1,97 +1,61 @@
 #include <raycast/Raycaster.h>
-#include <core/Color.h>
+#include <render/FrameBuffer.h>
 #include <iostream>
 #include <cmath>
 #include <limits>
 #include <cassert>
-#include <array>
 
 using namespace raycast;
+using namespace raycast::settings;
 
-enum Colors{
-    SKY = -1,
-    GROUND = 0,
-    WALL1 = 1,
-    WALL2 = 2,
-};
+int castTo16_16(double value){
 
-core::Color W1_COLOR = core::Color(255, 175, 119);
-core::Color W2_COLOR = core::Color(181, 58, 102);
-core::Color wall_colors[2] = {W1_COLOR, W2_COLOR};
+}
 
 void RayCaster::drawByRayHit(const Vector2& ray_direction, const Vector2& camera_direction, const std::pair<double, double>& cos_vertical_horizontal, int column) const{
-    /////////////////////////////////////////// parameters
-    //TODO как то организовать ввод и получение параметров
-
-    //ground parameters
-    core::Color GROUND_COLOR = core::Color::lerp(core::Color::black, core::Color::white, 30);
-
-    //sky parameters
-    core::Color SKY_COLOR = core::Color(170, 142, 224);
-
-    //wall parameters
     const int W_H = frame_height_; // the height of wall in pixels
-
-    //other parameters
-    constexpr double W_P_rel = 2; // the relation between wall and player height
-    constexpr double P_W_rel = 1.0 / W_P_rel; // the relation between player and wall height
     const int P_H = static_cast<int>(W_H * P_W_rel); // the height of player in pixels
 
-    constexpr double SC_D = 1.0; //distance between camera and virtual screen
+    //projection of distance on camera axe (using scalar product and the fact, that camera_direction is normalized)
+    double depth = ray_cast_hit.t_distance_ * (ray_direction.x * camera_direction.x + ray_direction.y * camera_direction.y);
 
-    double minimal_brightness = 0.6;
-    double darkening_distance = 30.0;
-    //texture parameters
-    const int texture_width = 512;
-    //constexpr double vertical_field_of_view = 0.0; //the angle of view in vertical axe. Interchangeably with SC_D
+    //calculating for shadows
+    double brightness_procent_cos = ray_cast_hit.face_index_ == IntersectionSide::Vertical ?
+                                cos_vertical_horizontal.first : cos_vertical_horizontal.second;
+    //for smooth changing
+    double brightness_procent_depth = std::max(0.0, (1.0 - (depth/darkening_distance)));
+    double brightness_procent = (std::max(0.5, brightness_procent_cos)) * brightness_procent_depth;
+    double brightness = (1.0-minimal_brightness) * brightness_procent + minimal_brightness;
 
-    ///////////////////////////////////////////
+    Uint8 fog_factor = fog_.factor(depth);
+    auto get_color_with_fog = [this, &fog_factor](core::Color color)
+    {return core::Color::fromBits(fog_.applyFog(static_cast<Uint32>(color), fog_factor));};
 
-    auto get_draw_params = [this, &minimal_brightness, &darkening_distance, &cos_vertical_horizontal, &GROUND_COLOR, &SKY_COLOR]
-    (Colors color_id, double wall_u = 0, double depth = 0, bool with_texture = false) -> render::DrawCallParams{
-        core::Color color;
-        double brightness = 1.0;
-        switch (color_id){
-            case Colors::WALL1:
-            case Colors::WALL2:{
-                color = wall_colors[color_id - 1];
-                //calculating for shadows
-                double brightness_procent_cos = ray_cast_hit.face_index_ == IntersectionSide::Vertical ?
-                                            cos_vertical_horizontal.first : cos_vertical_horizontal.second;
-                //for smooth changing
-                double brightness_procent_depth = std::max(0.0, (1.0 - (depth/darkening_distance)));
-                double brightness_procent = (std::max(0.5, brightness_procent_cos)) * brightness_procent_depth;
-                brightness = (1.0-minimal_brightness) * brightness_procent + minimal_brightness;
-                break;
-                }
-            case Colors::GROUND:
-                color = GROUND_COLOR; break;
-            case Colors::SKY:
-                color = SKY_COLOR; break;
-            default: break;
-        }
-
-        color.r_ = static_cast<Uint8>(color.r_ * brightness);
-        color.g_ = static_cast<Uint8>(color.g_ * brightness);
-        color.b_ = static_cast<Uint8>(color.b_ * brightness);
-        if (!with_texture){
-            return {.tex_id = -1, .tex_x = -1, .alpha_canal = color.a_, .brightness = brightness, .color = color};
-        }
-        return {.tex_id = ray_cast_hit.wall_id_, .tex_x = static_cast<int>(wall_u * texture_width)
-            , .alpha_canal = -1, .brightness = brightness, .color = core::Color{}};
-    };
     //draw sky and ground
-    frame_buffer_.vline(column, 0, frame_height_ - P_H, get_draw_params(Colors::SKY));
-    frame_buffer_.vline(column, frame_height_ - P_H + 1, frame_height_, get_draw_params(Colors::GROUND));
+    frame_buffer_.vline(column, 0, frame_height_ - P_H, SKY_COLOR);
+    frame_buffer_.vline(column, frame_height_ - P_H + 1, frame_height_, GROUND_COLOR);
 
+
+    const render::Texture& texture = storage_.get(static_cast<size_t>(ray_cast_hit.wall_id_));
     const RayHit& ray_hit = ray_cast_hit;
     if (ray_hit.has_hit_){
-        double depth = ray_hit.t_distance_ * (ray_direction.x * camera_direction.x + ray_direction.y * camera_direction.y);
         const double SC_RAY_DEPTH_rel = SC_D/depth;
         int y0 = static_cast<int>(P_H * (1 - SC_RAY_DEPTH_rel)); //bottom border of wall projection in pixels(can be negative)
         int y1 = static_cast<int>(P_H + SC_RAY_DEPTH_rel * (W_H - P_H)); //top border of wall projection in pixels(can be more than frame_height_)
-        frame_buffer_.vline(column, frame_height_ - y1, frame_height_ - y0, get_draw_params(static_cast<Colors>(ray_hit.wall_id_), ray_hit.wall_u_, depth, false));
-        //frame_buffer_.vline(column, frame_height_ - y1, frame_height_ - y0, get_draw_params(static_cast<Colors>(ray_hit.wall_id_), ray_hit.wall_u_, depth, true));
+        const Uint32* tex_column_ptr = texture.column(static_cast<int>(ray_cast_hit.wall_u_ * texture.width));
+        int length_of_wall = y1 - y0 + 1;
+        //draw wall
+        frame_buffer_.vline(column, frame_height_ - y1, frame_height_ - y0, get_color_with_fog(WALL_COLOR));
+        if (ray_hit.wall_id_ >= 2){
+            double step = static_cast<double>(texture.height)/static_cast<double>(length_of_wall);
+            auto castToFixedFloat = [](double value){double int_value, frac_value =  std::modf(value, &int_value);
+                return (static_cast<int>(int_value) << 16) | static_cast<int>(frac_value * (1 << 16));};
+            //int tex_start = castToFixedFloat(std::max(0, y1 - frame_height_) * step); //frameBuffer implements this
+            int tex_start = 0;
+            int tex_step = castToFixedFloat(step); //cast to 16.16 format
+            render::DrawCallParams params = {tex_column_ptr, tex_start, tex_step, depth, static_cast<Uint8>(255 * brightness)};
+            frame_buffer_.vline<false>(column, frame_height_ - y0, frame_height_ - y1, params);
+        }
     }
 }
 
@@ -195,7 +159,7 @@ void RayCaster::castRay(Vector2 ray_direction) {
             ray_cast_hit = RayHit(
                 true, t_inter,
                 coordinates, wall_id, intersection_side,
-                intersection_side == IntersectionSide::Vertical ?
+                intersection_side == IntersectionSide::Horizontal ?
                 coordinates.x - std::floor(coordinates.x): coordinates.y - std::floor(coordinates.y)
             );
             break;
