@@ -84,13 +84,13 @@ namespace render {
          * @return const reference to Texture with given id.
          * @attention Not protected from invalid ids
          */
-        inline const Texture& get(size_t id);
+        const Texture& get(size_t id) const;
 
         /**
          * @param id id of texture
          * @return const reference to Texture with given id or const reference to a placeholder
          */
-        inline const Texture& getOrEmpty(size_t id) noexcept;
+        const Texture& getOrEmpty(size_t id) const noexcept;
 
         /**
          * @return max ID used by this storage

@@ -1,5 +1,8 @@
 #include "render/TextureStorageInflator.h"
 
+#include <algorithm>
+#include <charconv>
+#include <format>
 #include <fstream>
 #include <numeric>
 #include <unordered_set>

@@ -29,13 +29,6 @@ FrameBuffer::FrameBuffer(int width, int height)
     int_height_ = height;
 
     buffer_.assign(width_ * height_, 0);
-    zbuf_.assign(width_, std::numeric_limits<float>::infinity());
-}
-
-void FrameBuffer::set_fog_params(Color fog_color, float min_fog_depth, float max_fog_depth) {
-    fog_color_ = fog_color.toUint32_t();
-    fog_min_depth_ = min_fog_depth;
-    fog_max_depth = max_fog_depth;
 }
 
 void FrameBuffer::set_fog_params(Color fog_color, float min_fog_depth, float max_fog_depth) {
@@ -62,12 +55,6 @@ void FrameBuffer::set(int x, int y, const Color color) {
     buffer_[x * height_ + y] = static_cast<Uint32>(color);
 }
 
-void FrameBuffer::set(int x, int y, const Color color) {
-    if (x < 0 || y < 0 || x >= int_width_ || y >= int_height_) return;
-
-    buffer_[x * height_ + y] = params.tex_col[y]; //TODO пересчитать через step
-}
-
 void FrameBuffer::vline(int x, int y0, int y1, const Color color) {
     if (x < 0 || x >= int_width_) return;
     if (y0 > y1) std::swap(y0, y1);
@@ -85,11 +72,11 @@ void FrameBuffer::vline(int x, int y0, int y1, const DrawCallParams &params) {
     if (x < 0 || x >= int_width_) return;
 
     const auto &[tex_col, tex_y0, step, depth, brightness] = params;
-    if (step <= 0 || tex_y0 < 0) return;
+    if (!tex_col || step < 0 || tex_y0 < 0) return;
     if (y0 > y1) std::swap(y0, y1);
 
-    int clipping_offset = 0;
-    if (y0 < 0) { clipping_offset = -y0 * step, y0 = 0; }
+    std::int64_t clipping_offset = 0;
+    if (y0 < 0) { clipping_offset = -static_cast<std::int64_t>(y0) * step, y0 = 0; }
     y1 = min(y1, int_height_ - 1);
     if (y0 > y1) return;
 
@@ -98,7 +85,8 @@ void FrameBuffer::vline(int x, int y0, int y1, const DrawCallParams &params) {
 
     const Uint8 *lut = core::DIM[brightness].data();
     //step is fixed precision number in 16.16 format
-    for (int y = y0, tex_y = tex_y0 + clipping_offset; y <= y1; ++y, tex_y += step) {
+    std::int64_t tex_y = tex_y0 + clipping_offset;
+    for (int y = y0; y <= y1; ++y, tex_y += step) {
         Uint32 texel = tex_col[tex_y >> 16];
 
         if constexpr (IsSprite) { if (!(texel & 0xFF000000u)) continue; }
@@ -107,6 +95,10 @@ void FrameBuffer::vline(int x, int y0, int y1, const DrawCallParams &params) {
         Uint32 fogged_texel = fog_.applyFog(lit_texel, fog_factor);
         col[y] = static_cast<Uint32>(Color::fromBits(fogged_texel).over(Color::fromBits(col[y])));
     }
+}
+
+void FrameBuffer::vline_sprite(int x, int y0, int y1, const DrawCallParams &params) {
+    vline<true>(x, y0, y1, params);
 }
 
 void FrameBuffer::hline(const int y, int x0, int x1, const Color color) {

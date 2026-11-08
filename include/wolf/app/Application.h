@@ -10,6 +10,7 @@
 #include <raycast/RayCaster.h>
 #include <render/FrameBuffer.h>
 #include <render/SdlPresenter.h>
+#include <render/TextureStorage.h>
 #include <world/Map.h>
 #include <world/Player.h>
 
@@ -31,6 +32,7 @@ namespace app {
         input::InputState input;
         input::PlayerController playerController;
 
+        render::TextureStorage textureStorage;
         std::unique_ptr<render::FrameBuffer> frameBuffer;
         std::unique_ptr<raycast::RayCaster> rayCaster;
         std::unique_ptr<render::SdlPresenter> presenter;
