@@ -30,7 +30,7 @@ namespace render {
         Texture(int w, int h, core::Color color)
             : width(w)
               , height(h)
-              , pixels(static_cast<size_t>(width) * height, color.toUint32_t()) {
+              , pixels(static_cast<size_t>(width) * height, static_cast<Uint32>(color)) {
         }
     };
 

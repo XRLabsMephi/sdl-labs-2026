@@ -5,6 +5,7 @@
 #include <core/Vec2.h>
 #include <world/Map.h>
 #include <render/FrameBuffer.h>
+#include <render/TextureStorage.h>
 #include <world/Player.h>
 
 namespace raycast{
@@ -14,11 +15,12 @@ namespace raycast{
     public:
         //возможно стоит добавить во frame_buffer - геттеры для получения frame_width и frame_height
         /**@param frame_width the width of frame, should be more than 1**/
-        RayCaster(int frame_width, int frame_height, const world::Player& player, const world::Map& map, render::FrameBuffer& frame_buffer)
+        RayCaster(int frame_width, int frame_height, const world::Player& player, const world::Map& map, render::FrameBuffer& frame_buffer, const render::TextureStorage& textures)
             :
             player_(player),
             map_(map),
             frame_buffer_(frame_buffer),
+            textures_(textures),
             frame_width_(frame_width),
             frame_height_(frame_height)
         {if (frame_width_ <= 1 || frame_height_ <= 0){
@@ -37,6 +39,7 @@ namespace raycast{
         const world::Player& player_;
         const world::Map& map_;
         render::FrameBuffer& frame_buffer_;
+        const render::TextureStorage& textures_;
         int frame_width_, frame_height_;
 
         static constexpr double angle_eps = 1e-7f;
@@ -44,6 +47,8 @@ namespace raycast{
         static constexpr double pi = 3.1415926536;
         //Cast a single ray with given nonzero direction
         RayHit castRay(Vector2 direction) const;
+
+        void drawSprites(Vector2 forward, double tanHalfFov, const std::vector<double>& wallDepths) const;
 
         void drawByRayHit(const RayHit& rayhit, std::pair<double, double> cos_vertical_horizontal, double depth, int column) const;
     };
