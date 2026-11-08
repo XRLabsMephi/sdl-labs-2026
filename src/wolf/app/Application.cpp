@@ -272,7 +272,7 @@ void app::Application::run() {
             // Clear the previous frame before drawing the current scene.
             frameBuffer->clear(core::Color::black);
 
-            rayCaster->DoRayCasting();
+            rayCaster->renderScene();
 
             if (!presenter->present(*frameBuffer)) {
                 reportError(
