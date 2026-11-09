@@ -69,7 +69,7 @@ namespace wolf {
         }
     }
 
-    int Application::run_loop() const {
+    int Application::run_loop() {
         Map map = Map::load("assets/wolf/maps/map01.txt");
         Player player;
         PlayerController controller;
