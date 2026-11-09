@@ -2,6 +2,7 @@
 #include "wolf/raycast/Raycaster.hpp"
 #include "wolf/world/Player.hpp"
 #include "wolf/texture/TextureStore.hpp"
+#include "wolf/input/PlayerController.hpp"
 #include <SDL3/SDL.h>
 #include <cassert>
 #include <cstdio>
@@ -11,6 +12,48 @@
 #include "wolf/world/Map.hpp"
 #include <fstream>
 #include <cmath>
+
+
+void testMovement() {
+    const char* path = "test_movement_map.txt";
+    {
+        std::ofstream file(path);
+        assert(file.is_open());
+        file << "7 7\n";
+        for (int y = 0; y < 7; y++) {
+            for (int x = 0; x < 7; x++) {
+                file << (x == 0 || y == 0 || x == 6 || y == 6 ? 1 : 0) << ' ';
+            }
+            file << '\n';
+        }
+    }
+    Map map;
+    assert(map.loadFromFile(path));
+    std::remove(path);
+    PlayerController controller;
+    Player straight;
+    straight.position = {3.5, 3.5};
+    InputState input;
+    input.forward = true;
+    controller.update(straight, map, input, 0.05);
+    double a = std::hypot(straight.position.x - 3.5, straight.position.y - 3.5);
+    Player diagonal;
+    diagonal.position = {3.5, 3.5};
+    input.right = true;
+    controller.update(diagonal, map, input, 0.05);
+    double b = std::hypot(diagonal.position.x - 3.5, diagonal.position.y - 3.5);
+    assert(std::abs(a - 0.15) < 1e-9);
+    assert(std::abs(a - b) < 1e-9);
+    Player stopped;
+    stopped.position = {3.5, 3.5};
+    input.forward = true;
+    input.backward = true;
+    input.right = false;
+    controller.update(stopped, map, input, 0.05);
+    assert(stopped.position.x == 3.5 && stopped.position.y == 3.5);
+    std::cout << "Movement test passed\n";
+}
+
 
 void testRayHit() {
     const char* path = "test_map.txt";
@@ -126,5 +169,6 @@ int main() {
     testTextureStore();
     testSprite();
     testRayHit();
+    testMovement();
     return 0;
 }

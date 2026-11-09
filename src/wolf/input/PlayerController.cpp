@@ -27,26 +27,32 @@ void PlayerController::rotate(Player& player, double angle) const {
     player.cameraPlane.y = planeX * s + player.cameraPlane.y * c;
 }
 
+
 void PlayerController::update(Player& player, const Map& map, const InputState& input, double dt) const {
     if (!std::isfinite(dt) || dt <= 0.0) return;
     if (dt > 0.05) dt = 0.05;
-    double step = moveSpeed * dt;
+    double x = 0.0, y = 0.0;
     if (input.forward) {
-        move(player, map, player.direction.x * step, player.direction.y * step);
+        x += player.direction.x;
+        y += player.direction.y;
     }
     if (input.backward) {
-        move(player, map, -player.direction.x * step, -player.direction.y * step);
+        x -= player.direction.x;
+        y -= player.direction.y;
     }
     if (input.left) {
-        move(player, map, player.direction.y * step, -player.direction.x * step);
+        x += player.direction.y;
+        y -= player.direction.x;
     }
     if (input.right) {
-        move(player, map, -player.direction.y * step, player.direction.x * step);
+        x -= player.direction.y;
+        y += player.direction.x;
     }
-    if (input.rotateLeft) {
-        rotate(player, -rotationSpeed * dt);
+    double len = std::sqrt(x * x + y * y);
+    if (len > 0.0) {
+        double step = moveSpeed * dt / len;
+        move(player, map, x * step, y * step);
     }
-    if (input.rotateRight) {
-        rotate(player, rotationSpeed * dt);
-    }
+    if (input.rotateLeft) rotate(player, -rotationSpeed * dt);
+    if (input.rotateRight) rotate(player, rotationSpeed * dt);
 }

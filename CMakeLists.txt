@@ -83,6 +83,7 @@ add_executable(test EXCLUDE_FROM_ALL
         src/wolf/Raycaster.cpp
         src/wolf/texture/TextureStore.cpp
         src/wolf/sprite/SpriteRenderer.cpp
+        src/wolf/input/PlayerController.cpp
 )
 
 target_include_directories(test PRIVATE include)
@@ -100,6 +101,7 @@ add_executable(render_check EXCLUDE_FROM_ALL
         src/wolf/Raycaster.cpp
         src/wolf/texture/TextureStore.cpp
         src/wolf/sprite/SpriteRenderer.cpp
+        src/wolf/input/PlayerController.cpp
 )
 
 target_include_directories(render_check PRIVATE include)
