@@ -1,0 +1,14 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "graphics_lab (CMake Debug)",
+      "type": "lldb",
+      "request": "launch",
+      "program": "${workspaceFolder}/build/debug/bin/graphics_lab",
+      "cwd": "${workspaceFolder}",
+      "args": [],
+      "preLaunchTask": "CMake: build Debug"
+    }
+  ]
+}
