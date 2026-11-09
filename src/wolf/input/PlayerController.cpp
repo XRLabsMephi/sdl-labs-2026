@@ -6,6 +6,17 @@
 namespace wolf {
 
 bool PlayerController::can_move(const Map& map, Vec2 position) const {
+    if (!std::isfinite(position.x) || !std::isfinite(position.y)) {
+        return false;
+    }
+
+    if (position.x - half_size_ < 0.0 ||
+        position.y - half_size_ < 0.0 ||
+        position.x + half_size_ >= map.get_width() ||
+        position.y + half_size_ >= map.get_height()) {
+        return false;
+        }
+
     int left = static_cast<int>(
         std::floor(position.x - half_size_)
     );
