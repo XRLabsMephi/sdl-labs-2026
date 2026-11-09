@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "Fog.h"
+#include "TextureStorage.h"
 #include "core/Color.h"
 
 namespace render {
@@ -17,9 +18,9 @@ namespace render {
     */
     struct DrawCallParams {
         const Uint32* tex_col = nullptr; /**< Texture pixels column*/
-        std::int64_t tex_y_start = 0; /**< Mapping from screen to texture coordinates in 16.16 fixed precision format.*/
-        std::int64_t tex_step = 0; /**< Texture pixels step per screen pixel, in 16.16 fixed precision format*/
-        float depth = 0; /**< Depth of the object in the frame (z_buf value). Influences the color*/
+        int tex_y_start = 0; /**< Mapping from screen to texture coordinates in 16.16 fixed precision format.*/
+        int tex_step = 0; /**< Texture pixels step per screen pixel, in 16.16 fixed precision format*/
+        double depth = 0; /**< Depth of the object in the frame (z_buf value). Influences the color*/
         Uint8 brightness = 0; /**< Dynamic shadowing coefficient*/
     };
 
@@ -43,6 +44,9 @@ namespace render {
         void set_fog_params(Color fog_color, float min_fog_depth, float max_fog_depth);
 
         /**
+         * @brief Sets the fog parameters: color and factor
+         */
+        /**
          * @brief Returns width of the buffer
          */
         [[nodiscard]] buf_size_t width() const;
@@ -64,12 +68,6 @@ namespace render {
         void clear(Color color);
 
         /**
-         * @brief Fills whole buffer
-         * @param params draw call parameters (see @c DrawCallParams)
-         */
-        void clear(const DrawCallParams &params);
-
-        /**
          * @brief Colors single pixel at point
          * @param x x coordinate
          * @param y y coordinate
@@ -77,15 +75,6 @@ namespace render {
          * @attention Points outside buffer rejects
          */
         void set(int x, int y, Color color);
-
-        /**
-         * @brief Colors single pixel at point
-         * @param x x coordinate
-         * @param y y coordinate
-         * @param params draw call parameters (see @c DrawCallParams)
-         * @attention Points outside buffer rejects
-         */
-        void set(int x, int y, const DrawCallParams &params);
 
         /**
         * @brief Draws vertical line

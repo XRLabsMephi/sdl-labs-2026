@@ -1,7 +1,5 @@
 #include "render/TextureStorage.h"
 
-#include <format>
-
 #include <ranges>
 
 #include "debug/Logger.h"
@@ -11,8 +9,7 @@ namespace {
 }
 
 namespace render {
-    TextureStorage::TextureStorage(size_t size) {
-        reset(size);
+    TextureStorage::TextureStorage(size_t size) : max_id_(size - 1), textures_(size, Texture::empty){
     }
 
     void TextureStorage::add(Texture texture, size_t id) {
@@ -57,7 +54,7 @@ namespace render {
 
     bool TextureStorage::contains(size_t id) const noexcept { return id < used_.size() && used_[id]; }
 
-    const Texture& TextureStorage::get(size_t id) const {
+    const Texture& TextureStorage::get(size_t id) const{
         return textures_[id];
     }
 

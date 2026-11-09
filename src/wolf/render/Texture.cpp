@@ -8,6 +8,7 @@
 #include <filesystem>
 #include <fstream>
 #include <SDL3/SDL_surface.h>
+#include <algorithm>
 
 #include "debug/Logger.h"
 
@@ -54,7 +55,6 @@ namespace render {
         height = surface->h;
         pixels.resize(static_cast<size_t>(width) * height);
 
-        //TODO implement tiling loading
         const auto *base = static_cast<const Uint8 *>(surface->pixels);
         for (int y = 0; y < height; ++y) {
             const Uint8 *row = base + static_cast<size_t>(y) * surface->pitch;
