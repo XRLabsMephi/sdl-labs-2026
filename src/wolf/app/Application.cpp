@@ -154,9 +154,7 @@ bool app::Application::initialize(const std::string& mapFilename) {
             );
         }
 
-        render::TextureStorageInflator(
-            root / "assets" / "textures" / "textures_mapping.txt"
-        ).inflate(textureStorage);
+        render::TextureStorageInflator("assets/textures/textures_mapping.txt").inflate(textureStorage);
 
         frameBuffer = std::make_unique<render::FrameBuffer>(
             FRAME_WIDTH,
@@ -173,6 +171,14 @@ bool app::Application::initialize(const std::string& mapFilename) {
             map,
             *frameBuffer,
             textureStorage
+        );
+
+        spriteRenderer = std::make_unique<render::SpriteRenderer>(
+            player,
+            map,
+            *frameBuffer,
+            textureStorage,
+            rayCaster->getDepthBuffer()
         );
 
         // The presenter borrows the window; Application retains ownership.
@@ -249,7 +255,8 @@ void app::Application::run() {
         logging::info("APP", "Starting the main loop.");
 
         Uint64 previousTime = SDL_GetTicksNS();
-
+        Uint64 fpsStartTime = previousTime;
+        Uint64 fpsFrameCount = 0;
         while (running) {
             const Uint64 currentTime = SDL_GetTicksNS();
 
@@ -273,6 +280,7 @@ void app::Application::run() {
             frameBuffer->clear(core::Color::black);
 
             rayCaster->renderScene();
+            spriteRenderer->renderSprites();
 
             if (!presenter->present(*frameBuffer)) {
                 reportError(
@@ -282,6 +290,16 @@ void app::Application::run() {
                 );
 
                 stop();
+            } else {
+                ++fpsFrameCount;
+                const Uint64 fpsCurrentTime = SDL_GetTicksNS();
+                const double fpsElapsedSeconds =static_cast<double>(fpsCurrentTime - fpsStartTime) * NANOSECONDS_PER_SECOND;
+                if (fpsElapsedSeconds >= 1.0) {
+                    const double fps = static_cast<double>(fpsFrameCount) / fpsElapsedSeconds;
+                    std::cout << fps << std::endl;
+                    fpsFrameCount = 0;
+                    fpsStartTime = fpsCurrentTime;
+                }
             }
         }
 

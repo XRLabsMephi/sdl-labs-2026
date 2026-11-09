@@ -13,6 +13,7 @@
 #include <render/TextureStorage.h>
 #include <world/Map.h>
 #include <world/Player.h>
+#include <render/SpriteRenderer.h>
 
 namespace app {
 
@@ -35,6 +36,7 @@ namespace app {
         render::TextureStorage textureStorage;
         std::unique_ptr<render::FrameBuffer> frameBuffer;
         std::unique_ptr<raycast::RayCaster> rayCaster;
+        std::unique_ptr<render::SpriteRenderer> spriteRenderer;
         std::unique_ptr<render::SdlPresenter> presenter;
 
         bool running = false;
