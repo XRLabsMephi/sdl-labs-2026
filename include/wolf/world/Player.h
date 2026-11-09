@@ -10,8 +10,9 @@ namespace world {
         core::Vector2 position{};
 
         double rotation = 0.0;
-        double angle = std::numbers::pi / 3.0;
+        double angle = std::numbers::pi / 2.2;
         double radius = 0.2;
+        int eyeHeight = 512;
 
     public:
         core::Vector2 getPosition() const {
@@ -20,6 +21,10 @@ namespace world {
 
         void setPosition(core::Vector2 newPosition) {
             position = newPosition;
+        }
+
+        void setEyeHeigth(int newEyeHeigth) {
+            eyeHeight = newEyeHeigth;
         }
 
         // Return the field of view in radians.
@@ -34,6 +39,10 @@ namespace world {
 
         double getRadius() const {
             return radius;
+        }
+
+        int getEyeHeight() const {
+            return eyeHeight;
         }
 
         void rotate(double angleDelta);

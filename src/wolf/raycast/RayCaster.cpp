@@ -8,11 +8,10 @@
 using namespace raycast;
 using namespace raycast::settings;
 
-void RayCaster::drawByRayHit(const Vector2& ray_direction, const Vector2& camera_direction,
-                             const std::pair<double, double>& cos_vertical_horizontal, double depth,
+void RayCaster::drawByRayHit(const std::pair<double, double>& cos_vertical_horizontal, double depth,
                              int column) const{
     const int W_H = frame_height_; // the height of wall in pixels
-    const int P_H = static_cast<int>(W_H * P_W_rel); // the height of player in pixels
+    const int P_H = player_.getEyeHeight(); // the height of player in pixels
 
     //projection of distance on camera axe (using scalar product and the fact, that camera_direction is normalized)
 
@@ -34,8 +33,13 @@ void RayCaster::drawByRayHit(const Vector2& ray_direction, const Vector2& camera
     frame_buffer_.vline(column, frame_height_ - P_H + 1, frame_height_, GROUND_COLOR);
 
 
-    const render::Texture& texture = storage_.get(static_cast<size_t>(ray_cast_hit.wall_id_));
     const RayHit& ray_hit = ray_cast_hit;
+    bool with_texture = ray_hit.wall_id_ >= 2;
+    const render::Texture& texture = storage_.getOrEmpty(static_cast<size_t>(ray_cast_hit.wall_id_));
+    if (&texture == &render::Texture::empty){
+        with_texture = false;
+    }
+
     if (ray_hit.has_hit_){
         const double SC_RAY_DEPTH_rel = SC_D/depth;
         int y0 = static_cast<int>(P_H * (1 - SC_RAY_DEPTH_rel)); //bottom border of wall projection in pixels(can be negative)
@@ -44,7 +48,7 @@ void RayCaster::drawByRayHit(const Vector2& ray_direction, const Vector2& camera
         int length_of_wall = y1 - y0 + 1;
         //draw wall
         frame_buffer_.vline(column, frame_height_ - y1, frame_height_ - y0, get_color_with_fog(WALL_COLOR));
-        if (ray_hit.wall_id_ >= 2){
+        if (with_texture){
             double step = static_cast<double>(texture.height)/static_cast<double>(length_of_wall);
             auto castToFixedFloat = [](double value){double int_value, frac_value =  std::modf(value, &int_value);
                 return (static_cast<int>(int_value) << 16) | static_cast<int>(frac_value * (1 << 16));};
@@ -91,9 +95,11 @@ void RayCaster::renderScene(){
      *на основе равных углов или привязки к серединам отрезков*/
     for (int xi = 0; xi < frame_width_; ++xi, ray_direction += shift){ //calculate next direction of ray
         castRay(ray_direction);
-        double depth = ray_cast_hit.t_distance_ * (ray_direction.x * camera_direction.x + ray_direction.y * camera_direction.y);
+        double depth;
+        if (!fish_eye){depth = ray_cast_hit.t_distance_ * ray_direction.dot(camera_direction);}
+        else {depth = ray_cast_hit.t_distance_ * ray_direction.length();}
         depth_buffer_[xi] = depth;
-        drawByRayHit(ray_direction, camera_direction, cos_vertical_horizontal, depth, xi);
+        drawByRayHit(cos_vertical_horizontal, depth, xi);
     }
 
 
@@ -102,8 +108,8 @@ void RayCaster::renderScene(){
 void RayCaster::castRay(Vector2 ray_direction) {
     Vector2 ray_coordinate = player_.getPosition();
 
-    auto& [ray_dir_x, ray_dir_y] = ray_direction;
-    auto& [x, y] = ray_coordinate;
+    const auto& [ray_dir_x, ray_dir_y] = ray_direction;
+    const auto& [x, y] = ray_coordinate;
 
     //preprocessing
     //we count t-parameters in another units of measurement. De-facto one t is length of ray_direction
@@ -169,32 +175,29 @@ void RayCaster::castRay(Vector2 ray_direction) {
             t_inter = closest_t_y;
             closest_t_y += tdy;
             intersection_side = IntersectionSide::Horizontal;
-            continue;
         }
-        else{
+        else if (closest_t_x < closest_t_y){
             cell_x += sign_dx;
             t_inter = closest_t_x;
             closest_t_x += tdx;
             intersection_side = IntersectionSide::Vertical;
         }
-        // if ray pass next to corner, it intersects one cell before, firstly vertical, secondly horizontal
-        // возможно стоит сделать отдельную проверку на обе
-        /*else
+        else
         {
             if (map_.isWall(cell_x + sign_dx, cell_y))
             {
                 closest_t_x = -1.0f; //terminating
                 continue;
             }
-            else if (map_.isWall(cell_x, cell_y + sign_dy))
+            if (map_.isWall(cell_x, cell_y + sign_dy))
             {
-                closest_t_y = -1.0f; //
+                closest_t_y = -1.0f; //terminating
                 continue;
             }
             cell_x += sign_dx;
             cell_y += sign_dy;
             closest_t_x += tdx;
             closest_t_y += tdy;
-        }*/
+        }
     }
 }

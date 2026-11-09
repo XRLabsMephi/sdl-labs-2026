@@ -2,6 +2,7 @@
 #include <stdexcept>
 #include <raycast/RayHit.h>
 #include <core/Vec2.h>
+#include <core/Color.h>
 #include <world/Map.h>
 #include <render/FrameBuffer.h>
 #include <world/Player.h>
@@ -14,21 +15,23 @@ namespace raycast{
         inline core::Color GROUND_COLOR = core::Color::lerp(core::Color::black, core::Color::white, 255 * 3 / 10);
         inline core::Color SKY_COLOR = core::Color(170, 142, 224);
 
-        constexpr double W_P_rel = 2; // the relation between wall and player height
-        constexpr double P_W_rel = 1.0 / W_P_rel; // the relation between player and wall height
-
-        constexpr double SC_D = 1.0; //distance between camera and virtual screen
         //constexpr double vertical_field_of_view = 0.0; //the angle of view in vertical axe. Interchangeably with SC_D
+        constexpr double SC_D = 1.0; //distance between camera and virtual screen
 
         inline double minimal_brightness = 0.6;
         inline double darkening_distance = 30.0;
 
-        constexpr int texture_width = 512;
+        inline bool fish_eye = false;
     }
 
 
     using Vector2 = core::Vector2;
     /**@brief The class that implements casting rays and set drawing parameters*/
+    enum Effects{
+        None,
+        FishEye
+    };
+
     class RayCaster{
     public:
         //возможно стоит добавить во frame_buffer - геттеры для получения frame_width и frame_height
@@ -38,16 +41,16 @@ namespace raycast{
          *@param map
          *@param frame_buffer
          *@param storage**/
-        RayCaster(int frame_width, int frame_height, const world::Player& player, const world::Map& map,
-                                                     render::FrameBuffer& frame_buffer, const render::TextureStorage& storage)
+        RayCaster(const world::Player& player, const world::Map& map, render::FrameBuffer& frame_buffer,
+            const render::TextureStorage& storage)
             :
             player_(player),
             map_(map),
             frame_buffer_(frame_buffer),
             storage_(storage),
-            frame_width_(frame_width),
-            frame_height_(frame_height),
-            depth_buffer_(frame_width)
+            frame_width_(static_cast<int>(frame_buffer_.width())),
+            frame_height_(static_cast<int>(frame_buffer_.height())),
+            depth_buffer_(frame_width_)
         {if (frame_width_ <= 1 || frame_height_ <= 0){
             throw std::invalid_argument("Invalid frame resolution");
         }}
@@ -61,6 +64,10 @@ namespace raycast{
         /**@return const ref to buffer of depths*/
         [[nodiscard]] std::vector<double>& getDepthBuffer(){return depth_buffer_;};
 
+        void set_fog_params(core::Color fog_color, float min_fog_depth, float max_fog_depth) {
+            fog_ = Fog(min_fog_depth, max_fog_depth, fog_color);
+        }
+
 
     private:
         const world::Player& player_;
@@ -68,8 +75,9 @@ namespace raycast{
         render::FrameBuffer& frame_buffer_;
         const render::TextureStorage &storage_;
         int frame_width_, frame_height_;
-        std::vector<double> depth_buffer_;
         Fog fog_;
+        std::vector<double> depth_buffer_;
+
 
         static constexpr double angle_eps = 1e-7f;
         static constexpr double eps = 1e-8f;
@@ -80,8 +88,7 @@ namespace raycast{
         void castRay(Vector2 direction);
 
         //draw column in FrameBuffer
-        void drawByRayHit(const Vector2& ray_direction, const Vector2& camera_direction,
-                        const std::pair<double, double>& cos_vertical_horizontal,
-                        double depth, int column) const;
+        void drawByRayHit(const std::pair<double, double>& cos_vertical_horizontal,
+                          double depth, int column) const;
     };
 }

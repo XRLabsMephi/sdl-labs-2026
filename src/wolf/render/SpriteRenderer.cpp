@@ -1,4 +1,5 @@
 #include <render/SpriteRenderer.h>
+#include <algorithm>
 using namespace render;
 
 //void SpriteRenderer::drawSprites(Vector2 forward, double tanHalfFov) const
@@ -13,7 +14,8 @@ void SpriteRenderer::renderSprites() const {
         const Vector2 right{forward.y, -forward.x};
         const double halfWidth = (frame_width_ - 1) / 2.0;
         const double horizontalFocalLength = halfWidth / tan(player_.getAngle() / 2.0f);
-        const double horizon = frame_height_ / 2.0;
+        const double eyeHeight = player_.getEyeHeight();
+        const double horizon = frame_height_ - eyeHeight;
         constexpr int TEXTURE_UNIT = 1 << 16;
 
         std::vector<VisibleSprite> visible;
@@ -34,15 +36,18 @@ void SpriteRenderer::renderSprites() const {
         for (const auto& [sprite, cameraX, depth] : visible)
         {
             const auto& texture = textures_.getOrEmpty(sprite->textureId);
+            if (&texture == &render::Texture::empty){
+                continue;
+            }
             const double centerX = halfWidth + horizontalFocalLength * cameraX / depth;
             const double projectedHeight = frame_height_ * (sprite->scale / depth);
             const double projectedWidth = horizontalFocalLength * (sprite->scale / depth)
                 * (static_cast<double>(texture.width) / texture.height);
 
             // Align the base of the sprite with the base of a wall at the same depth.
-            const double bottom = horizon + horizon / depth;
+            const double bottom = horizon + eyeHeight / depth;
             const double top = bottom - projectedHeight;
-            const double left = centerX - projectedWidth / 2.0;
+            const double leftEdge = centerX - projectedWidth / 2.0;
             const double rightEdge = centerX + projectedWidth / 2.0;
             if (!std::isfinite(projectedWidth) || !std::isfinite(projectedHeight) ||
                 projectedWidth <= 0.0 || projectedHeight <= 0.0) {
@@ -53,7 +58,7 @@ void SpriteRenderer::renderSprites() const {
             const auto clip = [](double edge, int limit) {
                 return static_cast<int>(std::ceil(std::clamp(edge, 0.0, static_cast<double>(limit))));
             };
-            const int x0 = clip(left, frame_width_);
+            const int x0 = clip(leftEdge, frame_width_);
             const int xEnd = clip(rightEdge, frame_width_);
             const int y0 = clip(top, frame_height_);
             const int yEnd = clip(bottom, frame_height_);
@@ -74,7 +79,7 @@ void SpriteRenderer::renderSprites() const {
                     continue;
                 }
                 const int texX = std::min(texture.width - 1,
-                    static_cast<int>(std::clamp((x - left) / projectedWidth, 0.0, 1.0) * texture.width));
+                    static_cast<int>(std::clamp((x - leftEdge) / projectedWidth, 0.0, 1.0) * texture.width));
                 frame_buffer_.vline_sprite(x, y0, yEnd - 1, {
                     texture.column(texX), texY, step, static_cast<float>(depth), 255
                 });

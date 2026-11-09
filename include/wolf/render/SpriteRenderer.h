@@ -1,16 +1,12 @@
-#include <vector>
-#include <algorithm>
+#pragma once
 
 #include <core/Vec2.h>
-#include <world/Sprite.h>
 #include <render/FrameBuffer.h>
 #include <render/TextureStorage.h>
 #include <world/Player.h>
 #include <world/Map.h>
 
 namespace render{
-
-
 class SpriteRenderer
 {
 
