@@ -78,7 +78,7 @@ void PlayerController::update(Player& player, const Map& map, const InputState& 
     }
 
     // Frame-rate independent acceleration and friction.
-    const double response = length > 0.0 ? 14.0 : 18.0;
+    const double response = input.drift ? 1.8 : (length > 0.0 ? 14.0 : 18.0);
     const double blend = 1.0 - std::exp(-response * dt);
     player.velocity.x += (target_velocity.x - player.velocity.x) * blend;
     player.velocity.y += (target_velocity.y - player.velocity.y) * blend;

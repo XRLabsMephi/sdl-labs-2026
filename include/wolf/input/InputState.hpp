@@ -8,6 +8,7 @@ namespace wolf {
         bool moveLeft = false;
         bool moveRight = false;
         bool sprint = false;
+        bool drift = false;
         bool turnLeft = false;
         bool turnRight = false;
         bool quit = false;

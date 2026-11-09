@@ -40,6 +40,8 @@ InputState read_input() {
     input.moveBackward = keys[SDL_SCANCODE_S];
     input.moveLeft = keys[SDL_SCANCODE_A];
     input.moveRight = keys[SDL_SCANCODE_D];
+    input.drift = keys[SDL_SCANCODE_LCTRL] ||
+                  keys[SDL_SCANCODE_RCTRL];
     input.turnLeft = keys[SDL_SCANCODE_LEFT];
     input.turnRight = keys[SDL_SCANCODE_RIGHT];
     input.sprint = keys[SDL_SCANCODE_LSHIFT] ||
