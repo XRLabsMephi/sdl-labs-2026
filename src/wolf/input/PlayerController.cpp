@@ -66,40 +66,56 @@ void PlayerController::update(Player& player, const Map& map, const InputState& 
             player.direction.x * side
     };
 
-    double length = std::sqrt(
-        move.x * move.x + move.y * move.y
-    );
+    // Normalize before applying speed: diagonal movement is not faster.
+    const double length = std::hypot(move.x, move.y);
+    Vec2 target_velocity{0.0, 0.0};
+    if (length > 0.0) {
+        const double speed = move_speed_ * (input.sprint ? 1.8 : 1.0);
+        target_velocity = {
+            move.x / length * speed,
+            move.y / length * speed
+        };
+    }
 
-    if (length == 0.0) {
+    // Frame-rate independent acceleration and friction.
+    const double response = length > 0.0 ? 14.0 : 18.0;
+    const double blend = 1.0 - std::exp(-response * dt);
+    player.velocity.x += (target_velocity.x - player.velocity.x) * blend;
+    player.velocity.y += (target_velocity.y - player.velocity.y) * blend;
+
+    if (length == 0.0 && std::hypot(player.velocity.x, player.velocity.y) < 0.01) {
+        player.velocity = {0.0, 0.0};
+    }
+
+    Vec2 displacement{player.velocity.x * dt, player.velocity.y * dt};
+    const double distance = std::hypot(displacement.x, displacement.y);
+    if (distance == 0.0) {
         return;
     }
 
-    // 3. Нормализация: движение по диагонали
-    // не должно быть быстрее обычного.
-    move.x = move.x / length * move_speed_ * dt;
-    move.y = move.y / length * move_speed_ * dt;
-
-    // 4. Делим перемещение на небольшие части,
-    // чтобы при большом dt не перескочить стену.
-    double distance = move_speed_ * dt;
-    int steps = std::max(
-        1,
-        static_cast<int>(std::ceil(distance / half_size_))
+    // Substep the actual (possibly sprinting) displacement.
+    const int steps = std::max(
+        1, static_cast<int>(std::ceil(distance / half_size_))
     );
-    move.x /= steps;
-    move.y /= steps;
+    displacement.x /= steps;
+    displacement.y /= steps;
 
-    // 5. Проверяем X и Y независимо.
+    // Slide along walls by resolving X and Y separately.
     for (int i = 0; i < steps; ++i) {
         Vec2 next = player.position;
-        next.x += move.x;
+        next.x += displacement.x;
         if (can_move(map, next)) {
             player.position.x = next.x;
+        } else {
+            player.velocity.x = 0.0;
         }
+
         next = player.position;
-        next.y += move.y;
+        next.y += displacement.y;
         if (can_move(map, next)) {
             player.position.y = next.y;
+        } else {
+            player.velocity.y = 0.0;
         }
     }
 }

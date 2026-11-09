@@ -25,9 +25,10 @@ int main() {
     input.moveForward = true;
     controller.update(player, map, input, 0.1);
 
+    const double forward_distance = player.position.x - 1.5;
     check(
-        std::abs(player.position.x - 1.8) < 1e-6,
-        "Forward movement failed"
+        forward_distance > 0.0 && forward_distance < 0.3,
+        "Forward acceleration failed"
     );
     check(
         std::abs(player.position.y - 1.5) < 1e-6,
@@ -41,8 +42,30 @@ int main() {
     double dy = player.position.y - 1.5;
 
     check(
-        std::abs(std::sqrt(dx * dx + dy * dy) - 0.3) < 1e-6,
+        std::abs(std::hypot(dx, dy) - forward_distance) < 1e-6,
         "Diagonal movement changed speed"
+    );
+
+    player = wolf::Player{};
+    input = wolf::InputState{};
+    input.moveForward = true;
+    input.sprint = true;
+    controller.update(player, map, input, 0.1);
+
+    const double sprint_distance = player.position.x - 1.5;
+    check(
+        sprint_distance > forward_distance * 1.7 &&
+        sprint_distance < forward_distance * 1.9,
+        "Sprint speed multiplier failed"
+    );
+
+    const double before_braking = player.position.x;
+    input = wolf::InputState{};
+    controller.update(player, map, input, 0.1);
+    check(
+        player.position.x > before_braking &&
+        player.position.x - before_braking < sprint_distance,
+        "Movement braking failed"
     );
 
     player = wolf::Player{};
