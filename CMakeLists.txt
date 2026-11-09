@@ -14,15 +14,8 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(SDL3)
 
-
 file(GLOB_RECURSE SOURCES "src/wolf/*.cpp")
 
-add_executable(laba ${SOURCES}
-        src/wolf/render/FrameBuffer.cpp
-        src/wolf/render/SdlPresenter.cpp
-        src/wolf/app/Application.cpp
-        src/wolf/world/Map.cpp
-        src/wolf/input/PlayerController.cpp
-        src/wolf/raycast/Raycaster.cpp
-)
-target_link_libraries(laba PRIVATE SDL3::SDL3)
+add_executable(wolf_raycaster ${SOURCES})
+
+target_link_libraries(wolf_raycaster PRIVATE SDL3::SDL3)
