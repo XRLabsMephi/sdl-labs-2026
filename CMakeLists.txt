@@ -20,10 +20,9 @@ set(HEADERS
         include/wolf/debug/Logger.h
         include/wolf/render/Texture.h
         include/wolf/render/TextureStorage.h
-        include/wolf/render/TextureStorageInflator.h
+        include/wolf/render/TextureStorageLoader.h
         include/wolf/render/Fog.h
         include/wolf/render/SpriteRenderer.h
-        include/wolf/render/View.h
 )
 
 set(SOURCES
@@ -38,7 +37,7 @@ set(SOURCES
         src/wolf/input/InputState.cpp
         src/wolf/render/Texture.cpp
         src/wolf/render/TextureStorage.cpp
-        src/wolf/render/TextureStorageInflator.cpp
+        src/wolf/render/TextureStorageLoader.cpp
         src/wolf/render/SpriteRenderer.cpp
 )
 
@@ -53,7 +52,7 @@ target_link_libraries(graphics_lab PRIVATE SDL3::SDL3)
 target_compile_features(graphics_lab PRIVATE cxx_std_20)
 
 target_compile_options(graphics_lab PRIVATE
-        $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Wall -Wextra -Wpedantic -O2>
+        $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Wall -Wextra -Wpedantic -O3 -march=native>
         $<$<CXX_COMPILER_ID:MSVC>:/W4 /permissive->
 )
 
@@ -62,7 +61,6 @@ set_target_properties(graphics_lab PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
 )
 
-# Keep runtime assets beside the executable, including in multi-config builds.
 add_custom_target(graphics_lab_assets
     COMMAND ${CMAKE_COMMAND} -E copy_directory
         "${CMAKE_CURRENT_SOURCE_DIR}/assets"

@@ -1,6 +1,5 @@
 #pragma once
 
-#include <cstdint>
 #include <vector>
 
 #include "Fog.h"
@@ -20,7 +19,7 @@ namespace render {
         const Uint32* tex_col = nullptr; /**< Texture pixels column*/
         int tex_y_start = 0; /**< Mapping from screen to texture coordinates in 16.16 fixed precision format.*/
         int tex_step = 0; /**< Texture pixels step per screen pixel, in 16.16 fixed precision format*/
-        double depth = 0; /**< Depth of the object in the frame (z_buf value). Influences the color*/
+        double depth = 0; /**< Depth of the object in the frame (zbuf value). Influences the color*/
         Uint8 brightness = 0; /**< Dynamic shadowing coefficient*/
     };
 
@@ -30,10 +29,18 @@ namespace render {
     class FrameBuffer {
         buf_size_t width_; /**< Width of buffer in pixels */
         buf_size_t height_; /**< Height of buffer in pixels */
-        int int_width_; /**< Integer version of buffer width. Internal-use only */
-        int int_height_; /**< Integer version of buffer height. Internal-use only */
+        int max_x_; /**< Maximum x coordinate value. Only for internal use*/
+        int max_y_; /**< Maximum x coordinate value. Only for internal use*/
         vector<Uint32> buffer_; /**< flat column-major buffer*/
         Fog fog_;
+
+        alignas(64) Uint8 lut_r_[256]{};
+        alignas(64) Uint8 lut_g_[256]{};
+        alignas(64) Uint8 lut_b_[256]{};
+        Uint8 lut_fog_q_ = 0xFF;         // ключ инвалидации: для какого fog собран LUT
+        Uint8 lut_brightness_ = 0xFF;    // ключ инвалидации: для какого brightness
+
+        void buildFogLut(Uint8 brightness, Uint8 fog_factor);
 
     public:
         FrameBuffer(int32_t width, int32_t height);

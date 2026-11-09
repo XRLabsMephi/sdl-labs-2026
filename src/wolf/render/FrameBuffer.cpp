@@ -13,8 +13,8 @@ using std::max;
 FrameBuffer::FrameBuffer(int width, int height)
     : width_(0)
       , height_(0)
-      , int_width_(0)
-      , int_height_(0) {
+      , max_x_(0)
+      , max_y_(0) {
     if (width <= 0) { throw std::invalid_argument("width must be > 0"); }
     if (height <= 0) { throw std::invalid_argument("height must be > 0"); }
 
@@ -25,8 +25,8 @@ FrameBuffer::FrameBuffer(int width, int height)
         throw std::length_error("Buffer dimensions are too large");
     }
 
-    int_width_ = width;
-    int_height_ = height;
+    max_x_ = width - 1;
+    max_y_ = height - 1;
 
     buffer_.assign(width_ * height_, 0);
 }
@@ -46,67 +46,178 @@ void FrameBuffer::clear(const Color color) {
 }
 
 void FrameBuffer::set(int x, int y, const Color color) {
-    if (x < 0 || y < 0 || x >= int_width_ || y >= int_height_) return;
+    if (x < 0 || y < 0 || x > max_x_ || y > max_y_) return;
 
     buffer_[x * height_ + y] = static_cast<Uint32>(color);
 }
 
 void FrameBuffer::vline(int x, int y0, int y1, const Color color) {
-    if (x < 0 || x >= int_width_) return;
+    if (x < 0 || x > max_x_) return;
     if (y0 > y1) std::swap(y0, y1);
 
     y0 = max(y0, 0);
-    y1 = min(y1, int_height_ - 1);
+    y1 = min(y1, max_y_);
     if (y0 > y1) return;
 
     uint32_t *col = &buffer_[x * height_];
     std::fill_n(col + y0, y1 - y0 + 1, static_cast<Uint32>(color));
 }
 
+[[gnu::noinline]] void FrameBuffer::buildFogLut(Uint8 brightness, Uint8 fog_factor) {
+    const Uint8 *lut = core::DIM[brightness].data();
+    const Uint32 fog_rgb = static_cast<Uint32>(fog_.rgb_color) & 0x00FFFFFFu;
+    const Uint32 fog_r = (fog_rgb >> 16) & 0xFFu;
+    const Uint32 fog_g = (fog_rgb >> 8) & 0xFFu;
+    const Uint32 fog_b = fog_rgb & 0xFFu;
+    const Uint32 ft = fog_factor;
+    const Uint32 finv = 255u - ft;
+    for (int v = 0; v < 256; ++v) {
+        const Uint32 d = lut[v];
+        lut_r_[v] = static_cast<Uint8>((finv * d + ft * fog_r + 127u) / 255u);
+        lut_g_[v] = static_cast<Uint8>((finv * d + ft * fog_g + 127u) / 255u);
+        lut_b_[v] = static_cast<Uint8>((finv * d + ft * fog_b + 127u) / 255u);
+    }
+    lut_fog_q_ = fog_factor >> 3;
+    lut_brightness_ = brightness;
+}
+
 template<bool IsSprite>
 void FrameBuffer::vline(int x, int y0, int y1, const DrawCallParams &params) {
-    if (x < 0 || x >= int_width_) return;
+    if (x < 0 || x > max_x_) return;
 
     const auto &[tex_col, tex_y0, step, depth, brightness] = params;
     if (!tex_col || step < 0 || tex_y0 < 0) return;
-    if (y0 > y1) std::swap(y0, y1);
+    if (y0 > y1) {
+       std::swap(y0, y1);
+    }
 
     int clipping_offset = 0;
     if (y0 < 0) { clipping_offset = -y0 * step, y0 = 0; }
-    y1 = min(y1, int_height_ - 1);
+    y1 = min(y1, max_y_);
     if (y0 > y1) return;
 
-    Uint8 fog_factor = fog_.factor(depth);
-    Uint32 *col = &buffer_[x * height_];
+    const Uint8 fog_factor = fog_.factor(static_cast<float>(depth));
+    const auto fog_rgb = static_cast<Uint32>(fog_.rgb_color);
 
+    Uint32 *__restrict cp = &buffer_[x * height_];
+    const Uint32 *__restrict tc = tex_col;
+
+    // LUT path for fog_factor in [1, 254]
+    if (fog_factor > 0 && fog_factor < 255) {
+        const Uint8 fog_q = fog_factor >> 3; // fog key (quantized to 32/step)
+        if (lut_fog_q_ != fog_q || lut_brightness_ != brightness) { //if fog or brightness changed too much - rebuild
+            buildFogLut(brightness, fog_q << 3);
+        }
+
+        for (int y = y0, tex_y = tex_y0 + clipping_offset; y <= y1; ++y, tex_y += step) {
+            const Uint32 texel = tc[tex_y >> 16]; //unpacking 16.16 value and getting the texel
+            const Uint32 texel_alpha = texel & 0xFF000000u;
+            if constexpr (IsSprite) { if (!texel_alpha) continue; }
+
+            // applying fog as raw Uint32 lerp
+            const Uint32 fogged = texel_alpha
+                            | (static_cast<Uint32>(lut_r_[(texel >> 16) & 0xFFu]) << 16)
+                            | (static_cast<Uint32>(lut_g_[(texel >> 8) & 0xFFu]) << 8)
+                            | static_cast<Uint32>(lut_b_[texel & 0xFFu]);
+
+            //walls are opaque, so no need to blend
+            if constexpr (!IsSprite) {
+                cp[y] = fogged;
+            } else {
+                //if sprite pixel is opaque no need to blend
+                if (texel_alpha == 0xFF000000u) {
+                    cp[y] = fogged;
+                    continue;
+                }
+                // raw Uint32 "over" type of blend
+                const Uint32 dst = cp[y];
+                const Uint32 sa = texel_alpha >> 24;
+                const Uint8 *da = core::DIM[sa].data();
+                const Uint8 *dia = core::DIM[255 - sa].data();
+                cp[y] = 0xFF000000u |
+                        ((da[(fogged >> 16) & 0xFF] + dia[(dst >> 16) & 0xFF]) << 16) |
+                        ((da[(fogged >> 8) & 0xFF] + dia[(dst >> 8) & 0xFF]) << 8) |
+                        (da[fogged & 0xFF] + dia[dst & 0xFF]);
+            }
+        }
+        return;
+    }
+
+    //non-combined LUT
     const Uint8 *lut = core::DIM[brightness].data();
-    //step is fixed precision number in 16.16 format
+
+    //for walls no need to blend
+    if constexpr (!IsSprite) {
+        if (fog_factor == 255) {
+            const Uint32 solid = 0xFF000000u | fog_rgb;
+            std::fill_n(cp + y0, y1 - y0 + 1, solid);
+            return;
+        }
+
+        // fog_factor == 0
+        for (int y = y0, tex_y = tex_y0 + clipping_offset; y <= y1; ++y, tex_y += step) {
+            const Uint32 texel = tc[tex_y >> 16];
+            //applying brightness
+            const Uint32 r = lut[(texel >> 16) & 0xFFu];
+            const Uint32 g = lut[(texel >> 8) & 0xFFu];
+            const Uint32 b = lut[texel & 0xFFu];
+            cp[y] = 0xFF000000u | (r << 16) | (g << 8) | b;
+        }
+        return;
+    }
+
     for (int y = y0, tex_y = tex_y0 + clipping_offset; y <= y1; ++y, tex_y += step) {
-        Uint32 texel = tex_col[tex_y >> 16];
+        const Uint32 texel = tc[tex_y >> 16];
+        const Uint32 texel_alpha = texel & 0xFF000000u;
+        if (!texel_alpha) continue;
 
-        if constexpr (IsSprite) { if (!(texel & 0xFF000000u)) continue; }
+        //applying brightness
+        Uint32 lit = 0xFF000000u |
+                     (static_cast<Uint32>(lut[(texel >> 16) & 0xFFu]) << 16) |
+                     (static_cast<Uint32>(lut[(texel >> 8) & 0xFFu]) << 8) |
+                     static_cast<Uint32>(lut[texel & 0xFFu]);
 
-        Uint32 lit_texel = static_cast<Uint32>(Color::fromBits(texel).dimmed(lut));
-        Uint32 fogged_texel = fog_.applyFog(lit_texel, fog_factor);
-        col[y] = static_cast<Uint32>(Color::fromBits(fogged_texel).over(Color::fromBits(col[y])));
+        if (fog_factor == 255) lit = 0xFF000000u | fog_rgb;
+        else if (fog_factor != 0) {
+            // applyFog manually
+            const Uint32 t = fog_factor;
+            const Uint32 inv = 255u - t;
+            lit = 0xFF000000u |
+                  (((inv * ((lit >> 16) & 0xFFu) + t * ((fog_rgb >> 16) & 0xFFu) + 127u) / 255u) << 16) |
+                  (((inv * ((lit >> 8) & 0xFFu) + t * ((fog_rgb >> 8) & 0xFFu) + 127u) / 255u) << 8) |
+                  ((inv * (lit & 0xFFu) + t * (fog_rgb & 0xFFu) + 127u) / 255u);
+        }
+
+        if (texel_alpha == 0xFF000000u) {
+            cp[y] = lit;
+            continue;
+        }
+
+        const Uint32 dst = cp[y];
+        const Uint32 sa = texel_alpha >> 24;
+        const Uint8 *da = core::DIM[sa].data();
+        const Uint8 *dia = core::DIM[255 - sa].data();
+        //manual Uint32 blend
+        cp[y] = 0xFF000000u |
+                ((da[(lit >> 16) & 0xFF] + dia[(dst >> 16) & 0xFF]) << 16) |
+                ((da[(lit >> 8) & 0xFF] + dia[(dst >> 8) & 0xFF]) << 8) |
+                (da[lit & 0xFF] + dia[dst & 0xFF]);
     }
 }
 
-template void render::FrameBuffer::vline<false>(
-    int, int, int, const render::DrawCallParams&);
+template void FrameBuffer::vline<false>(int, int, int, const DrawCallParams &);
 
-template void render::FrameBuffer::vline<true>(
-    int, int, int, const render::DrawCallParams&);
+template void FrameBuffer::vline<true>(int, int, int, const DrawCallParams &);
 
 void FrameBuffer::vline_sprite(int x, int y0, int y1, const DrawCallParams &params) {
     vline<true>(x, y0, y1, params);
 }
 
 void FrameBuffer::hline(const int y, int x0, int x1, const Color color) {
-    if (y < 0 || y >= int_height_) return;
+    if (y < 0 || y > max_y_) return;
     if (x0 > x1) std::swap(x0, x1);
     x0 = max(x0, 0);
-    x1 = min(x1, int_width_ - 1);
+    x1 = min(x1, max_x_);
     if (x0 > x1) return;
 
     const buf_size_t h = height_;
@@ -117,12 +228,14 @@ void FrameBuffer::hline(const int y, int x0, int x1, const Color color) {
 }
 
 void FrameBuffer::hline(const int y, int x0, int x1, const DrawCallParams &params) {
-    if (y < 0 || y >= int_height_) return;
+    if (y < 0 || y > max_y_) return;
     if (x0 > x1) std::swap(x0, x1);
     x0 = max(x0, 0);
-    x1 = min(x1, int_width_ - 1);
+    x1 = min(x1, max_x_);
     if (x0 > x1) return;
 
+    const auto &[tex_col, tex_y0, step, depth, brightness] = params;
+    if (!tex_col || step < 0 || tex_y0 < 0) return;
     //TODO
 }
 
@@ -132,8 +245,8 @@ void FrameBuffer::rectangle(int x0, int y0, int x1, int y1, const Color color) {
 
     y0 = max(y0, 0);
     x0 = max(x0, 0);
-    x1 = min(x1, int_width_ - 1);
-    y1 = min(y1, int_height_ - 1);
+    x1 = min(x1, max_x_);
+    y1 = min(y1, max_y_);
 
     if (x0 > x1 || y0 > y1) return;
 
@@ -150,10 +263,12 @@ void FrameBuffer::rectangle(int x0, int y0, int x1, int y1, DrawCallParams &para
 
     y0 = max(y0, 0);
     x0 = max(x0, 0);
-    x1 = min(x1, int_width_ - 1);
-    y1 = min(y1, int_height_ - 1);
+    x1 = min(x1, max_x_ - 1);
+    y1 = min(y1, max_y_ - 1);
 
     if (x0 > x1 || y0 > y1) return;
 
+    const auto &[tex_col, tex_y0, step, depth, brightness] = params;
+    if (!tex_col || step < 0 || tex_y0 < 0) return;
     //TODO
 }

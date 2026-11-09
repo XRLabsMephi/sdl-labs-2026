@@ -111,6 +111,30 @@ namespace core {
             };
         }
 
+        [[nodiscard]] constexpr Color lerp_rgb(const Color &rhs, Uint8 percent) const noexcept {
+            return lerp_rgb(*this, rhs, percent);
+        }
+
+        /**
+         * @brief Linear interpolation of RGB channels only; alpha is taken from lhs.
+         * @param lhs first color (also the source of resulting alpha)
+         * @param rhs second color
+         * @param percent [0, 255] amount of transition between lhs and rhs
+         * @return resulting Color with lhs.a()
+         */
+        [[nodiscard]] static constexpr Color lerp_rgb(const Color &lhs, const Color &rhs, Uint8 percent) noexcept {
+            const Uint32 l = lhs.u_col_;
+            const Uint32 r = rhs.u_col_;
+            const Uint32 t = percent;
+            const Uint32 inv = 255u - t;
+            auto mix = [inv, t](Uint32 a, Uint32 b) constexpr -> Uint32 { return (inv * a + t * b + 127u) / 255u; };
+            const Uint32 rgb =
+                    (mix((l >> 16) & 0xFFu, (r >> 16) & 0xFFu) << 16) |
+                    (mix((l >> 8) & 0xFFu, (r >> 8) & 0xFFu) << 8) |
+                    mix(l & 0xFFu, r & 0xFFu);
+            return fromBits((l & 0xFF000000u) | rgb);
+        }
+
         /**
          * @brief Multiplies R, G, B components by scalar and clamps to [0, 255].
          * @param scalar multiplier, 255 = 1.0 (no change), 0 = black; alpha is preserved
