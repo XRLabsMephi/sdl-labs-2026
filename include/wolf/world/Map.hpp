@@ -23,5 +23,6 @@ public:
     [[nodiscard]] int get_height() const { return height_; }
 
     [[nodiscard]] std::optional<std::pair<int, int>> find_nearest_free_cell(double x, double y) const;
-    bool circle_hits_wall(Vector2 center, double radius) const;
+
+    bool square_hits_wall(Vector2 center, double half_size) const;
 };

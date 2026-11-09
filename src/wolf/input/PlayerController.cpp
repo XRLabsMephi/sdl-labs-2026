@@ -15,11 +15,11 @@ void PlayerController::apply_rotation(Player &player, const InputState &input, d
 void PlayerController::handle_collision(Player &player, const Vector2 &movement, const Map &map, double delta_time) const {
     Vector2 new_position = player.position + movement * move_speed_ * delta_time;
 
-    if (!map.circle_hits_wall({new_position.x, player.position.y}, player.hitbox_radius)) {
+    if (!map.square_hits_wall({new_position.x, player.position.y}, player.hitbox_half_size)) {
         player.position.x = new_position.x;
     }
 
-    if (!map.circle_hits_wall({player.position.x, new_position.y}, player.hitbox_radius)) {
+    if (!map.square_hits_wall({player.position.x, new_position.y}, player.hitbox_half_size)) {
         player.position.y = new_position.y;
     }
 }
