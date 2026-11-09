@@ -39,7 +39,7 @@ namespace wolf {
             "Blobick Raycaster",
             width_,
             height_,
-            0
+            SDL_WINDOW_RESIZABLE
         );
 
         if (!window_) {
@@ -53,7 +53,6 @@ namespace wolf {
             return false;
         }
 
-        SDL_SetWindowRelativeMouseMode(window_, true);
         return true;
     }
 
@@ -90,6 +89,17 @@ namespace wolf {
             if (input.quit) {
                 break;
             }
+
+            const bool rightHeld =
+                    (SDL_GetMouseState(nullptr, nullptr) & SDL_BUTTON_RMASK) != 0;
+
+            if (rightHeld != SDL_GetWindowRelativeMouseMode(window_)) {
+                if (!SDL_SetWindowRelativeMouseMode(window_, rightHeld)) {
+                    std::cerr << SDL_GetError() << '\n';
+                    return 1;
+                }
+            }
+
             Uint64 current_time = SDL_GetTicksNS();
             double dt = static_cast<double>(current_time - previous_time) / 1'000'000'000.0;
             previous_time = current_time;
@@ -103,9 +113,9 @@ namespace wolf {
             controller.update(player, map, input, dt);
 
             float dx = 0;
-            SDL_GetRelativeMouseState(&dx, nullptr);
+            const auto buttons = SDL_GetRelativeMouseState(&dx, nullptr);
 
-            double angle = dx * 0.002;
+            double angle = rightHeld ? dx * 0.002 : 0.0;
             double c = std::cos(angle), s = std::sin(angle);
 
             auto rotate = [c, s](Vec2 v) -> Vec2 {
@@ -129,6 +139,13 @@ namespace wolf {
 
             // Стены поверх фона.
             raycaster.render(frame, map, player);
+            if (rightHeld) {
+                int cx = width_ / 2;
+                int cy = height_ / 2;
+
+                frame.fillRect(cx - 3, cy - 3, 7, 7, {0, 0, 0});
+                frame.fillRect(cx - 2, cy - 2, 5, 5, {255, 255, 255});
+            }
 
             // Вывод полностью готового кадра.
             if (!presenter.present(frame)) {
