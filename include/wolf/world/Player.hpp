@@ -9,6 +9,8 @@ namespace wolf {
         Vec2 direction{1.0, 0.0};
         Vec2 velocity{0.0, 0.0};
         double dashCooldown = 0.0;
+        double dashRemaining = 0.0;
+        Vec2 dashDirection{1.0, 0.0};
         double sprintTime = 0.0;
 
         // tan(30 градусов): горизонтальное поле зрения 60 градусов.

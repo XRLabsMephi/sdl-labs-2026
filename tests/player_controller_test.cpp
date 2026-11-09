@@ -124,38 +124,77 @@ int main() {
         "Spawn outside map accepted"
     );
 
-    // Dash: instant impulse, collision-safe movement, and a cooldown.
-    wolf::Map dash_map({
-        {1, 1, 1, 1, 1, 1, 1, 1},
-        {1, 0, 0, 0, 0, 0, 0, 1},
-        {1, 0, 0, 0, 0, 0, 0, 1},
-        {1, 1, 1, 1, 1, 1, 1, 1}
-    });
+    // A dash covers the same distance at different frame rates.
+    std::vector<std::vector<int>> dash_cells(3, std::vector<int>(30, 0));
+    for (int x = 0; x < 30; ++x) {
+        dash_cells[0][x] = 1;
+        dash_cells[2][x] = 1;
+    }
+    for (auto& row : dash_cells) {
+        row.front() = 1;
+        row.back() = 1;
+    }
+    const wolf::Map dash_map(dash_cells);
+
     player = wolf::Player{};
     input = wolf::InputState{};
     input.dash = true;
     controller.update(player, dash_map, input, 0.05);
     check(
-        player.position.x > 2.0 && player.dashCooldown > 0.0,
-        "Dash failed to apply an impulse"
+        player.position.x > 2.0 &&
+        std::abs(player.dashRemaining - 0.10) < 1e-9,
+        "Dash did not start at the intended speed and duration"
     );
 
-    const double after_dash = player.position.x;
-    player.velocity = {0.0, 0.0};
+    input.dash = false;
+    controller.update(player, dash_map, input, 0.05);
+    controller.update(player, dash_map, input, 0.05);
+    const double stepped_position = player.position.x;
+    check(
+        std::abs(stepped_position - 3.6) < 1e-6 &&
+        player.dashRemaining < 1e-9,
+        "Dash did not travel a fixed 150 ms distance"
+    );
+
+    wolf::Player single_frame_player;
+    input.dash = true;
+    controller.update(single_frame_player, dash_map, input, 0.15);
+    check(
+        std::abs(single_frame_player.position.x - stepped_position) < 1e-6,
+        "Dash distance depends on frame rate"
+    );
+
+    // Repeated dash requests during cooldown must not restart the dash.
+    input.dash = true;
     controller.update(player, dash_map, input, 0.05);
     check(
-        std::abs(player.position.x - after_dash) < 1e-9,
+        player.dashRemaining == 0.0 && player.dashCooldown > 0.0,
         "Dash ignored its cooldown"
     );
 
-    input = wolf::InputState{};
+    input.dash = false;
     controller.update(player, dash_map, input, 0.9);
     input.dash = true;
-    const double before_second_dash = player.position.x;
     controller.update(player, dash_map, input, 0.05);
     check(
-        player.position.x > before_second_dash,
+        player.dashRemaining > 0.0,
         "Dash did not recharge"
+    );
+
+    // A dash into a wall must stop at the collision boundary.
+    wolf::Map dash_wall_map({
+        {1, 1, 1, 1, 1},
+        {1, 0, 0, 1, 1},
+        {1, 1, 1, 1, 1}
+    });
+    player = wolf::Player{};
+    input = wolf::InputState{};
+    input.dash = true;
+    controller.update(player, dash_wall_map, input, 0.15);
+    check(
+        player.position.x <= 2.8 + 1e-9 &&
+        player.dashRemaining == 0.0,
+        "Dash passed through a wall"
     );
 
     // Sustained sprint grows from 1.8x to 2.5x on a long straight.

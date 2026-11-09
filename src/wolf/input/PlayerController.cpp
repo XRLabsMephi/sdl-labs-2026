@@ -89,61 +89,87 @@ void PlayerController::update(Player& player, const Map& map, const InputState& 
         };
     }
 
-    // Frame-rate independent acceleration and friction.
-    const double response = input.drift ? 1.8 : (length > 0.0 ? 14.0 : 18.0);
-    const double blend = 1.0 - std::exp(-response * dt);
-    player.velocity.x += (target_velocity.x - player.velocity.x) * blend;
-    player.velocity.y += (target_velocity.y - player.velocity.y) * blend;
-
-    // Dash in the movement direction, or forward while stationary.
-    // Collision checks below still apply to the full dash displacement.
-    if (input.dash && player.dashCooldown <= 0.0) {
-        const Vec2 dash_direction = length > 0.0 ? move : player.direction;
-        const double dash_length = std::hypot(dash_direction.x, dash_direction.y);
-        if (dash_length > 0.0) {
-            constexpr double dash_speed = 14.0;
-            player.velocity = {
-                dash_direction.x / dash_length * dash_speed,
-                dash_direction.y / dash_length * dash_speed
-            };
+    // Dash has a fixed 150 ms duration, independent of frame rate.
+    // Store its direction once so turning doesn't bend the dash.
+    constexpr double dash_speed = 14.0;
+    if (input.dash && player.dashCooldown <= 0.0 && player.dashRemaining <= 0.0) {
+        const Vec2 direction = length > 0.0 ? move : player.direction;
+        const double magnitude = std::hypot(direction.x, direction.y);
+        if (magnitude > 0.0) {
+            player.dashDirection = {direction.x / magnitude, direction.y / magnitude};
+            player.dashRemaining = 0.15;
             player.dashCooldown = 0.85;
+            player.velocity = {
+                player.dashDirection.x * dash_speed,
+                player.dashDirection.y * dash_speed
+            };
         }
     }
 
-    if (length == 0.0 && std::hypot(player.velocity.x, player.velocity.y) < 0.01) {
-        player.velocity = {0.0, 0.0};
-    }
-
-    Vec2 displacement{player.velocity.x * dt, player.velocity.y * dt};
-    const double distance = std::hypot(displacement.x, displacement.y);
-    if (distance == 0.0) {
-        return;
-    }
-
-    // Substep the actual (possibly sprinting) displacement.
-    const int steps = std::max(
-        1, static_cast<int>(std::ceil(distance / half_size_))
-    );
-    displacement.x /= steps;
-    displacement.y /= steps;
-
-    // Slide along walls by resolving X and Y separately.
-    for (int i = 0; i < steps; ++i) {
-        Vec2 next = player.position;
-        next.x += displacement.x;
-        if (can_move(map, next)) {
-            player.position.x = next.x;
-        } else {
-            player.velocity.x = 0.0;
+    // The same collision solver handles both regular movement and dashes.
+    auto move_with_collisions = [&](Vec2 displacement) {
+        const double distance = std::hypot(displacement.x, displacement.y);
+        if (distance <= 0.0) {
+            return;
         }
 
-        next = player.position;
-        next.y += displacement.y;
-        if (can_move(map, next)) {
-            player.position.y = next.y;
-        } else {
-            player.velocity.y = 0.0;
+        const int steps = std::max(
+            1, static_cast<int>(std::ceil(distance / half_size_))
+        );
+        displacement.x /= steps;
+        displacement.y /= steps;
+
+        bool collided = false;
+        for (int i = 0; i < steps; ++i) {
+            Vec2 next = player.position;
+            next.x += displacement.x;
+            if (can_move(map, next)) {
+                player.position.x = next.x;
+            } else {
+                player.velocity.x = 0.0;
+                collided = true;
+            }
+
+            next = player.position;
+            next.y += displacement.y;
+            if (can_move(map, next)) {
+                player.position.y = next.y;
+            } else {
+                player.velocity.y = 0.0;
+                collided = true;
+            }
         }
+
+        if (collided) {
+            player.dashRemaining = 0.0;
+        }
+    };
+
+    const double dash_dt = std::min(dt, player.dashRemaining);
+    if (dash_dt > 0.0) {
+        move_with_collisions({
+            player.dashDirection.x * dash_speed * dash_dt,
+            player.dashDirection.y * dash_speed * dash_dt
+        });
+        player.dashRemaining = std::max(0.0, player.dashRemaining - dash_dt);
+    }
+
+    // If dash expires mid-frame, spend the rest of the frame moving normally.
+    const double regular_dt = dt - dash_dt;
+    if (regular_dt > 0.0) {
+        const double response = input.drift ? 1.8 : (length > 0.0 ? 14.0 : 18.0);
+        const double blend = 1.0 - std::exp(-response * regular_dt);
+        player.velocity.x += (target_velocity.x - player.velocity.x) * blend;
+        player.velocity.y += (target_velocity.y - player.velocity.y) * blend;
+
+        if (length == 0.0 && std::hypot(player.velocity.x, player.velocity.y) < 0.01) {
+            player.velocity = {0.0, 0.0};
+        }
+
+        move_with_collisions({
+            player.velocity.x * regular_dt,
+            player.velocity.y * regular_dt
+        });
     }
 }
 
