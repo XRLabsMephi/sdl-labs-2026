@@ -109,3 +109,32 @@ std::optional<std::pair<int, int>> Map::find_nearest_free_cell(double x, double 
 
     return std::nullopt;
 }
+
+bool Map::circle_hits_wall(Vector2 center, double radius) const {
+    if (radius <= 0.0) {
+        int cx = static_cast<int>(std::floor(center.x));
+        int cy = static_cast<int>(std::floor(center.y));
+        return !is_in_map(cx, cy) || is_wall(cx, cy);
+    }
+
+    int min_cx = static_cast<int>(std::floor(center.x - radius));
+    int max_cx = static_cast<int>(std::floor(center.x + radius));
+    int min_cy = static_cast<int>(std::floor(center.y - radius));
+    int max_cy = static_cast<int>(std::floor(center.y + radius));
+
+    for (int cy = min_cy; cy <= max_cy; ++cy) {
+        for (int cx = min_cx; cx <= max_cx; ++cx) {
+            if (!is_in_map(cx, cy)) return true;
+            if (!is_wall(cx, cy))   continue;
+
+            double closest_x = std::clamp(center.x, static_cast<double>(cx),
+                                          static_cast<double>(cx + 1));
+            double closest_y = std::clamp(center.y, static_cast<double>(cy),
+                                          static_cast<double>(cy + 1));
+            double dx = center.x - closest_x;
+            double dy = center.y - closest_y;
+            if (dx * dx + dy * dy < radius * radius) return true;
+        }
+    }
+    return false;
+}
