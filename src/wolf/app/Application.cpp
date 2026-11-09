@@ -25,11 +25,16 @@ void Application::run() {
         double dt = static_cast<double>(now - last) / static_cast<double>(freq);
         last = now;
         if (dt > 0.1) dt = 0.1;
-        InputState input = read_input(SDL_GetKeyboardState(nullptr));
+
+        InputState event_input;
         SDL_Event e;
         while (SDL_PollEvent(&e)) {
-            handle_event(input, e);
+            handle_event(event_input, e);
         }
+
+        InputState input = read_input(SDL_GetKeyboardState(nullptr));
+        input.quit = event_input.quit;
+
         if (input.quit) running = false;
         controller.update(player, input, map, dt);
         buffer->clear();

@@ -6,6 +6,7 @@
 #include <cmath>
 #include <queue>
 #include <algorithm>
+#include <iostream>
 
 void Map::clear() {
     width_ = 0;
@@ -13,38 +14,85 @@ void Map::clear() {
     map_.clear();
 }
 
-bool Map::load_from_file(const std::string &path) {
+bool Map::load_from_file(const std::string& path) {
     clear();
 
     std::ifstream file(path);
-    if (!file) { return false; }
+    if (!file) {
+        std::cerr << "[Map] cannot open: " << path << "\n";
+        return false;
+    }
+
+    constexpr int MIN_CELL_ID = 0;
+    constexpr int MAX_CELL_ID = 1;
 
     std::string line;
+    int line_no = 0;
+
     while (std::getline(file, line)) {
+        ++line_no;
+
+        if (!line.empty() && line.back() == '\r') line.pop_back();
+
         if (line.empty()) continue;
-        height_++;
 
         std::istringstream iss(line);
+        std::vector<int> row;
 
-        int row_width = 0;
-
-        int x;
-        while (iss >> x) {
-            map_.push_back(x);
-            row_width++;
+        int value;
+        while (iss >> value) {
+            if (value < MIN_CELL_ID || value > MAX_CELL_ID) {
+                std::cerr << "[Map] " << path << ":" << line_no
+                          << ": invalid wall id " << value
+                          << " (expected " << MIN_CELL_ID
+                          << ".." << MAX_CELL_ID << ")\n";
+                clear();
+                return false;
+            }
+            row.push_back(value);
         }
 
-        if (width_ == 0) { width_ = row_width; }
-        else if (row_width != width_) {
+        iss >> std::ws;
+        if (!iss.eof()) {
+            std::cerr << "[Map] " << path << ":" << line_no
+                      << ": trailing garbage after column " << row.size() << "\n";
             clear();
             return false;
         }
+
+        if (row.empty()) {
+            std::cerr << "[Map] " << path << ":" << line_no
+                      << ": row contains no cells\n";
+            clear();
+            return false;
+        }
+
+        if (width_ == 0) {
+            width_ = static_cast<int>(row.size());
+        } else if (static_cast<int>(row.size()) != width_) {
+            std::cerr << "[Map] " << path << ":" << line_no
+                      << ": row has " << row.size() << " cells, expected " << width_ << "\n";
+            clear();
+            return false;
+        }
+
+        map_.insert(map_.end(), row.begin(), row.end());
+        ++height_;
     }
 
-    if (map_.empty()) {
+    if (map_.empty() || width_ <= 0 || height_ <= 0) {
+        std::cerr << "[Map] " << path << ": empty map\n";
         clear();
         return false;
     }
+
+    if (map_.size() != static_cast<size_t>(width_) * static_cast<size_t>(height_)) {
+        std::cerr << "[Map] internal invariant broken: size=" << map_.size()
+                  << " expected=" << width_ * height_ << "\n";
+        clear();
+        return false;
+    }
+
     return true;
 }
 

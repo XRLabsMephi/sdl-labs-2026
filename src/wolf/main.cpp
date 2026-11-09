@@ -1,6 +1,6 @@
 #include "app/Application.hpp"
 
-int main(int argc, char* argv[]) {
+int main() {
     try {
         Application application;
         application.run();
