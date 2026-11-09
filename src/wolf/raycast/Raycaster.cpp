@@ -18,8 +18,8 @@ namespace {
 
         switch (wallId) {
             case 1:  color = {110, 120, 145, 255}; break;
-            case 2:  color = {190,  95,  75, 200}; break;
-            case 3:  color = { 90, 160, 100, 40 }; break;
+            case 2:  color = {190,  95,  75, 255}; break;
+            case 3:  color = { 90, 160, 100, 255}; break;
             default: color = {120, 120, 120, 255}; break;
         }
 
@@ -36,7 +36,8 @@ namespace {
 namespace raycast {
     void Raycaster::castRay(const world::Player& player,
                             const world::Map&    map,
-                            double               cameraX) noexcept {
+                            double               cameraX,
+                            const texture::TextureStore* textures) {
 
         RayHit result{};
         rayHits_.clear();
@@ -87,8 +88,6 @@ namespace raycast {
         core::Vec2 PointX{FirstX, LastPoint.y + (FirstX - LastPoint.x) * k},    // on x intersection
                    PointY{LastPoint.x + (FirstY - LastPoint.y) * invK, FirstY}; // on y intersection
 
-        double rayStregnth = 1;
-
         for (uint32_t i = 0; i < kMaxSteps; ++i) {
             if (sgnY == 0) {
                 // horizontal ray: only x intersections happen
@@ -136,8 +135,7 @@ namespace raycast {
             }
 
             if (map.isSolid(mapX, mapY) || i == kMaxSteps - 1) {
-                if (map.isSolid(mapX, mapY))
-                    result.hit = true;
+                result.hit = map.isSolid(mapX, mapY);
 
                 result.mapX   = mapX;
                 result.mapY   = mapY;
@@ -169,22 +167,17 @@ namespace raycast {
                     result.wallU = LastPoint.x - (double)result.mapX;
                 }
 
-                if (Ray.x > 0.0 && result.side == 0 || Ray.y < 0.0 && result.side == 1) {
+                if ((Ray.x > 0.0 && result.side == 0) || (Ray.y < 0.0 && result.side == 1)) {
                     result.wallU = 1.0 - result.wallU; // if against axis -> invert
                 }
 
                 if (result.depth < kEpsilon)
                     result.depth = kEpsilon;
 
-                const uint32_t color = wallColor(result.wallId, result.side).pack();
-                const double   alpha = color >> 24;
-
-                rayStregnth *= (1 - alpha / 255.0);
-                
                 rayHits_.push_back(result);
-
-                if (rayStregnth < 1e-3)
-                    break;
+                // Keep marching through transparent cells. Stop at a fully opaque
+                // material or the map boundary; cutout coverage is resolved per pixel.
+                if (!map.isInBounds(mapX, mapY) || !textures || textures->isOpaque(result.wallId)) break;
             }
         }
     }
@@ -192,8 +185,7 @@ namespace raycast {
     void Raycaster::render(const world::Player&         player,
                            const world::Map&            map,
                            const texture::TextureStore& textures,
-                           const effects::Fog&          fog,
-                           render::Framebuffer&         framebuffer) noexcept {
+                           render::Framebuffer&         framebuffer) {
 
         const uint32_t w = framebuffer.width();
         const uint32_t h = framebuffer.height();
@@ -203,35 +195,32 @@ namespace raycast {
             depthBuffer_.resize(w);
         }
 
-        const uint32_t mid       = h / 2;           // screen center, no division
+        const double mid         = h * 0.5;
         const double   invW      = 2.0 / w;         // precompute 1/w once
-        const double   maxHeight = h * 2.0;         // clamp before uint32_t cast (avoid UB)
-
-        // raw pixel buffer — no bounds check per pixel
-        uint32_t* pixels = framebuffer.color();
 
         FrameCtx f = {
-            pixels,
-            w,
-            h,
-            fog
+            framebuffer,
+            h
         };
 
         for (uint32_t x = 0; x < w; ++x) {
             // cameraX [-1, +1]: left to right
             const double cameraX = invW * x - 1.0;
 
-            castRay(player, map, cameraX);
+            castRay(player, map, cameraX, &textures);
 
             // fill depth buffer
             depthBuffer_[x] = kHugeDist;
         
-            if (!rayHits_.empty() && rayHits_[0].hit) {
-                depthBuffer_[x] = rayHits_[0].depth; // closest wall
-            } 
+            for (const auto& hit : rayHits_) {
+                if (hit.hit && textures.isOpaque(hit.wallId)) {
+                    depthBuffer_[x] = hit.depth;
+                    break;
+                }
+            }
 
-            for (int32_t i = rayHits_.size() - 1; i >= 0; --i) {
-                const RayHit& rh = rayHits_[i];
+            for (auto it = rayHits_.rbegin(); it != rayHits_.rend(); ++it) {
+                const RayHit& rh = *it;
 
                 if (!rh.hit) // inf
                     continue;
@@ -239,12 +228,11 @@ namespace raycast {
                 // less depth - bigger wall
                 double lineHeight = static_cast<double>(h) / rh.depth;
 
-                // clamp BEFORE uint32_t cast — otherwise lineHeight can overflow uint32_t
-                if (lineHeight > maxHeight)
-                    lineHeight = maxHeight;
-
-                const uint32_t drawStart = static_cast<uint32_t>(std::max(mid - lineHeight * 0.5, 0.0));       // >= 0
-                const uint32_t drawEnd   = static_cast<uint32_t>(std::min(mid + lineHeight * 0.5, (double)h)); // <= h
+                // Clip screen bounds, retaining the original height for near-wall UVs.
+                const uint32_t drawStart = static_cast<uint32_t>(std::clamp(
+                    std::ceil(mid - lineHeight * 0.5 - 0.5), 0.0, static_cast<double>(h)));
+                const uint32_t drawEnd = static_cast<uint32_t>(std::clamp(
+                    std::ceil(mid + lineHeight * 0.5 - 0.5), 0.0, static_cast<double>(h)));
 
                 const texture::Texture* tex = textures.get(rh.wallId);
 
@@ -255,7 +243,7 @@ namespace raycast {
                     lineHeight,
                 };
 
-                if (tex == nullptr || tex->width <= 0 || tex->height <= 0) {
+                if (tex == nullptr || !tex->valid()) {
                     drawSolidColumn(f, c, rh);
                 }
                 else {
@@ -268,7 +256,7 @@ namespace raycast {
     void Raycaster::drawTexturedColumn(const FrameCtx&  f,
                                        const ColumnCtx& c,
                                        const RayHit&    rh,
-                                       const texture::Texture& tex) noexcept {
+                                       const texture::Texture& tex) {
 
         int32_t texX = static_cast<int32_t>(rh.wallU * static_cast<double>(tex.width));
         
@@ -279,11 +267,8 @@ namespace raycast {
             texX = tex.width - 1;
 
         const double step   = static_cast<double>(tex.height) / c.lineHeight;
-        double       texPos = std::max(1.0 - rh.depth, 0.0) * static_cast<double>(tex.height) / 2.0;
+        double texPos = (c.drawStart + 0.5 - (f.h * 0.5 - c.lineHeight * 0.5)) * step;
 
-        uint32_t* const pixels = f.pixels;
-        const uint32_t  w      = f.w;
-        
         for (uint32_t y = c.drawStart; y < c.drawEnd; ++y) {
             int texY = static_cast<int>(texPos);
 
@@ -309,45 +294,19 @@ namespace raycast {
                 b = static_cast<uint8_t>(b * kSideShadeFactor);
             }
 
-            core::ColorRGBA color(r, g, b, a);
-
-            // fog
-            color = f.fog.apply(color, rh.depth);
-
-            pixels[y * w + c.x] = color.pack();
+            f.framebuffer.drawFragment(c.x, y, {r, g, b, a}, rh.depth);
         }             
     }
 
     void Raycaster::drawSolidColumn(const FrameCtx&  f,
                                     const ColumnCtx& c,
-                                    const RayHit&    rh) noexcept {
+                                    const RayHit&    rh) {
         
         // pack ONCE per column, not per pixel
-        const uint32_t color = wallColor(rh.wallId, rh.side).pack();
+        const auto color = wallColor(rh.wallId, rh.side);
 
-        uint8_t alpha = color >> 24;
-        uint8_t rev_a = 0xFF - alpha;
-
-        uint32_t remove_a = 0x00FFFFFF;
-
-        // direct write: one store + one add per pixel
-        for (uint32_t col_idx = c.x + c.drawStart * f.w; col_idx < c.drawEnd * f.w; col_idx += f.w) {
-            uint32_t prev_color = f.pixels[col_idx] & remove_a;
-            uint32_t new_color  = color             & remove_a;
-
-            // uint32_t result_color = (prev_color * rev_a + new_color * alpha) / 255 + fill_a;
-
-            uint8_t r = (((prev_color >> 0 ) & 0xFF) * rev_a + ((new_color >> 0 ) & 0xFF) * alpha) / 255u;
-            uint8_t g = (((prev_color >> 8 ) & 0xFF) * rev_a + ((new_color >> 8 ) & 0xFF) * alpha) / 255u;
-            uint8_t b = (((prev_color >> 16) & 0xFF) * rev_a + ((new_color >> 16) & 0xFF) * alpha) / 255u;
-            uint8_t a = 0xFF;
-
-            core::ColorRGBA col{r, g, b, a};
-
-            //apply fog
-            col = f.fog.apply(col, rh.depth);
-
-            f.pixels[col_idx] = col.pack();
+        for (uint32_t y = c.drawStart; y < c.drawEnd; ++y) {
+            f.framebuffer.drawFragment(c.x, y, color, rh.depth);
         }
     }
 }

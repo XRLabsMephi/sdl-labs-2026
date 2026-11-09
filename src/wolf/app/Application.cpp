@@ -3,6 +3,7 @@
 #include <chrono>
 #include <iostream>
 #include <algorithm>
+#include <filesystem>
 
 #include <SDL3/SDL.h>
 
@@ -24,17 +25,23 @@ namespace {
     constexpr double kPlayerRadius    = 0.2; // collision radius
 
     //colors
-    constexpr core::ColorRGBA kCeilingColor{60, 60, 80};
-    constexpr core::ColorRGBA kFloorColor  {40, 40, 40};
+    constexpr core::ColorRGBA kCeilingColor{145, 138, 101};
+    constexpr core::ColorRGBA kFloorColor  {83, 77, 47};
 }
 
 namespace app {
     Application::Application()
         : framebuffer_(kWidth, kHeight),
-          presenter_(kWidth, kHeight, "Wolf Raycaster - Lab 01"),
+          presenter_(kWidth, kHeight, "Wolf Raycaster - Lab 02"),
           map_(world::Map::defaultMap()),
           player_(kPlayerStartPos, kPlayerStartDir, kPlayerFov),
-          controller_(kPlayerMoveSpeed, kPlayerTurnSpeed, kPlayerRadius) {}
+          fog_(3.0, 14.0, {160, 153, 107}),
+          controller_(kPlayerMoveSpeed, kPlayerTurnSpeed, kPlayerRadius) {
+        const auto root = std::filesystem::path(WOLF_ASSETS_DIR) / "textures/backrooms";
+        textureStore_.load(1, root / "wallpaper.png");
+        textureStore_.load(2, root / "panels.png");
+        textureStore_.load(3, root / "glass.png", 96);
+    }
 
     Application::~Application() = default;
 
@@ -108,6 +115,7 @@ namespace app {
     }
 
     void Application::renderFrame() {
+        framebuffer_.clear(); // Reset per-pixel depth before the geometry passes.
         // direct access to the pixel buffer — no per-pixel bounds check
         uint32_t* pixels = framebuffer_.color();
         const int half   = kHeight / 2;
@@ -119,6 +127,8 @@ namespace app {
         std::fill(pixels + (half + 1) * kWidth, pixels + kHeight * kWidth, floor); // floor
 
         // walls on top layer
-        raycaster_.render(player_, map_, textureStore_, fog_, framebuffer_);
+        raycaster_.render(player_, map_, textureStore_, framebuffer_);
+        spriteRenderer_.render(player_, sprites_, textureStore_, raycaster_.depthBuffer(), framebuffer_);
+        fog_.apply(framebuffer_);
     }
 }
