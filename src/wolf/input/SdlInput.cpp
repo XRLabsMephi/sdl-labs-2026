@@ -34,6 +34,15 @@ InputState read_input() {
             double_tap_sprint = false;
         }
 
+        if (event.type == SDL_EVENT_MOUSE_BUTTON_DOWN &&
+            event.button.button == SDL_BUTTON_RIGHT) {
+            input.toggleMouseLook = true;
+        }
+
+        if (event.type == SDL_EVENT_WINDOW_FOCUS_LOST) {
+            input.mouseFocusLost = true;
+        }
+
         // Edge-triggered: one dash per actual Space press.
         if (event.type == SDL_EVENT_KEY_DOWN && !event.key.repeat) {
             if (event.key.scancode == SDL_SCANCODE_SPACE) {

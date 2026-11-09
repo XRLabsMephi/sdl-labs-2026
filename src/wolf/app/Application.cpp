@@ -93,19 +93,26 @@ namespace wolf {
         Uint64 previous_time = SDL_GetTicksNS();
         Uint64 run_start_time = previous_time;
         Uint64 last_title_update = 0;
+        bool mouseLookEnabled = false;
         while (true) {
             InputState input = read_input();
             if (input.quit) {
                 break;
             }
 
-            const bool rightHeld =
-                    (SDL_GetMouseState(nullptr, nullptr) & SDL_BUTTON_RMASK) != 0;
-
-            if (rightHeld != SDL_GetWindowRelativeMouseMode(window_)) {
-                if (!SDL_SetWindowRelativeMouseMode(window_, rightHeld)) {
-                    std::cerr << SDL_GetError() << '\n';
-                    return 1;
+            // Right mouse button toggles capture; losing focus releases it.
+            const bool mouseLookChanged =
+                    input.toggleMouseLook || input.mouseFocusLost;
+            if (mouseLookChanged) {
+                const bool nextMouseLook =
+                        !input.mouseFocusLost &&
+                        (mouseLookEnabled != input.toggleMouseLook);
+                if (nextMouseLook != mouseLookEnabled) {
+                    if (!SDL_SetWindowRelativeMouseMode(window_, nextMouseLook)) {
+                        std::cerr << SDL_GetError() << '\n';
+                        return 1;
+                    }
+                    mouseLookEnabled = nextMouseLook;
                 }
             }
 
@@ -144,9 +151,11 @@ namespace wolf {
             controller.update(player, map, input, dt);
 
             float dx = 0;
-            const auto buttons = SDL_GetRelativeMouseState(&dx, nullptr);
+            SDL_GetRelativeMouseState(&dx, nullptr);
 
-            double angle = rightHeld ? dx * 0.002 : 0.0;
+            // Ignore stale motion on the frame that changes capture mode.
+            double angle = mouseLookEnabled && !mouseLookChanged
+                    ? dx * 0.002 : 0.0;
             double c = std::cos(angle), s = std::sin(angle);
 
             auto rotate = [c, s](Vec2 v) -> Vec2 {
@@ -170,7 +179,7 @@ namespace wolf {
 
             // Стены поверх фона.
             raycaster.render(frame, map, player);
-            if (rightHeld) {
+            if (mouseLookEnabled) {
                 int cx = width_ / 2;
                 int cy = height_ / 2;
 

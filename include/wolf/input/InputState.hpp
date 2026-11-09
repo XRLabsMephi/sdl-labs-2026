@@ -11,6 +11,8 @@ namespace wolf {
         bool drift = false;
         bool dash = false;
         bool restartRun = false;
+        bool toggleMouseLook = false;
+        bool mouseFocusLost = false;
         bool turnLeft = false;
         bool turnRight = false;
         bool quit = false;

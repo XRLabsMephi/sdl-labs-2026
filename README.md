@@ -93,6 +93,7 @@ commit message and development conventions.
 - Hold sprint for 3 seconds: gradually build up to 2.5x speed
 - `Ctrl`: drift / slide
 - `Space`: dash (0.85-second cooldown)
-- Hold right mouse button and move mouse: look around
+- Right mouse button: toggle mouse-look capture (click again to release)
+- Losing window focus automatically releases mouse capture
 - `T`: restart at spawn and reset the run timer shown in the window title
 - `Esc`: exit
