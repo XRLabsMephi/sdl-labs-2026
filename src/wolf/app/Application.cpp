@@ -18,6 +18,32 @@ namespace wolf
 namespace
 {
 
+void resetPlayerIfInsideWall(Player& player, const Map& map)
+{
+    const int startX = static_cast<int>(player.position.x);
+    const int startY = static_cast<int>(player.position.y);
+    if (!map.isWall(startX, startY))
+    {
+        return;
+    }
+
+    for (int y = 0; y < map.height(); ++y)
+    {
+        for (int x = 0; x < map.width(); ++x)
+        {
+            if (!map.isWall(x, y))
+            {
+                player.position = {x + 0.5, y + 0.5};
+                player.direction = {-1.0, 0.0};
+                player.cameraPlane = {0.0, 0.66};
+                return;
+            }
+        }
+    }
+
+    throw std::runtime_error("Map does not contain a free spawn cell");
+}
+
 InputState readInput()
 {
     InputState input;
@@ -67,6 +93,7 @@ int Application::run()
     {
         const Map map = Map::loadFromFile("assets/wolf/maps/map01.txt");
         Player player;
+        resetPlayerIfInsideWall(player, map);
         FrameBuffer frame(320, 200);
         PlayerController controller;
         Raycaster raycaster;
