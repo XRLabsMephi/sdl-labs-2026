@@ -6,6 +6,7 @@ find_package(SDL3 CONFIG REQUIRED)
 
 add_executable(graphics_lab
     src/main.cpp
+    src/wolf/app/Application.cpp
     src/wolf/input/PlayerController.cpp
     src/wolf/raycast/Raycaster.cpp
     src/wolf/render/FrameBuffer.cpp

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <string>
 
 namespace wolf
 {
@@ -9,6 +10,8 @@ class Map
 {
 public:
     Map(int width, int height, std::vector<int> cells);
+
+    [[nodiscard]] static Map loadFromFile(const std::string& path);
 
     [[nodiscard]] int width() const;
     [[nodiscard]] int height() const;

@@ -1,6 +1,8 @@
 #include "wolf/world/Map.hpp"
 
 #include <stdexcept>
+#include <fstream>
+#include <utility>
 
 namespace wolf
 {
@@ -14,6 +16,35 @@ Map::Map(int width, int height, std::vector<int> cells)
     {
         throw std::invalid_argument("Map dimensions do not match its cells");
     }
+}
+
+Map Map::loadFromFile(const std::string& path)
+{
+    std::ifstream input(path);
+    if (!input)
+    {
+        throw std::runtime_error("Cannot open map: " + path);
+    }
+
+    int width = 0;
+    int height = 0;
+    if (!(input >> width >> height) || width <= 0 || height <= 0)
+    {
+        throw std::runtime_error("Invalid map dimensions: " + path);
+    }
+
+    std::vector<int> cells;
+    cells.reserve(static_cast<std::size_t>(width) * static_cast<std::size_t>(height));
+    for (int index = 0; index < width * height; ++index)
+    {
+        int tile = 0;
+        if (!(input >> tile) || tile < 0)
+        {
+            throw std::runtime_error("Invalid map cell data: " + path);
+        }
+        cells.push_back(tile);
+    }
+    return {width, height, std::move(cells)};
 }
 
 int Map::width() const
