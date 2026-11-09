@@ -123,5 +123,39 @@ int main() {
         "Spawn outside map accepted"
     );
 
+    // Dash: instant impulse, collision-safe movement, and a cooldown.
+    wolf::Map dash_map({
+        {1, 1, 1, 1, 1, 1, 1, 1},
+        {1, 0, 0, 0, 0, 0, 0, 1},
+        {1, 0, 0, 0, 0, 0, 0, 1},
+        {1, 1, 1, 1, 1, 1, 1, 1}
+    });
+    player = wolf::Player{};
+    input = wolf::InputState{};
+    input.dash = true;
+    controller.update(player, dash_map, input, 0.05);
+    check(
+        player.position.x > 2.0 && player.dashCooldown > 0.0,
+        "Dash failed to apply an impulse"
+    );
+
+    const double after_dash = player.position.x;
+    player.velocity = {0.0, 0.0};
+    controller.update(player, dash_map, input, 0.05);
+    check(
+        std::abs(player.position.x - after_dash) < 1e-9,
+        "Dash ignored its cooldown"
+    );
+
+    input = wolf::InputState{};
+    controller.update(player, dash_map, input, 0.9);
+    input.dash = true;
+    const double before_second_dash = player.position.x;
+    controller.update(player, dash_map, input, 0.05);
+    check(
+        player.position.x > before_second_dash,
+        "Dash did not recharge"
+    );
+
     std::cout << "PlayerController tests passed\n";
 }

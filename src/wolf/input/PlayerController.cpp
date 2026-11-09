@@ -33,6 +33,8 @@ void PlayerController::update(Player& player, const Map& map, const InputState& 
         return;
     }
 
+    player.dashCooldown = std::max(0.0, player.dashCooldown - dt);
+
     // 1. Поворот камеры.
     int turn = static_cast<int>(input.turnRight) -
                static_cast<int>(input.turnLeft);
@@ -82,6 +84,21 @@ void PlayerController::update(Player& player, const Map& map, const InputState& 
     const double blend = 1.0 - std::exp(-response * dt);
     player.velocity.x += (target_velocity.x - player.velocity.x) * blend;
     player.velocity.y += (target_velocity.y - player.velocity.y) * blend;
+
+    // Dash in the movement direction, or forward while stationary.
+    // Collision checks below still apply to the full dash displacement.
+    if (input.dash && player.dashCooldown <= 0.0) {
+        const Vec2 dash_direction = length > 0.0 ? move : player.direction;
+        const double dash_length = std::hypot(dash_direction.x, dash_direction.y);
+        if (dash_length > 0.0) {
+            constexpr double dash_speed = 14.0;
+            player.velocity = {
+                dash_direction.x / dash_length * dash_speed,
+                dash_direction.y / dash_length * dash_speed
+            };
+            player.dashCooldown = 0.85;
+        }
+    }
 
     if (length == 0.0 && std::hypot(player.velocity.x, player.velocity.y) < 0.01) {
         player.velocity = {0.0, 0.0};

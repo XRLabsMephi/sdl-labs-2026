@@ -33,6 +33,12 @@ InputState read_input() {
             event.key.scancode == SDL_SCANCODE_W) {
             double_tap_sprint = false;
         }
+
+        // Edge-triggered: one dash per actual Space press.
+        if (event.type == SDL_EVENT_KEY_DOWN &&
+            event.key.scancode == SDL_SCANCODE_SPACE && !event.key.repeat) {
+            input.dash = true;
+        }
     }
 
     const bool* keys = SDL_GetKeyboardState(nullptr);
