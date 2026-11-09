@@ -5,6 +5,7 @@
 #include <iostream>
 #include <cmath>
 #include <stdexcept>
+#include <string>
 
 #include "wolf/input/PlayerController.hpp"
 #include "wolf/input/SdlInput.hpp"
@@ -90,6 +91,8 @@ namespace wolf {
         }
 
         Uint64 previous_time = SDL_GetTicksNS();
+        Uint64 run_start_time = previous_time;
+        Uint64 last_title_update = 0;
         while (true) {
             InputState input = read_input();
             if (input.quit) {
@@ -114,6 +117,28 @@ namespace wolf {
             // сразу на большое расстояние.
             if (dt > 0.1) {
                 dt = 0.1;
+            }
+
+            // Restart the run at the original spawn and reset the timer.
+            if (input.restartRun) {
+                player = Player{};
+                run_start_time = current_time;
+                last_title_update = 0;
+            }
+
+            // Display elapsed time without adding text rendering dependencies.
+            if (last_title_update == 0 ||
+                current_time - last_title_update >= 200'000'000ULL) {
+                const Uint64 elapsed_seconds =
+                    (current_time - run_start_time) / 1'000'000'000ULL;
+                const std::string title =
+                    "Blobick Raycaster | Run " +
+                    std::to_string(elapsed_seconds / 60) + ":" +
+                    (elapsed_seconds % 60 < 10 ? "0" : "") +
+                    std::to_string(elapsed_seconds % 60) +
+                    " | T: restart";
+                SDL_SetWindowTitle(window_, title.c_str());
+                last_title_update = current_time;
             }
 
             controller.update(player, map, input, dt);

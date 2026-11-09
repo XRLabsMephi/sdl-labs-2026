@@ -35,9 +35,13 @@ InputState read_input() {
         }
 
         // Edge-triggered: one dash per actual Space press.
-        if (event.type == SDL_EVENT_KEY_DOWN &&
-            event.key.scancode == SDL_SCANCODE_SPACE && !event.key.repeat) {
-            input.dash = true;
+        if (event.type == SDL_EVENT_KEY_DOWN && !event.key.repeat) {
+            if (event.key.scancode == SDL_SCANCODE_SPACE) {
+                input.dash = true;
+            }
+            if (event.key.scancode == SDL_SCANCODE_T) {
+                input.restartRun = true;
+            }
         }
     }
 
