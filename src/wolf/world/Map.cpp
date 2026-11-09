@@ -42,13 +42,26 @@ Map Map::load(const std::string& filename) {
     while (std::getline(file, line)) {
         std::stringstream input(line);
         std::vector<int> row;
-        int value;
-        while (input >> value) {
+        std::string token;
+        while (input >> token) {
+            std::stringstream number(token);
+            int value;
+            char extra;
+            if (!(number >> value) || (number >> extra)) {
+                throw std::runtime_error(
+                    "Invalid map cell: " + token
+                );
+            }
             row.push_back(value);
         }
+
         if (!row.empty()) {
             cells.push_back(row);
         }
+    }
+
+    if (file.bad()) {
+        throw std::runtime_error("Cannot read map: " + filename);
     }
 
     return Map(cells);
