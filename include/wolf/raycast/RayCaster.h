@@ -80,6 +80,8 @@ namespace raycast{
         void castRay(Vector2 direction);
 
         //draw column in FrameBuffer
-        void drawByRayHit(const Vector2& ray_direction, const Vector2& camera_direction, const std::pair<double, double>& cos_vertical_horizontal, int column) const;
+        void drawByRayHit(const Vector2& ray_direction, const Vector2& camera_direction,
+                        const std::pair<double, double>& cos_vertical_horizontal,
+                        double depth, int column) const;
     };
 }

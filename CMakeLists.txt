@@ -22,6 +22,8 @@ set(HEADERS
         include/wolf/render/TextureStorage.h
         include/wolf/render/TextureStorageInflator.h
         include/wolf/render/Fog.h
+        include/wolf/render/SpriteRenderer.h
+        include/wolf/render/View.h
 )
 
 set(SOURCES
@@ -37,6 +39,7 @@ set(SOURCES
         src/wolf/render/Texture.cpp
         src/wolf/render/TextureStorage.cpp
         src/wolf/render/TextureStorageInflator.cpp
+        src/wolf/render/SpriteRenderer.cpp
 )
 
 add_executable(graphics_lab src/wolf/main.cpp ${HEADERS} ${SOURCES})

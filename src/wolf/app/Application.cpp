@@ -173,6 +173,14 @@ bool app::Application::initialize(const std::string& mapFilename) {
             textureStorage
         );
 
+        spriteRenderer = std::make_unique<render::SpriteRenderer>(
+            player,
+            map,
+            *frameBuffer,
+            textureStorage,
+            rayCaster->getDepthBuffer()
+        );
+
         // The presenter borrows the window; Application retains ownership.
         presenter = std::make_unique<render::SdlPresenter>(
             window.get()
@@ -272,6 +280,7 @@ void app::Application::run() {
             frameBuffer->clear(core::Color::black);
 
             rayCaster->renderScene();
+            spriteRenderer->renderSprites();
 
             if (!presenter->present(*frameBuffer)) {
                 reportError(

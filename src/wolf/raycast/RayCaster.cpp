@@ -1,4 +1,4 @@
-#include <raycast/Raycaster.h>
+#include <raycast/RayCaster.h>
 #include <render/FrameBuffer.h>
 #include <iostream>
 #include <cmath>
@@ -8,16 +8,14 @@
 using namespace raycast;
 using namespace raycast::settings;
 
-int castTo16_16(double value){
-
-}
-
-void RayCaster::drawByRayHit(const Vector2& ray_direction, const Vector2& camera_direction, const std::pair<double, double>& cos_vertical_horizontal, int column) const{
+void RayCaster::drawByRayHit(const Vector2& ray_direction, const Vector2& camera_direction,
+                             const std::pair<double, double>& cos_vertical_horizontal, double depth,
+                             int column) const{
     const int W_H = frame_height_; // the height of wall in pixels
     const int P_H = static_cast<int>(W_H * P_W_rel); // the height of player in pixels
 
     //projection of distance on camera axe (using scalar product and the fact, that camera_direction is normalized)
-    double depth = ray_cast_hit.t_distance_ * (ray_direction.x * camera_direction.x + ray_direction.y * camera_direction.y);
+
 
     //calculating for shadows
     double brightness_procent_cos = ray_cast_hit.face_index_ == IntersectionSide::Vertical ?
@@ -93,7 +91,9 @@ void RayCaster::renderScene(){
      *на основе равных углов или привязки к серединам отрезков*/
     for (int xi = 0; xi < frame_width_; ++xi, ray_direction += shift){ //calculate next direction of ray
         castRay(ray_direction);
-        drawByRayHit(ray_direction, camera_direction, cos_vertical_horizontal, xi);
+        double depth = ray_cast_hit.t_distance_ * (ray_direction.x * camera_direction.x + ray_direction.y * camera_direction.y);
+        depth_buffer_[xi] = depth;
+        drawByRayHit(ray_direction, camera_direction, cos_vertical_horizontal, depth, xi);
     }
 
 
@@ -109,11 +109,11 @@ void RayCaster::castRay(Vector2 ray_direction) {
     //we count t-parameters in another units of measurement. De-facto one t is length of ray_direction
 
     //from the similarity of triangles
-    double tdx = 1.0f / std::fabs(ray_dir_x); //shift through ray-axis in t-measuring when changing x for one //if denominator zero will be inf
-    double tdy = 1.0f / std::fabs(ray_dir_y); //shift through ray-axis in t-measuring when changing y for one//if denominator zero will be inf
+    const double tdx = 1.0f / std::fabs(ray_dir_x); //shift through ray-axis in t-measuring when changing x for one //if denominator zero will be inf
+    const double tdy = 1.0f / std::fabs(ray_dir_y); //shift through ray-axis in t-measuring when changing y for one//if denominator zero will be inf
 
-    int sign_dx = (ray_dir_x == 0.0) ? 0 : ray_dir_x > 0.0 ? 1 : -1;
-    int sign_dy = (ray_dir_y == 0.0) ? 0 : ray_dir_y > 0.0 ? 1 : -1;
+    const int sign_dx = (ray_dir_x == 0.0) ? 0 : ray_dir_x > 0.0 ? 1 : -1;
+    const int sign_dy = (ray_dir_y == 0.0) ? 0 : ray_dir_y > 0.0 ? 1 : -1;
 
     double double_cell_x = std::floor(x), double_cell_y = std::floor(y); //the coordinate of cell where x and y is
 
@@ -124,7 +124,7 @@ void RayCaster::castRay(Vector2 ray_direction) {
     if (sign_dx < 0 && x == double_cell_x) {--double_cell_x;}
     if (sign_dy < 0 && y == double_cell_y) {--double_cell_y;}
 
-    const double rx = double_cell_x + (sign_dx > 0 ? 1.0 : 0.0) - x;
+    const auto rx = double_cell_x + (sign_dx > 0 ? 1.0 : 0.0) - x;
     const double ry = double_cell_y + (sign_dy > 0 ? 1.0 : 0.0) - y;
 
     //coordinate in ray-axe in t-measuring of closest not processed x-border
