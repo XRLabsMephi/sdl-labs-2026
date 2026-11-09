@@ -1,20 +1,28 @@
-cmake_minimum_required(VERSION 3.24)
+cmake_minimum_required(VERSION 3.20)
+project(wolf_raycaster CXX)
 
-project(SoftwareGraphicsLabs LANGUAGES CXX)
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-add_executable(graphics_lab
-    src/main.cpp
+include_directories(include)
+
+include(FetchContent)
+FetchContent_Declare(
+        SDL3
+        GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
+        GIT_TAG main
 )
+FetchContent_MakeAvailable(SDL3)
 
-target_compile_features(graphics_lab PRIVATE cxx_std_20)
 
-target_compile_options(graphics_lab PRIVATE
-    -Wall
-    -Wextra
-    -Wpedantic
+file(GLOB_RECURSE SOURCES "src/wolf/*.cpp")
+
+add_executable(laba ${SOURCES}
+        src/wolf/render/FrameBuffer.cpp
+        src/wolf/render/SdlPresenter.cpp
+        src/wolf/app/Application.cpp
+        src/wolf/world/Map.cpp
+        src/wolf/input/PlayerController.cpp
+        src/wolf/raycast/Raycaster.cpp
 )
-
-set_target_properties(graphics_lab PROPERTIES
-    CXX_EXTENSIONS OFF
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
-)
+target_link_libraries(laba PRIVATE SDL3::SDL3)
