@@ -2,7 +2,7 @@
 
 Application::Application() {
     if (!map.load_from_file(std::string(ASSETS_DIR) + "/wolf/world/map.txt")) {
-        std::cerr << "map load failed\n";
+        throw std::runtime_error("Map load failed");
     }
     constexpr size_t width = 800;
     constexpr size_t height = 600;
@@ -10,7 +10,7 @@ Application::Application() {
         presenter = std::make_unique<SDLPresenter>("Raycaster 3D", width, height);
         buffer = std::make_unique<FrameBuffer>(width, height);
     } catch (const std::exception& e) {
-        std::cerr << "Initialization failed: " << e.what() << "\n";
+        throw std::runtime_error(std::string("Initialization failed: ") + e.what());
     }
 }
 
