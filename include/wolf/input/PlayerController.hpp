@@ -20,4 +20,6 @@ public:
         apply_rotation(player, input, delta_time);
         apply_movement(player, input, map, delta_time);
     }
+
+    static void resolve_spawn(Player& player, const Map& map) ;
 };

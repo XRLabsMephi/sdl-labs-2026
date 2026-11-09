@@ -1,3 +1,4 @@
+#include <stdexcept>
 #include "input/PlayerController.hpp"
 
 void PlayerController::apply_rotation(Player &player, const InputState &input, double delta_time) const {
@@ -36,4 +37,20 @@ void PlayerController::apply_movement(Player &player, const InputState &input, c
 
     move.normalize();
     handle_collision(player, move, map, delta_time);
+}
+
+void PlayerController::resolve_spawn(Player &player, const Map &map) {
+    double player_x = player.position.x;
+    double player_y = player.position.y;
+
+    if (!map.is_wall(player_x, player_y)) return;
+
+    auto new_position = map.find_nearest_free_cell(player_x, player_y);
+
+    if (!new_position) {
+        throw std::runtime_error("Map has no free cells");
+    }
+
+    player.position.x = new_position->first + 0.5;
+    player.position.y = new_position->second + 0.5;
 }

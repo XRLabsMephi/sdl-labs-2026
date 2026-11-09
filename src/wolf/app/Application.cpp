@@ -9,6 +9,7 @@ Application::Application() {
     try {
         presenter = std::make_unique<SDLPresenter>("Raycaster 3D", width, height);
         buffer = std::make_unique<FrameBuffer>(width, height);
+        PlayerController::resolve_spawn(player, map);
     } catch (const std::exception& e) {
         throw std::runtime_error(std::string("Initialization failed: ") + e.what());
     }

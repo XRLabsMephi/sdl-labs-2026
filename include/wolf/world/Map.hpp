@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
 #include <string>
+#include <optional>
 
 class Map {
     int width_ = 0, height_ = 0;
@@ -19,4 +20,6 @@ public:
 
     [[nodiscard]] int get_width() const { return width_; }
     [[nodiscard]] int get_height() const { return height_; }
+
+    [[nodiscard]] std::optional<std::pair<int, int>> find_nearest_free_cell(double x, double y) const;
 };

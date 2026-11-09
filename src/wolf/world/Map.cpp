@@ -4,6 +4,8 @@
 #include <sstream>
 #include <string>
 #include <cmath>
+#include <queue>
+#include <algorithm>
 
 void Map::clear() {
     width_ = 0;
@@ -70,4 +72,40 @@ bool Map::is_wall(double x, double y) const {
     int x_ = std::floor(x);
     int y_ = std::floor(y);
     return is_wall(x_, y_);
+}
+
+std::optional<std::pair<int, int>> Map::find_nearest_free_cell(double x, double y) const {
+    if (width_ <= 0 || height_ <= 0) return std::nullopt;
+
+    x = std::clamp((int)std::floor(x), 0, width_  - 1);
+    y = std::clamp((int)std::floor(y), 0, height_ - 1);
+
+    std::queue<std::pair<int, int>> queue;
+    queue.emplace(x, y);
+
+    std::vector visited(height_, std::vector<int>(width_));
+
+    while (!queue.empty()) {
+        auto [cur_x, cur_y] = queue.front();
+        queue.pop();
+
+        if (
+            cur_x < 0 || cur_x >= width_ ||
+            cur_y < 0 || cur_y >= height_ ||
+            visited[cur_y][cur_x]
+        ) {
+            continue;
+        }
+
+        visited[cur_y][cur_x] = 1;
+
+        if (!is_wall(cur_x, cur_y)) return std::make_pair(cur_x, cur_y);
+
+        queue.emplace(cur_x + 1,cur_y);
+        queue.emplace(cur_x - 1,cur_y);
+        queue.emplace(cur_x,cur_y + 1);
+        queue.emplace(cur_x,cur_y - 1);
+    }
+
+    return std::nullopt;
 }
