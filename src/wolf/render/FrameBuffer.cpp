@@ -35,10 +35,6 @@ void FrameBuffer::set_fog_params(Color fog_color, float min_fog_depth, float max
     fog_ = Fog(min_fog_depth, max_fog_depth, fog_color);
 }
 
-void FrameBuffer::set_fog_params(Color fog_color, float min_fog_depth, float max_fog_depth) {
-    fog_ = Fog(min_fog_depth, max_fog_depth, fog_color);
-}
-
 buf_size_t FrameBuffer::width() const { return width_; }
 
 buf_size_t FrameBuffer::height() const { return height_; }
