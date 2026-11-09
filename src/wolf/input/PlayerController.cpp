@@ -70,9 +70,19 @@ void PlayerController::update(Player& player, const Map& map, const InputState& 
 
     // Normalize before applying speed: diagonal movement is not faster.
     const double length = std::hypot(move.x, move.y);
+
+    // Sustained sprint rewards continuous movement after three seconds.
+    player.sprintTime = input.sprint && length > 0.0
+        ? player.sprintTime + dt
+        : 0.0;
+
     Vec2 target_velocity{0.0, 0.0};
     if (length > 0.0) {
-        const double speed = move_speed_ * (input.sprint ? 1.8 : 1.0);
+        const double buildup = std::clamp(
+            (player.sprintTime - 3.0) / 1.5, 0.0, 1.0
+        );
+        const double multiplier = input.sprint ? 1.8 + 0.7 * buildup : 1.0;
+        const double speed = move_speed_ * multiplier;
         target_velocity = {
             move.x / length * speed,
             move.y / length * speed

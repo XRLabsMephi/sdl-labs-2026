@@ -1,6 +1,7 @@
 #include <cmath>
 #include <cstdlib>
 #include <iostream>
+#include <vector>
 
 #include "wolf/input/PlayerController.hpp"
 
@@ -155,6 +156,38 @@ int main() {
     check(
         player.position.x > before_second_dash,
         "Dash did not recharge"
+    );
+
+    // Sustained sprint grows from 1.8x to 2.5x on a long straight.
+    std::vector<std::vector<int>> runway(3, std::vector<int>(100, 0));
+    for (int x = 0; x < 100; ++x) {
+        runway[0][x] = 1;
+        runway[2][x] = 1;
+    }
+    for (auto& row : runway) {
+        row.front() = 1;
+        row.back() = 1;
+    }
+    const wolf::Map long_map(runway);
+    player = wolf::Player{};
+    input = wolf::InputState{};
+    input.moveForward = true;
+    input.sprint = true;
+    for (int i = 0; i < 50; ++i) {
+        controller.update(player, long_map, input, 0.1);
+    }
+    check(
+        player.sprintTime > 4.9 &&
+        std::hypot(player.velocity.x, player.velocity.y) > 7.4,
+        "Sustained sprint never reached its maximum speed"
+    );
+
+    input.sprint = false;
+    controller.update(player, long_map, input, 0.1);
+    check(
+        player.sprintTime == 0.0 &&
+        std::hypot(player.velocity.x, player.velocity.y) < 7.5,
+        "Sustained sprint did not reset"
     );
 
     std::cout << "PlayerController tests passed\n";
