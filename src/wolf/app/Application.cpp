@@ -4,6 +4,7 @@
 #include <exception>
 #include <iostream>
 #include <cmath>
+#include <stdexcept>
 
 #include "wolf/input/PlayerController.hpp"
 #include "wolf/input/SdlInput.hpp"
@@ -73,6 +74,11 @@ namespace wolf {
         Map map = Map::load("assets/wolf/maps/map01.txt");
         Player player;
         PlayerController controller;
+
+        if (!controller.can_move(map, player.position)) {
+            throw std::runtime_error("Invalid player spawn position");
+        }
+
         FrameBuffer frame(width_, height_);
         Raycaster raycaster;
         SdlPresenter presenter(renderer_, width_, height_);

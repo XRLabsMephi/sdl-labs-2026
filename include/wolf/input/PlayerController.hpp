@@ -6,22 +6,20 @@
 #include "wolf/world/Player.hpp"
 
 namespace wolf {
-
     class PlayerController {
     public:
         void update(
-            Player& player,
-            const Map& map,
-            const InputState& input,
+            Player &player,
+            const Map &map,
+            const InputState &input,
             double dt
         ) const;
 
-    private:
-        bool can_move(const Map& map, Vec2 position) const;
+        bool can_move(const Map &map, Vec2 position) const;
 
+    private:
         double move_speed_ = 3.0;
         double rotation_speed_ = 2.0;
         double half_size_ = 0.2;
     };
-
 }

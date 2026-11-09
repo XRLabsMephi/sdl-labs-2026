@@ -4,7 +4,7 @@
 
 #include "wolf/input/PlayerController.hpp"
 
-void check(bool condition, const char* message) {
+void check(bool condition, const char *message) {
     if (!condition) {
         std::cerr << message << "\n";
         std::exit(1);
@@ -57,8 +57,8 @@ int main() {
     );
 
     double dot =
-        player.direction.x * player.cameraPlane.x +
-        player.direction.y * player.cameraPlane.y;
+            player.direction.x * player.cameraPlane.x +
+            player.direction.y * player.cameraPlane.y;
 
     check(
         std::abs(dot) < 1e-6,
@@ -74,6 +74,30 @@ int main() {
         player.position.x > 1.5 &&
         player.position.x + 0.2 < 4.0,
         "Player crossed a wall"
+    );
+
+    // Valid spawn.
+    check(
+        controller.can_move(map, {1.5, 1.5}),
+        "Valid spawn rejected"
+    );
+
+    // Spawn inside a wall.
+    check(
+        !controller.can_move(map, {0.5, 0.5}),
+        "Spawn inside wall accepted"
+    );
+
+    // Spawn too close to a wall.
+    check(
+        !controller.can_move(map, {1.1, 1.5}),
+        "Spawn overlapping wall accepted"
+    );
+
+    // Spawn outside the map.
+    check(
+        !controller.can_move(map, {-1.0, 1.5}),
+        "Spawn outside map accepted"
     );
 
     std::cout << "PlayerController tests passed\n";
