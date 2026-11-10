@@ -92,7 +92,6 @@ namespace render {
          * @param y1 end y coordinate
          * @param params draw call parameters (see @c DrawCallParams)
          */
-        template<bool IsSprite>
         void vline(int x, int y0, int y1, const DrawCallParams &params);
 
         /**

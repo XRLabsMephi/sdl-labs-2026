@@ -11,7 +11,7 @@
 namespace raycast{
     namespace settings{
         inline core::Color WALL_COLOR = core::Color(255, 175, 119);
-        inline core::Color GROUND_COLOR = core::Color::lerp(core::Color::black, core::Color::white, 255 * 3 / 10);
+        inline core::Color GROUND_COLOR = core::Color::lerp_rgb(core::Color::black, core::Color::white, 255 * 3 / 10);
         inline core::Color SKY_COLOR = core::Color(170, 142, 224);
 
         constexpr double W_P_rel = 2; // the relation between wall and player height

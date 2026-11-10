@@ -15,8 +15,20 @@ namespace render {
             void operator()(SDL_Texture* texture) const noexcept;
         };
 
+        struct SDL_Window_Deleter {
+            void operator()(SDL_Window* window) const noexcept;
+        };
+
+        struct SDL_Surface_Deleter {
+            void operator()(SDL_Surface* surface) const noexcept;
+        };
+
+        void fail(std::string_view message);
+
         std::unique_ptr<SDL_Renderer, SDL_Renderer_Deleter> renderer_;
         std::unique_ptr<SDL_Texture, SDL_Texture_Deleter> texture_;
+        std::unique_ptr<SDL_Window, SDL_Window_Deleter> window_;
+        std::unique_ptr<SDL_Surface, SDL_Surface_Deleter> surface_;
         buf_size_t width_ = 0, height_ = 0;
         std::string error_message;
 
