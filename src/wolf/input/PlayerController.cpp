@@ -22,8 +22,8 @@ void PlayerController::update(Player& player, const Map& map, const InputState& 
     const double strafeAxis = static_cast<double>(input.strafeRight) - static_cast<double>(input.strafeLeft);
 
     Vec2 movement = player.direction.normalized() * forwardAxis;
-    const Vec2 right{-player.direction.y, player.direction.x};
-    movement += right.normalized() * strafeAxis;
+    // Positive camera-plane coordinates are the right side of the rendered view.
+    movement += player.cameraPlane.normalized() * strafeAxis;
 
     if (movement.length() > 1.0)
     {
