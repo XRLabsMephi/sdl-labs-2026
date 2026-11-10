@@ -6,15 +6,12 @@
 #include "wolf/texture/Texture.hpp"
 
 namespace texture {
-    // Minimal resource contract for Application / participant 1.
-    // File loading accepts PNG only and converts it to the CPU renderer's packed RGBA.
     class TextureStore {
     public:
-        // Material opacity multiplies the PNG alpha (255 keeps the original alpha).
-        void load(int id, const std::filesystem::path& path, std::uint8_t opacity = 255);
+        void load(int id, const std::filesystem::path& path, uint8_t opacity = 255);
         void set(int id, Texture texture, std::uint8_t opacity = 255);
-        [[nodiscard]] const Texture* get(int id) const noexcept;
-        [[nodiscard]] bool isOpaque(int id) const noexcept;
+        [[nodiscard]] const Texture *get(int id) const noexcept;
+        bool isOpaque(int id) const noexcept;
 
     private:
         struct Entry {

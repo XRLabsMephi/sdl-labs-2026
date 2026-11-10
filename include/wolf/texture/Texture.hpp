@@ -6,23 +6,24 @@
 #include <vector>
 
 namespace texture {
-    // Same packed RGBA format as ColorRGBA::pack(); no SDL objects in rendering code.
+    // Same packed RGBA format as ColorRGBA::pack()
     struct Texture {
-        int width = 0;
-        int height = 0;
-        std::vector<std::uint32_t> pixels;
+        size_t width = 0;
+        size_t height = 0;
+        std::vector<uint32_t> pixels;
 
-        [[nodiscard]] bool valid() const noexcept {
-            return width > 0 && height > 0 &&
-                pixels.size() == static_cast<std::size_t>(width) * static_cast<std::size_t>(height);
+        bool valid() const noexcept {
+            return width > 0 && height > 0 && pixels.size() == width * height;
         }
 
         // Nearest-neighbour sampling with clamped edges. Invalid textures are transparent.
-        [[nodiscard]] std::uint32_t sample(int x, int y) const noexcept {
-            if (!valid()) return 0;
-            x = std::clamp(x, 0, width - 1);
-            y = std::clamp(y, 0, height - 1);
-            return pixels[static_cast<std::size_t>(y) * width + x];
+        uint32_t sample(int x, int y) const noexcept {
+            if (!valid()) {
+                return 0;
+            }
+            size_t clx = std::min((size_t) std::max(x, 0), width - 1);
+            size_t cly = std::min((size_t) std::max(y, 0), height - 1);
+            return pixels[cly * width + clx];
         }
     };
 }
