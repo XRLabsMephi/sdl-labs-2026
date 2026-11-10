@@ -14,6 +14,8 @@ constexpr char WINDOW_TITLE[] = "RayCaster";
 constexpr int WINDOW_WIDTH = 1024;
 constexpr int WINDOW_HEIGHT = 768;
 
+constexpr int EYE_HEIGHT = WINDOW_HEIGHT / 2;
+
 constexpr int FRAME_WIDTH = WINDOW_WIDTH;
 constexpr int FRAME_HEIGHT = WINDOW_HEIGHT;
 constexpr core::Color FOG_COLOR{72, 76, 84};
@@ -25,8 +27,8 @@ constexpr SDL_WindowFlags WINDOW_FLAGS = SDL_WINDOW_RESIZABLE;
 
 constexpr double NANOSECONDS_PER_SECOND = 1e-9;
 
-constexpr double MOVE_SPEED = 3.0;
-constexpr double ROTATION_SPEED = 2.0;
+constexpr double MOVE_SPEED = 15.0;
+constexpr double ROTATION_SPEED = 8.0;
 constexpr double MOUSE_SENSITIVITY = 0.002;
 
 enum class ApplicationError {
@@ -110,7 +112,7 @@ bool app::Application::initialize(const std::string& mapFilename) {
 
         player.setPosition(map.getSpawnPosition());
 
-        player.setEyeHeigth(WINDOW_HEIGHT/7);
+        player.setEyeHeigth(EYE_HEIGHT);
 
         // Initialize all controller settings before the first update.
         playerController.setMoveSpeed(MOVE_SPEED);

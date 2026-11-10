@@ -9,7 +9,7 @@ using namespace raycast;
 using namespace raycast::settings;
 
 void RayCaster::drawByRayHit(const std::pair<double, double>& cos_vertical_horizontal, double depth,
-                             int column) const{
+                             double tan_half_fov, int column) const{
     const int W_H = frame_height_; // the height of wall in pixels
     const int P_H = player_.getEyeHeight(); // the height of player in pixels
 
@@ -41,6 +41,7 @@ void RayCaster::drawByRayHit(const std::pair<double, double>& cos_vertical_horiz
     }
 
     if (ray_hit.has_hit_){
+        const double SC_D = (frame_width_ - 1)/(2 * tan_half_fov * W_H); //distance between camera and virtual screen
         const double SC_RAY_DEPTH_rel = SC_D/depth;
         int y0 = static_cast<int>(P_H * (1 - SC_RAY_DEPTH_rel)); //bottom border of wall projection in pixels(can be negative)
         int y1 = static_cast<int>(P_H + SC_RAY_DEPTH_rel * (W_H - P_H)); //top border of wall projection in pixels(can be more than frame_height_)
@@ -99,7 +100,7 @@ void RayCaster::renderScene(){
         if (!fish_eye){depth = ray_cast_hit.t_distance_ * ray_direction.dot(camera_direction);}
         else {depth = ray_cast_hit.t_distance_ * ray_direction.length();}
         depth_buffer_[xi] = depth;
-        drawByRayHit(cos_vertical_horizontal, depth, xi);
+        drawByRayHit(cos_vertical_horizontal, depth, tan_half_fov, xi);
     }
 
 

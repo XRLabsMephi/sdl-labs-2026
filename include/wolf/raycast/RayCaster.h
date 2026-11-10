@@ -13,15 +13,14 @@ namespace raycast{
     namespace settings{
         inline core::Color WALL_COLOR = core::Color(255, 175, 119);
         inline core::Color GROUND_COLOR = core::Color::lerp(core::Color::black, core::Color::white, 255 * 3 / 10);
-        inline core::Color SKY_COLOR = core::Color(170, 142, 224);
+        inline core::Color SKY_COLOR = core::Color(147, 89, 124);
 
         //constexpr double vertical_field_of_view = 0.0; //the angle of view in vertical axe. Interchangeably with SC_D
-        constexpr double SC_D = 1.0; //distance between camera and virtual screen
 
         inline double minimal_brightness = 0.6;
         inline double darkening_distance = 30.0;
 
-        inline bool fish_eye = false;
+        inline bool fish_eye = true;
     }
 
 
@@ -89,6 +88,6 @@ namespace raycast{
 
         //draw column in FrameBuffer
         void drawByRayHit(const std::pair<double, double>& cos_vertical_horizontal,
-                          double depth, int column) const;
+                          double depth, double tan_half_fov, int column) const;
     };
 }
