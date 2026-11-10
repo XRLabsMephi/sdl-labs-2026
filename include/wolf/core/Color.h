@@ -86,8 +86,8 @@ namespace core {
          * @param percent [0, 255] amount of transition between current and other
          * @return resulting Color
          */
-        [[nodiscard]] constexpr Color lerp(const Color &other, Uint8 percent) const noexcept {
-            return lerp(*this, other, percent);
+        [[nodiscard]] constexpr Color lerp_rgb(const Color &other, Uint8 percent) const noexcept {
+            return lerp_rgb(*this, other, percent);
         }
 
         /**
@@ -97,7 +97,7 @@ namespace core {
          * @param percent [0, 255] amount of transition between lhs and rhs
          * @return resulting Color
          */
-        [[nodiscard]] static constexpr Color lerp(const Color &lhs, const Color &rhs, Uint8 percent) noexcept {
+        [[nodiscard]] static constexpr Color lerp_rgb(const Color &lhs, const Color &rhs, Uint8 percent) noexcept {
             const Uint32 t = percent;
             const Uint32 inv = 255u - t;
             auto mix = [inv, t](const Uint8 l, const Uint8 r) -> Uint8 {
@@ -107,7 +107,7 @@ namespace core {
                 mix(lhs.r(), rhs.r()),
                 mix(lhs.g(), rhs.g()),
                 mix(lhs.b(), rhs.b()),
-                mix(lhs.a(), rhs.a())
+                lhs.a()
             };
         }
 
@@ -146,10 +146,8 @@ namespace core {
          * @param dst background color, must be opaque
          * @return resulting Color
          */
-        [[nodiscard]] constexpr Color over(const Color &dst) const noexcept {
+        [[gnu::always_inline]] [[nodiscard]] constexpr Color over(const Color &dst) const noexcept {
             const Uint32 sa = a();
-            if (sa == 0) return dst;
-            if (sa == 255) return *this;
             const auto *da = DIM[sa].data();
             const auto *dia = DIM[255 - sa].data();
             const Uint32 rr = da[r()] + dia[dst.r()];

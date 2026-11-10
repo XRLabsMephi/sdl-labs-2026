@@ -52,7 +52,7 @@ void RayCaster::drawByRayHit(const Vector2& ray_direction, const Vector2& camera
             int tex_start = 0;
             int tex_step = castToFixedFloat(step); //cast to 16.16 format
             render::DrawCallParams params = {tex_column_ptr, tex_start, tex_step, depth, static_cast<Uint8>(255 * brightness)};
-            frame_buffer_.vline<false>(column, frame_height_ - y0, frame_height_ - y1, params);
+            frame_buffer_.vline(column, frame_height_ - y0, frame_height_ - y1, params);
         }
     }
 }
