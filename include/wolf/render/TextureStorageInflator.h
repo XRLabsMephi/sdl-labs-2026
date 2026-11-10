@@ -4,14 +4,14 @@
 namespace render {
     namespace fs = std::filesystem;
 
-    class TextureStorageLoader {
+    class TextureStorageInflator {
         fs::path mapping_file_path_;
 
         static std::vector<TextureStorage::TextureEntry> parseMapping(std::istream &stream, const fs::path &base_dir);
 
     public:
-        explicit TextureStorageLoader(fs::path mapping_file_path);
+        explicit TextureStorageInflator(fs::path mapping_file_path);
 
-        void load(TextureStorage &storage) const;
+        void inflate(TextureStorage &storage) const;
     };
 }

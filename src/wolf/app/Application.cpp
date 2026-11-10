@@ -1,6 +1,6 @@
 #include <app/Application.h>
 #include <debug/Logger.h>
-#include <render/TextureStorageLoader.h>
+#include <render/TextureStorageInflator.h>
 
 #include <exception>
 #include <filesystem>
@@ -154,7 +154,7 @@ bool app::Application::initialize(const std::string& mapFilename) {
             );
         }
 
-        render::TextureStorageLoader("assets/textures/textures_mapping.txt").load(textureStorage);
+        render::TextureStorageInflator("assets/textures/textures_mapping.txt").inflate(textureStorage);
 
         frameBuffer = std::make_unique<render::FrameBuffer>(
             FRAME_WIDTH,
@@ -275,6 +275,9 @@ void app::Application::run() {
             }
 
             update(deltaTime);
+
+            // Clear the previous frame before drawing the current scene.
+            frameBuffer->clear(core::Color::black);
 
             rayCaster->renderScene();
             spriteRenderer->renderSprites();

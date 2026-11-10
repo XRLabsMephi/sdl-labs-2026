@@ -1,4 +1,4 @@
-#include "render/TextureStorageLoader.h"
+#include "render/TextureStorageInflator.h"
 
 #include <algorithm>
 #include <charconv>
@@ -17,7 +17,7 @@ namespace {
     void fail(const std::string &msg) {
         logging::error(component, 2, msg, "");
         throw std::runtime_error(std::format("{} error", component));
-    }
+    };
 
     std::string_view trim(std::string_view s) {
         constexpr auto to_skip = " \t\r";
@@ -29,7 +29,7 @@ namespace {
 
 namespace render {
 
-    std::vector<TextureStorage::TextureEntry> TextureStorageLoader::parseMapping(
+    std::vector<TextureStorage::TextureEntry> TextureStorageInflator::parseMapping(
         std::istream &stream,
         const fs::path &base_dir
         ) {
@@ -53,10 +53,10 @@ namespace render {
         return entries;
     }
 
-    TextureStorageLoader::TextureStorageLoader(fs::path mapping_file_path)
+    TextureStorageInflator::TextureStorageInflator(fs::path mapping_file_path)
     : mapping_file_path_(std::move(mapping_file_path)) {}
 
-    void TextureStorageLoader::load(TextureStorage &storage) const {
+    void TextureStorageInflator::inflate(TextureStorage &storage) const {
         std::ifstream stream(mapping_file_path_);
         if (!stream) {
             fail(std::format("cannot open texture mapping file: \"{}\"", mapping_file_path_.string()));
