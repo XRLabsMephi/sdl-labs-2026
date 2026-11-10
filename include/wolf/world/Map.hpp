@@ -13,21 +13,25 @@ namespace world {
 
         explicit Map(std::vector<std::vector<int>> cells);
 
-        [[nodiscard]] static Map loadFromFile(const std::string &path);
+        static Map loadFromFile(const std::string &path);
 
-        [[nodiscard]] static Map defaultMap();
+        static Map initMap();
 
-        [[nodiscard]] int width() const noexcept;
+        static Map initMap(const std::string &filePath);
 
-        [[nodiscard]] int height() const noexcept;
+        size_t width() const noexcept;
 
-        [[nodiscard]] bool isInBounds(int x, int y) const noexcept;
+        size_t height() const noexcept;
 
-        [[nodiscard]] int cellAt(int x, int y) const noexcept;
+        bool isInBounds(int x, int y) const noexcept;
 
-        [[nodiscard]] bool isSolid(int x, int y) const noexcept;
+        int cellAt(int x, int y) const noexcept;
+
+        bool isSolid(int x, int y) const noexcept;
 
     private:
+        static bool areMapCellsValid(const std::vector<std::vector<int>> &cells);
+
         std::vector<std::vector<int>> cells_;
     };
 }

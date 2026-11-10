@@ -63,7 +63,7 @@ namespace {
     void configure(lab02::DemoScene& scene, const std::string& kind) {
         if (kind == "demo") return;
         if (kind == "application") {
-            scene.map = world::Map::defaultMap();
+            scene.map = world::Map::initMap();
             scene.player = world::Player({2.5, 12.5}, {1.0, -1.0}, 80.0 / 57.2958);
             scene.sprites.clear();
         } else if (kind == "opaque") {

@@ -16,7 +16,7 @@ add_library(wolf_render STATIC
 target_include_directories(wolf_render PUBLIC include)
 target_compile_features(wolf_render PUBLIC cxx_std_20)
 target_link_libraries(wolf_render PUBLIC PNG::PNG)
-target_compile_options(wolf_render PRIVATE -Wall -Wextra -Wpedantic)
+target_compile_options(wolf_render PRIVATE -Wall -Wextra -Wpedantic -O3)
 set_target_properties(wolf_render PROPERTIES CXX_EXTENSIONS OFF)
 
 add_executable(graphics_lab
@@ -31,6 +31,7 @@ target_compile_options(graphics_lab PRIVATE
     -Wall
     -Wextra
     -Wpedantic
+    -O3
 )
 
 set_target_properties(graphics_lab PROPERTIES

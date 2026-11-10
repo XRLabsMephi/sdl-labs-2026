@@ -13,7 +13,7 @@ namespace {
     //Player starting settings
     constexpr core::Vec2 kPlayerStartPos{2.5, 12.5};
     constexpr core::Vec2 kPlayerStartDir{1, -1};
-    
+
     constexpr double RAD         = 57.2958;
     constexpr double FOV_DEGREES = 80;
 
@@ -33,7 +33,7 @@ namespace app {
     Application::Application()
         : framebuffer_(kWidth, kHeight),
           presenter_(kWidth, kHeight, "Wolf Raycaster - Lab 02"),
-          map_(world::Map::defaultMap()),
+          map_(world::Map::initMap(std::filesystem::path(WOLF_ASSETS_DIR) / "maps/map01.txt")),
           player_(kPlayerStartPos, kPlayerStartDir, kPlayerFov),
           fog_(3.0, 14.0, {160, 153, 107}),
           controller_(kPlayerMoveSpeed, kPlayerTurnSpeed, kPlayerRadius) {
@@ -41,6 +41,17 @@ namespace app {
         textureStore_.load(1, root / "wallpaper.png");
         textureStore_.load(2, root / "panels.png");
         textureStore_.load(3, root / "glass.png", 96);
+        const auto spritesRoot = std::filesystem::path(WOLF_ASSETS_DIR) / "sprites";
+        textureStore_.load(101, spritesRoot / "barrel.png");
+        textureStore_.load(102, spritesRoot / "medkit.png");
+        textureStore_.load(103, spritesRoot / "lamp.png");
+
+        sprites_ = {
+            {.position = {4.5, 10.5}, .textureId = 101, .scale = 1.0},
+            {.position = {5.5, 9.5},  .textureId = 102, .scale = 0.65},
+            {.position = {7.3, 9.5},  .textureId = 103, .scale = 1.0},
+            {.position = {11.5, 3.5}, .textureId = 101, .scale = 1.0},
+        };
     }
 
     Application::~Application() = default;
@@ -83,32 +94,34 @@ namespace app {
 
         SDL_Event event{};
         while (SDL_PollEvent(&event)) {
-            if (event.type == SDL_EVENT_QUIT)
+            if (event.type == SDL_EVENT_QUIT) {
                 state.set(input::InputState::kQuit);
-            
-            if (event.type == SDL_EVENT_KEY_DOWN && event.key.key == SDLK_ESCAPE) 
+            }
+            if (event.type == SDL_EVENT_KEY_DOWN && event.key.key == SDLK_ESCAPE) {
                 state.set(input::InputState::kQuit);
+            }
         }
 
         const bool *keys = SDL_GetKeyboardState(nullptr);
         if (keys) {
-            if (keys[SDL_SCANCODE_W] || keys[SDL_SCANCODE_UP])
+            if (keys[SDL_SCANCODE_W] || keys[SDL_SCANCODE_UP]) {
                 state.set(input::InputState::kForward);
-                
-            if (keys[SDL_SCANCODE_S] || keys[SDL_SCANCODE_DOWN])
+            }
+            if (keys[SDL_SCANCODE_S] || keys[SDL_SCANCODE_DOWN]) {
                 state.set(input::InputState::kBackward);
-                
-            if (keys[SDL_SCANCODE_A])
+            }
+            if (keys[SDL_SCANCODE_A]) {
                 state.set(input::InputState::kLeft);
-                
-            if (keys[SDL_SCANCODE_D])
+            }
+            if (keys[SDL_SCANCODE_D]) {
                 state.set(input::InputState::kRight);
-                
-            if (keys[SDL_SCANCODE_LEFT])
+            }
+            if (keys[SDL_SCANCODE_LEFT]) {
                 state.set(input::InputState::kTurnLeft);
-                
-            if (keys[SDL_SCANCODE_RIGHT])
+            }
+            if (keys[SDL_SCANCODE_RIGHT]) {
                 state.set(input::InputState::kTurnRight);
+            }
         }
 
         return state;
