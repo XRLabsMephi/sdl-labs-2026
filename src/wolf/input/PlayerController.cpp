@@ -31,7 +31,8 @@ void PlayerController::update(Player& player, const Map& map, const InputState& 
     }
     move(player, map, movement.x * moveSpeed_ * elapsed, movement.y * moveSpeed_ * elapsed);
 
-    const double turnAxis = static_cast<double>(input.turnRight) - static_cast<double>(input.turnLeft);
+    // The camera plane points right, so a right turn uses a negative rotation angle.
+    const double turnAxis = static_cast<double>(input.turnLeft) - static_cast<double>(input.turnRight);
     const double angle = turnAxis * rotationSpeed_ * elapsed;
     const double cosine = std::cos(angle);
     const double sine = std::sin(angle);

@@ -58,8 +58,8 @@ InputState readInput()
     input.moveBackward = pressed(SDL_SCANCODE_S);
     input.strafeLeft = pressed(SDL_SCANCODE_A);
     input.strafeRight = pressed(SDL_SCANCODE_D);
-    input.turnLeft = pressed(SDL_SCANCODE_RIGHT) || pressed(SDL_SCANCODE_E);
-    input.turnRight = pressed(SDL_SCANCODE_LEFT) || pressed(SDL_SCANCODE_Q);
+    input.turnLeft = pressed(SDL_SCANCODE_LEFT) || pressed(SDL_SCANCODE_Q);
+    input.turnRight = pressed(SDL_SCANCODE_RIGHT) || pressed(SDL_SCANCODE_E);
     return input;
 }
 
