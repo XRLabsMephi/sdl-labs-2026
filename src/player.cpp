@@ -74,9 +74,9 @@ void Player::right(Playfield& pf, double deltaTime) {
 	}
 }
 
-double Player::get_A() { return A; }
-double Player::get_X() { return x; }
-double Player::get_Y() { return y; }
+double Player::get_A() const { return A; }
+double Player::get_X() const { return x; }
+double Player::get_Y() const { return y; }
 
 void Player::set_cords(std::pair<int, int> new_cords) {
 	x = std::max((double)0, (new_cords.first + 0.5) * settings::map_scale);

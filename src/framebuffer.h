@@ -19,6 +19,15 @@ struct Color {
 	uint8_t a = 0;
 };
 
+//сгенерировать струкутру цвета по запакованному чисевку и яркости
+inline Color toColor(std::uint32_t argb, double brightness) {
+	const auto r = static_cast<std::uint8_t>(((argb >> 16) & 255) * brightness);
+	const auto g = static_cast<std::uint8_t>(((argb >> 8) & 255) * brightness);
+	const auto b = static_cast<std::uint8_t>((argb & 255) * brightness);
+	const auto a = static_cast<std::uint8_t>((argb >> 24) & 255);
+	return Color{ r, g, b, a };
+}
+
 /*
 	Кадр целиком живёт в оперативной памяти.
 

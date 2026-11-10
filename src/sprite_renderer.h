@@ -10,7 +10,7 @@ class SpriteRenderer {
 public:
     void draw(
         const Sprite& sprite,
-        Player& player,
+        const Player& player,
         FrameBuffer& frameBuffer,
         const std::vector<double>& depthBuffer,
         double projectionDistance,

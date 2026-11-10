@@ -1,6 +1,12 @@
-#include "framebuffer.h"
-
+#include <cmath>
+#include <limits>
+#include <numbers>
 #include <algorithm>
+#include <algorithm>
+
+#include "settings.h"
+#include "raytracer.h"
+#include "framebuffer.h"
 
 /*
 	реализация функций из framebuffer.h

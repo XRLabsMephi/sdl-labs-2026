@@ -46,8 +46,12 @@ vector<vector<int>> generate_map(int w, int h, int max_food, int min_food_delt, 
     int dx[] = { 0, 1, 0, -1 };
     int dy[] = { -1, 0, 1, 0 };
 
+    int attempts = 0;
+    const int MAX_ATTEMPTS = 10000;
+
     // Random BFS    
-    while (static_cast<int>(carved.size()) < target_carved) {
+    while (static_cast<int>(carved.size()) < target_carved && attempts < MAX_ATTEMPTS) {
+        attempts++;
         // — шансом 50% продолжаем копать с текущего места, иначе прыгаем в случайную выкопанную точку
         if (uniform_int_distribution<int>(0, 10)(gen) == 0) {
             auto p = carved[uniform_int_distribution<size_t>(0, carved.size() - 1)(gen)];

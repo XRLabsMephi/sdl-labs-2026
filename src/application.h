@@ -4,6 +4,7 @@
 
 struct SDL_Window;
 struct SDL_Renderer;
+class Playfield;
 
 class Application {
 public:
@@ -19,6 +20,11 @@ private:
 	SDL_Window* window = nullptr;
 	SDL_Renderer* renderer = nullptr;
 
-	std::array<Texture, 16> textures_;
-	std::vector<double> depthBuffer_;
+	std::array<Texture, 64> textures_;
+
+
+	bool launch_SDL();
+	void close_SDL();
+	void load_textures();
+	void load_hub(Playfield& play_field);
 };

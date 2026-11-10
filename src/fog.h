@@ -1,14 +1,16 @@
 #pragma once
 
-#include <algorithm>
 #include <cstdint>
-#include "framebuffer.h"
+#include <algorithm>
+
 #include "settings.h"
+#include "framebuffer.h"
 
 namespace fog {
 	constexpr double fogStart = 4.0 * settings::map_scale;
 	constexpr double fogEnd = 18.0 * settings::map_scale;
 	constexpr Color fogColor{20, 25, 35, 255};
+	constexpr Color end{ 50, 25, 95, 255 };
 
 	inline Color apply(Color color, double depth) {
 		double t = std::clamp(

@@ -38,9 +38,9 @@ public:
 
 
 
-	double get_A();
-	double get_X();
-	double get_Y();
+	double get_A() const;
+	double get_X() const;
+	double get_Y() const;
 
 	int get_score();
 	void add_score(int delt);

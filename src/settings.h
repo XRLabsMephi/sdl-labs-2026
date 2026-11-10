@@ -17,4 +17,6 @@ namespace settings {
 	constexpr double moving_scale   = 240;
 	constexpr double screenWidth	= 800;
 	constexpr double screenHeight   = 600;
+
+	constexpr bool mouse = false;
 }

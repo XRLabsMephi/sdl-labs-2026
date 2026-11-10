@@ -10,34 +10,12 @@ set(SDL_STATIC ON CACHE BOOL "" FORCE)
 
 add_subdirectory(vendored/SDL EXCLUDE_FROM_ALL)
 
+file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS "src/*.cpp" "src/*.h"  "src/menu*.cpp" "src/menu*.h")
+
 add_executable(graphics_lab
-		src/main.cpp
-		src/playfield.cpp
-		src/board.cpp
-		src/playfield.h
-		src/board.h
-		src/player.h
-		src/player.cpp
-		src/raytracer.h
-		src/raytracer.cpp
-		src/framebuffer.h
-		src/framebuffer.cpp
-		src/application.h
-		src/application.cpp
-		src/sdl_presenter.h
-		src/sdl_presenter.cpp
-		src/raytracer.h
-		src/raytracer.cpp
-		src/texturestore.h
-		src/texturestore.cpp
-		src/sprite_renderer.h
-		src/sprite_renderer.cpp
-		src/sprite.h
-		src/sprite.cpp
-		src/map_generator.h
-		src/map_generator.cpp
-		src/interface.h
-		src/interface.cpp
+	${SOURCES}
 )
 
 target_link_libraries(graphics_lab PRIVATE SDL3::SDL3-static)
+
+option(ENABLE_SANITIZERS "Enable Address and Undefined Behavior sanitizers" ON)
