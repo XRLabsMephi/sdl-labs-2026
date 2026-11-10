@@ -1,20 +1,21 @@
-cmake_minimum_required(VERSION 3.24)
+cmake_minimum_required(VERSION 3.16)
 
-project(SoftwareGraphicsLabs LANGUAGES CXX)
+project(graphics_lab LANGUAGES CXX)
+
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+set(SDL_SHARED OFF CACHE BOOL "" FORCE)
+set(SDL_STATIC ON CACHE BOOL "" FORCE)
+
+add_subdirectory(vendored/SDL EXCLUDE_FROM_ALL)
+
+file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS "src/*.cpp" "src/*.h"  "src/menu*.cpp" "src/menu*.h")
 
 add_executable(graphics_lab
-    src/main.cpp
+	${SOURCES}
 )
 
-target_compile_features(graphics_lab PRIVATE cxx_std_20)
+target_link_libraries(graphics_lab PRIVATE SDL3::SDL3-static)
 
-target_compile_options(graphics_lab PRIVATE
-    -Wall
-    -Wextra
-    -Wpedantic
-)
-
-set_target_properties(graphics_lab PROPERTIES
-    CXX_EXTENSIONS OFF
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
-)
+option(ENABLE_SANITIZERS "Enable Address and Undefined Behavior sanitizers" ON)
