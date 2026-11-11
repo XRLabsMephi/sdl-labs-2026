@@ -21,7 +21,7 @@ void SpriteRenderer::renderSprites() const {
         std::vector<VisibleSprite> visible;
         for (const auto& sprite : map_.getSprites()) {
             const Vector2 relative = sprite.position - player_.getPosition();
-            const double depth = relative.dot(forward);
+            const double depth = viewSettings_.fish_eye? relative.length(): relative.dot(forward);
             if (depth > eps) {
                 visible.push_back({&sprite, relative.dot(right), depth});
             }
@@ -40,12 +40,12 @@ void SpriteRenderer::renderSprites() const {
                 continue;
             }
             const double centerX = halfWidth + horizontalFocalLength * cameraX / depth;
-            const double projectedHeight = frame_height_ * (sprite->scale / depth);
+            const double projectedHeight = horizontalFocalLength * (sprite->scale / depth);
             const double projectedWidth = horizontalFocalLength * (sprite->scale / depth)
                 * (static_cast<double>(texture.width) / texture.height);
 
             // Align the base of the sprite with the base of a wall at the same depth.
-            const double bottom = horizon + eyeHeight / depth;
+            const double bottom = horizon + horizontalFocalLength * (eyeHeight / frame_height_) / depth;
             const double top = bottom - projectedHeight;
             const double leftEdge = centerX - projectedWidth / 2.0;
             const double rightEdge = centerX + projectedWidth / 2.0;

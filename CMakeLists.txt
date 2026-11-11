@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.22.1)
 
 project(SoftwareGraphicsLabs LANGUAGES CXX)
 
-find_package(SDL3 REQUIRED CONFIG)
+find_package(SDL3 3.4 REQUIRED CONFIG)
 
 set(HEADERS
         include/wolf/app/Application.h
@@ -23,6 +23,7 @@ set(HEADERS
         include/wolf/render/TextureStorageInflator.h
         include/wolf/render/Fog.h
         include/wolf/render/SpriteRenderer.h
+        include/wolf/render/ViewSettings.h
 )
 
 set(SOURCES

@@ -14,6 +14,7 @@
 #include <world/Map.h>
 #include <world/Player.h>
 #include <render/SpriteRenderer.h>
+#include <render/ViewSettings.h>
 
 namespace app {
 
@@ -32,6 +33,8 @@ namespace app {
 
         input::InputState input;
         input::PlayerController playerController;
+
+        ViewSettings viewSettings;
 
         render::TextureStorage textureStorage;
         std::unique_ptr<render::FrameBuffer> frameBuffer;

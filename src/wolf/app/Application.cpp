@@ -6,6 +6,7 @@
 #include <filesystem>
 #include <iostream>
 #include <string>
+#include <numbers>
 
 namespace {
 
@@ -27,9 +28,11 @@ constexpr SDL_WindowFlags WINDOW_FLAGS = SDL_WINDOW_RESIZABLE;
 
 constexpr double NANOSECONDS_PER_SECOND = 1e-9;
 
-constexpr double MOVE_SPEED = 15.0;
+constexpr double MOVE_SPEED = 5.0;
 constexpr double ROTATION_SPEED = 8.0;
 constexpr double MOUSE_SENSITIVITY = 0.002;
+
+constexpr double FIELD_OF_VIEW = std::numbers::pi / 3;
 
 enum class ApplicationError {
     MapLoading = 1,
@@ -111,8 +114,8 @@ bool app::Application::initialize(const std::string& mapFilename) {
         }
 
         player.setPosition(map.getSpawnPosition());
-
         player.setEyeHeigth(EYE_HEIGHT);
+        player.setAngle(FIELD_OF_VIEW);
 
         // Initialize all controller settings before the first update.
         playerController.setMoveSpeed(MOVE_SPEED);
@@ -168,12 +171,14 @@ bool app::Application::initialize(const std::string& mapFilename) {
 
         frameBuffer->set_fog_params(FOG_COLOR, MIN_FOG_DEPTH, MAX_FOG_DEPTH);
 
+        viewSettings = ViewSettings{.fish_eye = false};
         // RayCaster borrows the player, map, frame buffer and textures.
         rayCaster = std::make_unique<raycast::RayCaster>(
             player,
             map,
             *frameBuffer,
-            textureStorage
+            textureStorage,
+            viewSettings
         );
 
         rayCaster->set_fog_params(FOG_COLOR, MIN_FOG_DEPTH, MAX_FOG_DEPTH);
@@ -183,6 +188,7 @@ bool app::Application::initialize(const std::string& mapFilename) {
             map,
             *frameBuffer,
             textureStorage,
+            viewSettings,
             rayCaster->getDepthBuffer()
         );
 

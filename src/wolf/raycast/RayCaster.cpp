@@ -4,6 +4,7 @@
 #include <cmath>
 #include <limits>
 #include <cassert>
+#include <utility>
 
 using namespace raycast;
 using namespace raycast::settings;
@@ -12,9 +13,6 @@ void RayCaster::drawByRayHit(const std::pair<double, double>& cos_vertical_horiz
                              double tan_half_fov, int column) const{
     const int W_H = frame_height_; // the height of wall in pixels
     const int P_H = player_.getEyeHeight(); // the height of player in pixels
-
-    //projection of distance on camera axe (using scalar product and the fact, that camera_direction is normalized)
-
 
     //calculating for shadows
     double brightness_procent_cos = ray_cast_hit.face_index_ == IntersectionSide::Vertical ?
@@ -91,13 +89,19 @@ void RayCaster::renderScene(){
 
     //the cos of the angle between camera direction and corresponding side of cell normal
     std::pair<double, double> cos_vertical_horizontal = {std::abs(camera_direction.x), std::abs(camera_direction.y)};
-    //сейчас реализация такова, что делим на w - 1 отрезок и берем границы в качестве векторов направления
-    /*возможно она будет изменена или просто будут добавлены дополнительно расчет
-     *на основе равных углов или привязки к серединам отрезков*/
-    for (int xi = 0; xi < frame_width_; ++xi, ray_direction += shift){ //calculate next direction of ray
+
+    Vector2 rotate = {cos(field_of_view/ (frame_width_ - 1)), sin(field_of_view/(frame_width_ - 1))};
+
+    auto next_direction = [&rotate, &shift](const Vector2& direction, bool angle_mode = false){
+        if (angle_mode){return Vector2{direction.x * rotate.x + direction.y * rotate.y,
+                                      -direction.x * rotate.y + direction.y * rotate.x};}
+        return Vector2{direction} + shift;
+    };
+
+    for (int xi = 0; xi < frame_width_; ++xi, ray_direction = next_direction(ray_direction, angle_projection_mode)){ //calculate next direction of ray
         castRay(ray_direction);
         double depth;
-        if (!fish_eye){depth = ray_cast_hit.t_distance_ * ray_direction.dot(camera_direction);}
+        if (!view_settings_.fish_eye){depth = ray_cast_hit.t_distance_ * ray_direction.dot(camera_direction);}
         else {depth = ray_cast_hit.t_distance_ * ray_direction.length();}
         depth_buffer_[xi] = depth;
         drawByRayHit(cos_vertical_horizontal, depth, tan_half_fov, xi);
@@ -155,22 +159,7 @@ void RayCaster::castRay(Vector2 ray_direction) {
     //main loop
     //calculating the next cell and check is there wall
     //TODO более подробно расписать работу алгоритма
-    while (true){
-        if (map_.isWall(cell_x, cell_y)){
-            int wall_id = map_.getCell(cell_x, cell_y);
-            if (wall_id == -1){
-                ray_cast_hit = RayHit{};
-                break;
-            }
-            Vector2 coordinates = ray_coordinate + ray_direction * t_inter;
-            ray_cast_hit = RayHit(
-                true, t_inter,
-                coordinates, wall_id, intersection_side,
-                intersection_side == IntersectionSide::Horizontal ?
-                coordinates.x - std::floor(coordinates.x): coordinates.y - std::floor(coordinates.y)
-            );
-            break;
-        }
+    while (!map_.isWall(cell_x, cell_y)){
         if (closest_t_x > closest_t_y){
             cell_y += sign_dy;
             t_inter = closest_t_y;
@@ -185,15 +174,11 @@ void RayCaster::castRay(Vector2 ray_direction) {
         }
         else
         {
-            if (map_.isWall(cell_x + sign_dx, cell_y))
-            {
-                closest_t_x = -1.0f; //terminating
-                continue;
+            if (map_.isWall(cell_x + sign_dx, cell_y)){
+                break;
             }
-            if (map_.isWall(cell_x, cell_y + sign_dy))
-            {
-                closest_t_y = -1.0f; //terminating
-                continue;
+            if (map_.isWall(cell_x, cell_y + sign_dy)){
+                break;
             }
             cell_x += sign_dx;
             cell_y += sign_dy;
@@ -201,4 +186,16 @@ void RayCaster::castRay(Vector2 ray_direction) {
             closest_t_y += tdy;
         }
     }
+    int wall_id = map_.getCell(cell_x, cell_y);
+    if (wall_id == -1){
+        ray_cast_hit = RayHit{};
+        return;
+    }
+    Vector2 coordinates = ray_coordinate + ray_direction * t_inter;
+    ray_cast_hit = RayHit(
+        true, t_inter,
+        coordinates, wall_id, intersection_side,
+        intersection_side == IntersectionSide::Horizontal ?
+        coordinates.x - std::floor(coordinates.x): coordinates.y - std::floor(coordinates.y)
+    );
 }

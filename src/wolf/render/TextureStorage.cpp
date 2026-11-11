@@ -9,7 +9,8 @@ namespace {
 }
 
 namespace render {
-    TextureStorage::TextureStorage(size_t size) : max_id_(size - 1), textures_(size, Texture::empty){
+    TextureStorage::TextureStorage(size_t size){
+        reset(size);
     }
 
     void TextureStorage::add(Texture texture, size_t id) {

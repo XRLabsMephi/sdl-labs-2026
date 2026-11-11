@@ -10,7 +10,7 @@ namespace world {
         core::Vector2 position{};
 
         double rotation = 0.0;
-        double angle = std::numbers::pi / 2.2;
+        double angle = std::numbers::pi / 3;
         double radius = 0.2;
         int eyeHeight = 512;
 
@@ -25,6 +25,10 @@ namespace world {
 
         void setEyeHeigth(int newEyeHeigth) {
             eyeHeight = newEyeHeigth;
+        }
+
+        void setAngle(double newAngle) {
+            angle = newAngle;
         }
 
         // Return the field of view in radians.

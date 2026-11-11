@@ -8,6 +8,7 @@
 #include <world/Player.h>
 #include <render/TextureStorage.h>
 #include <render/Fog.h>
+#include <render/ViewSettings.h>
 
 namespace raycast{
     namespace settings{
@@ -20,7 +21,8 @@ namespace raycast{
         inline double minimal_brightness = 0.6;
         inline double darkening_distance = 30.0;
 
-        inline bool fish_eye = true;
+        inline bool fish_eye = false;
+        inline bool angle_projection_mode = false;
     }
 
 
@@ -30,25 +32,23 @@ namespace raycast{
         None,
         FishEye
     };
-
+    /** @brief Encapsulates ray casting logic*/
     class RayCaster{
     public:
-        //возможно стоит добавить во frame_buffer - геттеры для получения frame_width и frame_height
-        /**@param frame_width the width of frame, should be more than 1
-         *@param frame_height
-         *@param player
+        /**@param player
          *@param map
          *@param frame_buffer
          *@param storage**/
         RayCaster(const world::Player& player, const world::Map& map, render::FrameBuffer& frame_buffer,
-            const render::TextureStorage& storage)
+            const render::TextureStorage& storage, const ViewSettings& view_settings)
             :
+            frame_width_(static_cast<int>(frame_buffer.width())),
+            frame_height_(static_cast<int>(frame_buffer.height())),
             player_(player),
             map_(map),
             frame_buffer_(frame_buffer),
             storage_(storage),
-            frame_width_(static_cast<int>(frame_buffer_.width())),
-            frame_height_(static_cast<int>(frame_buffer_.height())),
+            view_settings_(view_settings),
             depth_buffer_(frame_width_)
         {if (frame_width_ <= 1 || frame_height_ <= 0){
             throw std::invalid_argument("Invalid frame resolution");
@@ -61,19 +61,21 @@ namespace raycast{
         void renderScene();
 
         /**@return const ref to buffer of depths*/
-        [[nodiscard]] std::vector<double>& getDepthBuffer(){return depth_buffer_;};
+        [[nodiscard]] std::vector<double>& getDepthBuffer(){return depth_buffer_;}
 
+        /** Sets the fog parameters: color and factor*/
         void set_fog_params(core::Color fog_color, float min_fog_depth, float max_fog_depth) {
             fog_ = Fog(min_fog_depth, max_fog_depth, fog_color);
         }
 
 
     private:
+        int frame_width_, frame_height_;
         const world::Player& player_;
         const world::Map& map_;
         render::FrameBuffer& frame_buffer_;
-        const render::TextureStorage &storage_;
-        int frame_width_, frame_height_;
+        const render::TextureStorage& storage_;
+        const ViewSettings& view_settings_;
         Fog fog_;
         std::vector<double> depth_buffer_;
 
