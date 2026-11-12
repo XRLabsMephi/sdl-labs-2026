@@ -10,7 +10,6 @@ namespace wolf::render {
 
         ~SdlPresenter();
 
-        //низя тк иначе храним несколько указателей на текстуру в памяте и анлак
         SdlPresenter(const SdlPresenter&) = delete;
         SdlPresenter& operator=(const SdlPresenter&) = delete;
 

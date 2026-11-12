@@ -1,4 +1,6 @@
 #include "wolf/app/Application.hpp"
+
+#include <format>
 #include <iostream>
 
 namespace wolf::app {
@@ -8,8 +10,9 @@ namespace wolf::app {
             isRunning = false;
             return;
         }
-        if (!SDL_CreateWindowAndRenderer("Render", windowWidth, windowHeight, 0,&window, &renderer)) {
-            std::cerr << "Create window + Renderer error: " << SDL_GetError() << '\n';
+        //SDL_WINDOW_RESIZABLE | SDL_WINDOW_UTILITY | SDL_WINDOW_BORDERLESS
+        if (!SDL_CreateWindowAndRenderer("Render", windowWidth, windowHeight, SDL_WINDOW_RESIZABLE | SDL_WINDOW_UTILITY, &window, &renderer)) {
+            throw std::runtime_error(std::format("Could not create window: {}", SDL_GetError()));
             isRunning = false;
             return;
         }
@@ -29,9 +32,9 @@ namespace wolf::app {
         SDL_Quit();
     }
 
-    int Application::run() {
+    void Application::run() {
         if (!isRunning) {
-            return 1;
+            throw std::runtime_error("Application is not running");
         }
         std::uint64_t lastTime = SDL_GetTicks();
         //должно идти с одной скорость в сек иначе фигня
@@ -43,7 +46,6 @@ namespace wolf::app {
             update(delta);
             render();
         }
-        return 0;
     }
 
     void Application::processEvents() {

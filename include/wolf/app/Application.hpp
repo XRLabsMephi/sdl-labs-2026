@@ -16,11 +16,10 @@ namespace wolf::app {
         Application();
         ~Application();
 
-        //запрет копирования приложения иначе херня
         Application(const Application&) = delete;
         Application& operator=(const Application&) = delete;
 
-        int run();
+        void run();
 
     private:
         void processEvents();

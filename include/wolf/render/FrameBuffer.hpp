@@ -16,11 +16,11 @@ namespace wolf::render {
 
         void resize(int w, int h);
 
-        const std::uint32_t* getPixels() const;
+        [[nodiscard]] const std::uint32_t* getPixels() const noexcept;
 
-        int getWidth() const;
+        [[nodiscard]] int getWidth() const noexcept;
 
-        int getHeight() const;
+        [[nodiscard]] int getHeight() const noexcept;
     private:
         int width;
         int height;
