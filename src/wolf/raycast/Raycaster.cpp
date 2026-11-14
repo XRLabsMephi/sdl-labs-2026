@@ -80,21 +80,24 @@ namespace wolf::raycast {
                 int lineHeight = static_cast<int>(height / hit.wallDist);
                 int drawStart = -lineHeight / 2 + height / 2;
                 int drawEnd = lineHeight / 2 + height / 2;
-                const auto &tex = textureStore.get(1);
-                const int texX = static_cast<int>(hit.wallU * tex.width);
-                const double step = static_cast<double>(tex.height) / lineHeight;
-                double texturePos = (drawStart - drawEnd / 2.0 + lineHeight / 2.0) * step;
-                for (int y = drawStart; y < drawEnd; ++y) {
-                    int textureY = static_cast<int>(texturePos) & (tex.height - 1);
-                    texturePos += step;
-                    std::uint32_t colorPixel = tex.sample(texX, textureY);
-                    core::Color wallColor;
-                    if (hit.side == 1) {
-                        wallColor.r /= 2;
-                        wallColor.g /= 2;
-                        wallColor.b /= 2;
+
+                const auto& textura = textureStore.get(hit.wallType);
+                if (textura.valid()) {
+                    const int textureX = static_cast<int>(hit.wallU * textura.width);
+                    const double step = static_cast<double>(textura.height) / lineHeight;
+                    double texturePos = (drawStart - drawEnd / 2.0 + lineHeight / 2.0) * step;
+                    for (int y = drawStart; y < drawEnd; ++y) {
+                        int textureY = static_cast<int>(texturePos) & (textura.height - 1);
+                        texturePos += step;
+                        std::uint32_t colorPixel = textura.sample(textureX, textureY);
+                        core::Color wallColor;
+                        if (hit.side == 1) {
+                            wallColor.r /= 2;
+                            wallColor.g /= 2;
+                            wallColor.b /= 2;
+                        }
+                        fb.setPixel(x, y, wallColor);
                     }
-                    fb.setPixel(x, y, wallColor);
                 }
             }
         }
