@@ -1,7 +1,6 @@
 #pragma once
 #include <limits>
 
-#include "FrameBuffer.h"
 #include "core/Color.h"
 
 struct Fog {

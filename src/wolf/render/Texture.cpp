@@ -27,8 +27,11 @@ namespace render {
         fs::path path = filename;
 
         std::string ext = path.extension().string();
-        std::ranges::transform(ext, ext.begin(),
-        [](const unsigned char c) { return static_cast<char>(std::tolower(c)); });
+        std::ranges::transform(
+            ext,
+            ext.begin(),
+            [](const unsigned char c) { return static_cast<char>(std::tolower(c)); }
+            );
 
         //TODO Add support for JPG, Webp, and others
         if (ext != ".png") {
@@ -50,6 +53,15 @@ namespace render {
                     )
                 );
         }
+
+        //на будущее
+        /*if (!SDL_PremultiplySurfaceAlpha(surface.get(), false)) {
+            throw std::runtime_error(
+                std::format(
+                    "SDL_Surface from file \"{}\" premultiplying failed: {}", filename, SDL_GetError()
+                    )
+                );
+        }*/
 
         width = surface->w;
         height = surface->h;
