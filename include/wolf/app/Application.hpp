@@ -8,6 +8,8 @@
 #include "wolf/world/Map.hpp"
 #include "wolf/input/PlayerController.hpp"
 #include "wolf/raycast/Raycaster.hpp"
+#include "wolf/texture/TextureStore.hpp"
+#include <iostream>
 
 namespace wolf::app {
 
@@ -40,5 +42,6 @@ namespace wolf::app {
         world::Player player;
         input::PlayerController playerController;
         raycast::Raycaster raycaster;
+        texture::TextureStore textureStore_;
     };
 }

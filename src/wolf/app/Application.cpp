@@ -36,6 +36,11 @@ namespace wolf::app {
         if (!isRunning) {
             throw std::runtime_error("Application is not running");
         }
+        try {
+            textureStore_.load(1, "assets/wolf/textures/wall01.bmp");
+        } catch (std::exception& e) {
+            throw std::runtime_error(std::string("Could not load wall01.bmp: ") + e.what());
+        }
         std::uint64_t lastTime = SDL_GetTicks();
         //должно идти с одной скорость в сек иначе фигня
         while (isRunning) {
@@ -77,7 +82,7 @@ namespace wolf::app {
     }
 
     void Application::render() {
-        raycaster.render(*frameBuffer, player, map);
+        raycaster.render(*frameBuffer, player, map, textureStore_);
         presenter->present(*frameBuffer);
     }
 

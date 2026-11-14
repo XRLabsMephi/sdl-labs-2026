@@ -3,8 +3,10 @@
 #include <cmath>
 #include <algorithm>
 
+
+
 namespace wolf::raycast {
-    RayHit Raycaster::DDA_Ray(const world::Player& player, const world::Map& map, double cameraX) {
+    RayHit Raycaster::DDA_Ray(const world::Player &player, const world::Map &map, double cameraX) {
         RayHit hitResult;
         double rayDirX = player.direction.x + player.cameraPlane.x * cameraX;
         double rayDirY = player.direction.y + player.cameraPlane.y * cameraX;
@@ -64,7 +66,8 @@ namespace wolf::raycast {
     }
 
 
-    void Raycaster::render(render::FrameBuffer& fb, const world::Player& player, const world::Map& map) {
+    void Raycaster::render(render::FrameBuffer &fb, const world::Player &player, const world::Map &map,
+                           const texture::TextureStore &textureStore) {
         int width = fb.getWidth();
         int height = fb.getHeight();
         fb.clear(core::Color{50, 50, 50});
@@ -77,20 +80,22 @@ namespace wolf::raycast {
                 int lineHeight = static_cast<int>(height / hit.wallDist);
                 int drawStart = -lineHeight / 2 + height / 2;
                 int drawEnd = lineHeight / 2 + height / 2;
-                core::Color wallColor;
-                if (hit.wallType == 1) {
-                    wallColor = {200, 0, 0};
-                } else if (hit.wallType == 2) {
-                    wallColor = {0, 200, 0};
-                } else {
-                    wallColor = {0, 0, 200};
+                const auto &tex = textureStore.get(1);
+                const int texX = static_cast<int>(hit.wallU * tex.width);
+                const double step = static_cast<double>(tex.height) / lineHeight;
+                double texturePos = (drawStart - drawEnd / 2.0 + lineHeight / 2.0) * step;
+                for (int y = drawStart; y < drawEnd; ++y) {
+                    int textureY = static_cast<int>(texturePos) & (tex.height - 1);
+                    texturePos += step;
+                    std::uint32_t colorPixel = tex.sample(texX, textureY);
+                    core::Color wallColor;
+                    if (hit.side == 1) {
+                        wallColor.r /= 2;
+                        wallColor.g /= 2;
+                        wallColor.b /= 2;
+                    }
+                    fb.setPixel(x, y, wallColor);
                 }
-                if (hit.side == 1) {
-                    wallColor.r /= 2;
-                    wallColor.g /= 2;
-                    wallColor.b /= 2;
-                }
-                fb.drawVerticalLine(x, drawStart, drawEnd, wallColor);
             }
         }
     }

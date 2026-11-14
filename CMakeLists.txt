@@ -16,6 +16,13 @@ FetchContent_MakeAvailable(SDL3)
 
 file(GLOB_RECURSE SOURCES "src/wolf/*.cpp")
 
-add_executable(wolf_raycaster ${SOURCES})
+add_executable(wolf_raycaster ${SOURCES}
+        src/wolf/texture/TextureStore.cpp)
 
 target_link_libraries(wolf_raycaster PRIVATE SDL3::SDL3)
+
+#копи папки assets в папку сборки
+add_custom_command(TARGET wolf_raycaster POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_SOURCE_DIR}/assets $<TARGET_FILE_DIR:wolf_raycaster>/assets
+)
