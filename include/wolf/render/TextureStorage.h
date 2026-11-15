@@ -45,9 +45,9 @@ namespace render {
          * @param texture
          * @param id
          */
-        void add(std::optional<Texture> texture, size_t id);
+        void add(Texture texture, size_t id);
 
-        void add(const std::vector<std::pair<std::optional<Texture>, size_t>>& textures);
+        void add(const std::vector<std::pair<Texture, size_t>>& textures);
 
         /**
          * Loads texture from given file into storage

@@ -13,7 +13,7 @@ namespace render {
         reset(size);
     }
 
-    void TextureStorage::add(std::optional<Texture> texture, size_t id) {
+    void TextureStorage::add(Texture texture, size_t id) {
         if (id >= textures_.size()) {
             throw std::out_of_range(
                 std::format("texture id {} out of range (size {})", id, textures_.size()));
@@ -25,19 +25,19 @@ namespace render {
         textures_[id] = std::move(texture);
     }
 
-    void TextureStorage::add(const std::vector<std::pair<std::optional<Texture>, size_t>>& textures) {
+    void TextureStorage::add(const std::vector<std::pair<Texture, size_t>>& textures) {
         for (auto &[texture, id]: textures) {
             add(texture, id);
         }
     }
 
     void TextureStorage::addFromFile(const std::string &filename, const size_t id) {
-        add(loadOrEmpty(filename), id);
+        if (std::optional<Texture> texture = loadOrEmpty(filename)) add(texture.value(), id);
     }
 
     void TextureStorage::addFromEntries(const std::vector<TextureEntry> &entries) {
         for (auto& [filename, id]: entries) {
-            add(loadOrEmpty(filename), id);
+            if (std::optional<Texture> texture = loadOrEmpty(filename)) add(texture.value(), id);
         }
     }
 
@@ -56,12 +56,12 @@ namespace render {
     bool TextureStorage::contains(size_t id) const noexcept { return id < used_.size() && used_[id]; }
 
     const Texture& TextureStorage::get(size_t id) const{
-        return textures_[id].has_value() ? textures_[id].value() : Texture::empty;
+        return textures_[id].value();
     }
 
 
     const Texture& TextureStorage::getOrEmpty(size_t id) const noexcept {
-        return contains(id) ? get(id) : Texture::empty;
+        return contains(id) && textures_[id].has_value() ? textures_[id].value() : Texture::empty;
     }
 
     std::optional<Texture> TextureStorage::loadOrEmpty(const std::string &filename) {

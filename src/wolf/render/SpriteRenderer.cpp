@@ -21,9 +21,9 @@ void SpriteRenderer::renderSprites() const {
         std::vector<VisibleSprite> visible;
         for (const auto& sprite : map_.getSprites()) {
             const Vector2 relative = sprite.position - player_.getPosition();
-            const double depth = viewSettings_.fish_eye? relative.length(): relative.dot(forward);
+            const double depth = view_settings_.fish_eye? relative.length(): relative.dot(forward);
             if (depth > eps) {
-                visible.push_back({&sprite, viewSettings_.fish_eye? 1.0 : relative.dot(right), depth});
+                visible.push_back({&sprite, view_settings_.fish_eye? 1.0 : relative.dot(right), depth});
             }
         }
 

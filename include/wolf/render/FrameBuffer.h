@@ -8,7 +8,6 @@
 #include "core/Color.h"
 
 namespace render {
-    using Color = core::Color;
     template<typename T>
     using vector = std::vector<T>;
     using buf_size_t = size_t;
@@ -41,7 +40,7 @@ namespace render {
         /**
          * @brief Sets the fog parameters: color and factor
          */
-        void set_fog_params(Color fog_color, float min_fog_depth, float max_fog_depth);
+        void set_fog_params(core::Color fog_color, float min_fog_depth, float max_fog_depth);
 
         /**
          * @brief Sets the fog parameters: color and factor
@@ -65,7 +64,7 @@ namespace render {
          * @brief Fills whole buffer
          * @param color the color to apply
          */
-        void clear(Color color);
+        void clear(core::Color color);
 
         /**
          * @brief Colors single pixel at point
@@ -74,7 +73,7 @@ namespace render {
          * @param color color to apply
          * @attention Points outside buffer rejects
          */
-        void set(int x, int y, Color color);
+        void set(int x, int y, core::Color color);
 
         /**
         * @brief Draws vertical line
@@ -83,20 +82,20 @@ namespace render {
         * @param y1 end y coordinate
         * @param color color to apply
         */
-        void vline(int x, int y0, int y1, Color color);
+        void vline(int x, int y0, int y1, core::Color color);
 
         /**
-         * @brief Draws vertical line
+         * @brief Draws vertical line without color blending
          * @param x x coordinate
          * @param y0 start y coordinate
          * @param y1 end y coordinate
          * @param params draw call parameters (see @c DrawCallParams)
          */
-        template<bool IsSprite>
+        template<bool OpaqueDraw>
         void vline(int x, int y0, int y1, const DrawCallParams &params);
 
         /**
-         * @brief Draws vertical line
+         * @brief Draws vertical line with color blending
          * @param x x coordinate
          * @param y0 start y coordinate
          * @param y1 end y coordinate
@@ -111,7 +110,7 @@ namespace render {
          * @param x1 end x coordinate
          * @param color color to apply
          */
-        void hline(int y, int x0, int x1, Color color);
+        void hline(int y, int x0, int x1, core::Color color);
 
         /**
          * @brief Draws horizontal line
@@ -130,7 +129,7 @@ namespace render {
          * @param y1 bottom-right y coordinate
          * @param color color to apply
          */
-        void rectangle(int x0, int y0, int x1, int y1, Color color);
+        void rectangle(int x0, int y0, int x1, int y1, core::Color color);
 
         /**
          * @brief Draws rectangle.

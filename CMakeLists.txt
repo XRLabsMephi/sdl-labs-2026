@@ -20,7 +20,7 @@ set(HEADERS
         include/wolf/debug/Logger.h
         include/wolf/render/Texture.h
         include/wolf/render/TextureStorage.h
-        include/wolf/render/TextureStorageInflator.h
+        include/wolf/render/TextureStorageLoader.h
         include/wolf/render/Fog.h
         include/wolf/render/SpriteRenderer.h
         include/wolf/render/ViewSettings.h
@@ -38,7 +38,7 @@ set(SOURCES
         src/wolf/input/InputState.cpp
         src/wolf/render/Texture.cpp
         src/wolf/render/TextureStorage.cpp
-        src/wolf/render/TextureStorageInflator.cpp
+        src/wolf/render/TextureStorageLoader.cpp
         src/wolf/render/SpriteRenderer.cpp
 )
 
