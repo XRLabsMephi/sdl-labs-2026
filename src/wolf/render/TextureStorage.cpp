@@ -59,8 +59,9 @@ namespace render {
         return textures_[id].value();
     }
 
+
     const Texture& TextureStorage::getOrEmpty(size_t id) const noexcept {
-        return textures_[id] ?  textures_[id].value(): Texture::empty;
+        return contains(id) && textures_[id].has_value() ? textures_[id].value() : Texture::empty;
     }
 
     std::optional<Texture> TextureStorage::loadOrEmpty(const std::string &filename) {

@@ -14,6 +14,7 @@
 #include <world/Map.h>
 #include <world/Player.h>
 #include <render/SpriteRenderer.h>
+#include <render/ViewSettings.h>
 
 namespace app {
 
@@ -37,6 +38,8 @@ namespace app {
         std::unique_ptr<raycast::RayCaster> rayCaster_;
         std::unique_ptr<render::SpriteRenderer> spriteRenderer_;
         std::unique_ptr<render::SdlPresenter> presenter_;
+        ViewSettings viewSettings_;
+
 
         bool running_ = false;
         bool initialized_ = false;
