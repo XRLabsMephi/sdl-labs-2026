@@ -34,7 +34,7 @@ void RayCaster::drawByRayHit(const Vector2& ray_direction, const Vector2& camera
     frame_buffer_.vline(column, frame_height_ - P_H + 1, frame_height_, GROUND_COLOR);
 
 
-    const render::Texture& texture = storage_.get(static_cast<size_t>(ray_cast_hit.wall_id_));
+    const render::Texture& texture = storage_.getOrEmpty(static_cast<size_t>(ray_cast_hit.wall_id_));
     const RayHit& ray_hit = ray_cast_hit;
     if (ray_hit.has_hit_){
         const double SC_RAY_DEPTH_rel = SC_D/depth;

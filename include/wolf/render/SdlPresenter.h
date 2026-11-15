@@ -15,6 +15,8 @@ namespace render {
             void operator()(SDL_Texture* texture) const noexcept;
         };
 
+        void fail(std::string_view message);
+
         std::unique_ptr<SDL_Renderer, SDL_Renderer_Deleter> renderer_;
         std::unique_ptr<SDL_Texture, SDL_Texture_Deleter> texture_;
         buf_size_t width_ = 0, height_ = 0;

@@ -3,13 +3,14 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <optional>
 
 #include "Texture.h"
 
 namespace render {
     class TextureStorage {
         size_t max_id_ = 0;
-        std::vector<Texture> textures_;
+        std::vector<std::optional<Texture>> textures_;
         std::vector<bool> used_;
 
         /**
@@ -17,7 +18,7 @@ namespace render {
          * @param filename name of the file
          * @return loaded Texture or placeholder on error
          */
-        static Texture loadOrEmpty(const std::string &filename);
+        static std::optional<Texture> loadOrEmpty(const std::string &filename);
 
     public:
         /**
@@ -46,7 +47,7 @@ namespace render {
          */
         void add(Texture texture, size_t id);
 
-        void add(std::vector<std::pair<Texture, size_t> > textures);
+        void add(const std::vector<std::pair<Texture, size_t>>& textures);
 
         /**
          * Loads texture from given file into storage
