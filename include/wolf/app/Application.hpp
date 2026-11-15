@@ -9,6 +9,7 @@
 #include "wolf/input/PlayerController.hpp"
 #include "wolf/raycast/Raycaster.hpp"
 #include "wolf/texture/TextureStore.hpp"
+#include "wolf/sprite/SpriteRenderer.hpp"
 #include <iostream>
 
 namespace wolf::app {
@@ -43,5 +44,8 @@ namespace wolf::app {
         input::PlayerController playerController;
         raycast::Raycaster raycaster;
         texture::TextureStore textureStore_;
+
+        sprite::SpriteRenderer spriteRenderer_;
+        std::vector<sprite::Sprite> sprites_;
     };
 }
