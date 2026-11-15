@@ -40,11 +40,6 @@ namespace app {
         std::unique_ptr<render::SdlPresenter> presenter_;
         ViewSettings viewSettings_;
 
-        render::TextureStorage textureStorage;
-        std::unique_ptr<render::FrameBuffer> frameBuffer;
-        std::unique_ptr<raycast::RayCaster> rayCaster;
-        std::unique_ptr<render::SpriteRenderer> spriteRenderer;
-        std::unique_ptr<render::SdlPresenter> presenter;
 
         bool running_ = false;
         bool initialized_ = false;

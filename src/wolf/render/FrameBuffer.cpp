@@ -84,7 +84,6 @@ void FrameBuffer::vline(int x, int y0, int y1, const DrawCallParams &params) {
     Uint32 *__restrict col = &buffer_[x * height_];
     const Uint8 *lut = core::DIM[brightness].data();
     const int tex_y_start = tex_y0 + clipping_offset;
-    const Uint32 fill_const = 0xFF000000u | fog_color;
 
     const auto render_run = [&](const int idx, const int y_start, const int run) {
         const Uint32 texel = tex_col[idx];
@@ -92,7 +91,10 @@ void FrameBuffer::vline(int x, int y0, int y1, const DrawCallParams &params) {
         if (!a) return;
 
         Uint32 lit;
-        if (fog_factor == 255) { lit = fill_const; } else {
+        if (fog_factor == 255){
+            if constexpr (OpaqueDraw) { lit = 0xFF000000u | fog_color; }
+            else { lit = a | fog_color; }
+        } else {
             lit = static_cast<Uint32>(core::Color::fromBits(texel).dimmed(lut));
             if (fog_factor) lit = fog_.applyFog(lit, fog_factor);
         }
