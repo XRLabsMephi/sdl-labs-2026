@@ -23,7 +23,7 @@ void SpriteRenderer::renderSprites() const {
             const Vector2 relative = sprite.position - player_.getPosition();
             const double depth = viewSettings_.fish_eye? relative.length(): relative.dot(forward);
             if (depth > eps) {
-                visible.push_back({&sprite, relative.dot(right), depth});
+                visible.push_back({&sprite, viewSettings_.fish_eye? 1.0 : relative.dot(right), depth});
             }
         }
 

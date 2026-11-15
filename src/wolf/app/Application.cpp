@@ -171,7 +171,7 @@ bool app::Application::initialize(const std::string& mapFilename) {
 
         frameBuffer->set_fog_params(FOG_COLOR, MIN_FOG_DEPTH, MAX_FOG_DEPTH);
 
-        viewSettings = ViewSettings{.fish_eye = false};
+        viewSettings = ViewSettings{};
         // RayCaster borrows the player, map, frame buffer and textures.
         rayCaster = std::make_unique<raycast::RayCaster>(
             player,

@@ -16,12 +16,9 @@ namespace raycast{
         inline core::Color GROUND_COLOR = core::Color::lerp(core::Color::black, core::Color::white, 255 * 3 / 10);
         inline core::Color SKY_COLOR = core::Color(147, 89, 124);
 
-        //constexpr double vertical_field_of_view = 0.0; //the angle of view in vertical axe. Interchangeably with SC_D
-
         inline double minimal_brightness = 0.6;
         inline double darkening_distance = 30.0;
 
-        inline bool fish_eye = false;
         inline bool angle_projection_mode = false;
     }
 
@@ -35,10 +32,6 @@ namespace raycast{
     /** @brief Encapsulates ray casting logic*/
     class RayCaster{
     public:
-        /**@param player
-         *@param map
-         *@param frame_buffer
-         *@param storage**/
         RayCaster(const world::Player& player, const world::Map& map, render::FrameBuffer& frame_buffer,
             const render::TextureStorage& storage, const ViewSettings& view_settings)
             :

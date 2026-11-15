@@ -77,9 +77,6 @@ void RayCaster::renderScene(){
 
     // the vector of half of virtual screen (where image is projected)
     Vector2 plane = Vector2{camera_direction.y, -camera_direction.x} * tan_half_fov;
-
-    //TODO реализовать другие варианты для запуска лучей(в середины отрезков, по равным углам ...)
-
     // the step vector
     Vector2 shift = plane * (2.0 / static_cast<double>(frame_width_ - 1));
 
@@ -115,7 +112,6 @@ void RayCaster::castRay(Vector2 ray_direction) {
 
     const auto& [ray_dir_x, ray_dir_y] = ray_direction;
     const auto& [x, y] = ray_coordinate;
-
     //preprocessing
     //we count t-parameters in another units of measurement. De-facto one t is length of ray_direction
 
@@ -155,7 +151,6 @@ void RayCaster::castRay(Vector2 ray_direction) {
 
     int cell_x = static_cast<int>(double_cell_x), cell_y = static_cast<int>(double_cell_y); //start cell coordinates
 
-    //variables for transparency
     //main loop
     //calculating the next cell and check is there wall
     //TODO более подробно расписать работу алгоритма
