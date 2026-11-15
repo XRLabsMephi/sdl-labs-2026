@@ -31,7 +31,7 @@ namespace raycast{
         bool has_hit_ = false; //has hit (if false other parameters make no sense)
         int wall_id_ = -1; //id of wall
         IntersectionSide face_index_ = IntersectionSide::None; //the index of wall's face, where ray was hit
-        double t_distance_ = 0.0; //the length of ray way before hit
+        double t_distance_ = std::numeric_limits<double>::infinity(); //the length of ray way before hit
         double wall_u_ = 0.0; //the hit position relative to wall
         Vector2 coordinate_ {0.0, 0.0}; //coordinate of hit
     };

@@ -6,6 +6,7 @@
 #include <filesystem>
 #include <iostream>
 #include <string>
+#include <numbers>
 
 namespace {
 
@@ -14,19 +15,24 @@ constexpr char WINDOW_TITLE[] = "RayCaster";
 constexpr int WINDOW_WIDTH = 1024;
 constexpr int WINDOW_HEIGHT = 768;
 
+constexpr int EYE_HEIGHT = WINDOW_HEIGHT / 2;
+
 constexpr int FRAME_WIDTH = WINDOW_WIDTH;
 constexpr int FRAME_HEIGHT = WINDOW_HEIGHT;
 constexpr core::Color FOG_COLOR{72, 76, 84};
 constexpr float MIN_FOG_DEPTH = 2.0f;
 constexpr float MAX_FOG_DEPTH = 12.0f;
 
-constexpr SDL_WindowFlags WINDOW_FLAGS = 0;
+constexpr SDL_WindowFlags WINDOW_FLAGS = SDL_WINDOW_RESIZABLE;
+
 
 constexpr double NANOSECONDS_PER_SECOND = 1e-9;
 
 constexpr double MOVE_SPEED = 3.0;
 constexpr double ROTATION_SPEED = 2.0;
 constexpr double MOUSE_SENSITIVITY = 0.002;
+
+constexpr double FIELD_OF_VIEW = std::numbers::pi / 3;
 
 enum class ApplicationError {
     MapLoading = 1,
@@ -108,6 +114,9 @@ bool app::Application::initialize(const std::string& mapFilename) {
         }
 
         player_.setPosition(map_.getSpawnPosition());
+        player_.setPosition(map_.getSpawnPosition());
+        player_.setEyeHeigth(EYE_HEIGHT);
+        player_.setAngle(FIELD_OF_VIEW);
 
         // Initialize all controller settings before the first update.
         playerController_.setMoveSpeed(MOVE_SPEED);
@@ -155,7 +164,7 @@ bool app::Application::initialize(const std::string& mapFilename) {
         }
 
         render::TextureStorageLoader(
-            "assets/textures/textures_mapping.txt"
+            root / "assets/textures/textures_mapping.txt"
             ).load(textureStorage_);
 
         frameBuffer_ = std::make_unique<render::FrameBuffer>(
@@ -165,21 +174,24 @@ bool app::Application::initialize(const std::string& mapFilename) {
 
         frameBuffer_->set_fog_params(FOG_COLOR, MIN_FOG_DEPTH, MAX_FOG_DEPTH);
 
+        viewSettings_ = ViewSettings{};
         // RayCaster borrows the player, map, frame buffer and textures.
         rayCaster_ = std::make_unique<raycast::RayCaster>(
-            FRAME_WIDTH,
-            FRAME_HEIGHT,
             player_,
             map_,
             *frameBuffer_,
-            textureStorage_
+            textureStorage_,
+            viewSettings_
         );
+
+        rayCaster_->set_fog_params(FOG_COLOR, MIN_FOG_DEPTH, MAX_FOG_DEPTH);
 
         spriteRenderer_ = std::make_unique<render::SpriteRenderer>(
             player_,
             map_,
             *frameBuffer_,
             textureStorage_,
+            viewSettings_,
             rayCaster_->getDepthBuffer()
         );
 
