@@ -17,7 +17,8 @@ FetchContent_MakeAvailable(SDL3)
 file(GLOB_RECURSE SOURCES "src/wolf/*.cpp")
 
 add_executable(wolf_raycaster ${SOURCES}
-        src/wolf/texture/TextureStore.cpp)
+        src/wolf/texture/TextureStore.cpp
+        src/wolf/sprite/SpriteRenderer.cpp)
 
 target_link_libraries(wolf_raycaster PRIVATE SDL3::SDL3)
 
