@@ -23,6 +23,12 @@ namespace wolf::render {
         }
     }
 
+    void FrameBuffer::setPixel(int x, int y, std::uint32_t packedColor) {
+        if (x >= 0 && x < width && y >= 0 && y < height) {
+            pixels[y * width + x] = packedColor;
+        }
+    }
+
     void FrameBuffer::drawVerticalLine(int x, int yStart, int yEnd, const core::Color& color) {
         if (x < 0 || x >= width) {
             throw std::runtime_error(std::format("x {} >= width {}", x, width));

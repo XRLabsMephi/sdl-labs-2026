@@ -12,6 +12,8 @@ namespace wolf::render {
 
         void setPixel(int x, int y, const core::Color& color);
 
+        void setPixel(int x, int y, std::uint32_t packedColor);
+
         void drawVerticalLine(int x, int yStart, int yEnd, const core::Color& color);
 
         void resize(int w, int h);
@@ -21,6 +23,7 @@ namespace wolf::render {
         [[nodiscard]] int getWidth() const noexcept;
 
         [[nodiscard]] int getHeight() const noexcept;
+
     private:
         int width;
         int height;
