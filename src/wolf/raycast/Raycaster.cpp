@@ -69,6 +69,7 @@ namespace wolf::raycast {
                            const texture::TextureStore &textureStore) {
         int width = fb.getWidth();
         int height = fb.getHeight();
+        depthBuffer.resize(width, 1e30);
         fb.clear(core::Color{50, 50, 50});
 
         for (int x = 0; x < width; ++x) {
@@ -76,6 +77,7 @@ namespace wolf::raycast {
             double cameraX = 2.0 * x / static_cast<double>(width) - 1.0;
             RayHit hit = DDA_Ray(player, map, cameraX);
             if (hit.hit) {
+                depthBuffer[x] = hit.wallDist;
                 int lineHeight = static_cast<int>(height / hit.wallDist);
                 int drawStart = -lineHeight / 2 + height / 2;
                 int drawEnd = lineHeight / 2 + height / 2;

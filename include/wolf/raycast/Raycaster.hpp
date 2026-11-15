@@ -11,6 +11,7 @@ namespace wolf::raycast {
         void render(render::FrameBuffer& fb, const world::Player& player, const world::Map& map, const texture::TextureStore& textureStore);
      private:
         RayHit DDA_Ray(const world::Player& player, const world::Map& map, double cameraX);
+        std::vector<double> depthBuffer;
     };
 
 }
