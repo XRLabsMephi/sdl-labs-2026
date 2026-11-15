@@ -1,6 +1,4 @@
-#include <vector>
-#include <algorithm>
-
+#pragma once
 #include <core/Vec2.h>
 #include <world/Sprite.h>
 #include <render/FrameBuffer.h>

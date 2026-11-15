@@ -164,7 +164,7 @@ bool app::Application::initialize(const std::string& mapFilename) {
         }
 
         render::TextureStorageLoader(
-            "assets/textures/textures_mapping.txt"
+            root / "assets/textures/textures_mapping.txt"
             ).load(textureStorage_);
 
         frameBuffer_ = std::make_unique<render::FrameBuffer>(
@@ -183,6 +183,8 @@ bool app::Application::initialize(const std::string& mapFilename) {
             textureStorage_,
             viewSettings_
         );
+
+        rayCaster_->set_fog_params(FOG_COLOR, MIN_FOG_DEPTH, MAX_FOG_DEPTH);
 
         spriteRenderer_ = std::make_unique<render::SpriteRenderer>(
             player_,

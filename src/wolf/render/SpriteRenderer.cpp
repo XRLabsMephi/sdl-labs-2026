@@ -2,8 +2,6 @@
 #include <algorithm>
 using namespace render;
 
-//void SpriteRenderer::drawSprites(Vector2 forward, double tanHalfFov) const
-
 void SpriteRenderer::renderSprites() const {
         struct VisibleSprite {
             const world::Sprite* sprite;

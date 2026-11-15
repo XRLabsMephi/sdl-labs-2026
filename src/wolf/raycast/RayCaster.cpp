@@ -170,9 +170,13 @@ void RayCaster::castRay(Vector2 ray_direction) {
         else
         {
             if (map_.isWall(cell_x + sign_dx, cell_y)){
+                cell_x += sign_dx;
+                t_inter = closest_t_x += tdx;
                 break;
             }
             if (map_.isWall(cell_x, cell_y + sign_dy)){
+                cell_y += sign_dy;
+                t_inter = closest_t_y += tdy;
                 break;
             }
             cell_x += sign_dx;
