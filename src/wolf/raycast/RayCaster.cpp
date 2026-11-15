@@ -171,18 +171,23 @@ void RayCaster::castRay(Vector2 ray_direction) {
         {
             if (map_.isWall(cell_x + sign_dx, cell_y)){
                 cell_x += sign_dx;
-                t_inter = closest_t_x += tdx;
+                t_inter = closest_t_x;
+                intersection_side = IntersectionSide::Vertical;
                 break;
             }
             if (map_.isWall(cell_x, cell_y + sign_dy)){
                 cell_y += sign_dy;
-                t_inter = closest_t_y += tdy;
+                t_inter = closest_t_y;
+                intersection_side = IntersectionSide::Horizontal;
                 break;
             }
+            t_inter = closest_t_x;
+            intersection_side = IntersectionSide::Vertical;
             cell_x += sign_dx;
             cell_y += sign_dy;
             closest_t_x += tdx;
             closest_t_y += tdy;
+
         }
     }
     int wall_id = map_.getCell(cell_x, cell_y);
