@@ -1,7 +1,12 @@
 #include "world/map.h"
 
 #include <gtest/gtest.h>
+
+#include <filesystem>
+#include <fstream>
 #include <string>
+
+#include "render/texture_store.h"
 
 #ifndef TEST_DATA_DIR
 #define TEST_DATA_DIR "tests/test_data"
@@ -13,8 +18,19 @@
 
 class MapTest : public ::testing::Test {
  protected:
+  void SetUp() override {
+    temp_dir_ = std::filesystem::temp_directory_path() / "map_test_tmp";
+    std::filesystem::create_directories(temp_dir_);
+  }
+
+  void TearDown() override {
+    std::error_code ec;
+    std::filesystem::remove_all(temp_dir_, ec);
+  }
+
   const std::string test_data_dir = TEST_DATA_DIR;
   const std::string project_root_dir = PROJECT_ROOT_DIR;
+  std::filesystem::path temp_dir_;
 };
 
 TEST_F(MapTest, ThrowsOnNonExistentFile) {
@@ -42,6 +58,7 @@ TEST_F(MapTest, LoadsTemplateMap) {
     EXPECT_TRUE(map.IsWall(x, 0));
     EXPECT_EQ(map.GetTileType(x, 0).color, 0xFFF5F5);
     EXPECT_TRUE(map.GetTileType(x, 0).is_solid);
+    EXPECT_FALSE(map.HasTexture(x, 0));
   }
 
   // Row 1: "2    4" - West wall (2: F7D6D0), empty spaces (0), East wall (4: 4A4A4A)
@@ -131,4 +148,167 @@ TEST_F(MapTest, FlyweightPatternIntegrity) {
 
   // Address in registry should be identical (shared intrinsic state)
   EXPECT_EQ(&type_at_0_0, &type_at_2_2);
+}
+
+TEST_F(MapTest, LoadsMapWithTexturePath) {
+  const std::filesystem::path bmp_path = temp_dir_ / "brick.bmp";
+  Texture brick = Texture::FromColor(4, 4, Color::kRed);
+  ASSERT_TRUE(TextureStore::SaveToBmp(brick, bmp_path.string()));
+
+  const std::filesystem::path map_path = temp_dir_ / "textured.map";
+  std::ofstream out(map_path);
+  out << "1\n";
+  out << "1 " << bmp_path.string() << "\n";
+  out << "2 2\n";
+  out << "1 1\n";
+  out << "1 0\n";
+  out.close();
+
+  Map map = Map::FromFile(map_path.string());
+  EXPECT_EQ(map.GetWidth(), 2);
+  EXPECT_EQ(map.GetHeight(), 2);
+
+  EXPECT_TRUE(map.HasTexture(0, 0));
+  EXPECT_TRUE(map.GetTileType(0, 0).HasTexture());
+  EXPECT_EQ(map.GetTexturePath(0, 0), bmp_path.string());
+  EXPECT_EQ(map.GetTexture(0, 0).GetWidth(), 4);
+  EXPECT_EQ(map.GetTexture(0, 0).GetHeight(), 4);
+  EXPECT_EQ(map.GetTexture(0, 0).Sample(0, 0).GetValue(), Color::kRed.GetValue());
+
+  // Empty tile (0) has no texture
+  EXPECT_FALSE(map.HasTexture(1, 1));
+}
+
+TEST_F(MapTest, ThrowsOnMissingTextureFile) {
+  const std::filesystem::path map_path = temp_dir_ / "missing_tex.map";
+  std::ofstream out(map_path);
+  out << "1\n";
+  out << "1 non_existent_texture_file_98765.bmp\n";
+  out << "2 2\n";
+  out << "1 1\n";
+  out << "1 1\n";
+  out.close();
+
+  EXPECT_THROW((void)Map::FromFile(map_path.string()), std::runtime_error);
+}
+
+TEST_F(MapTest, LoadsMixedColorsAndTextures) {
+  const std::filesystem::path bmp_path = temp_dir_ / "stone.bmp";
+  Texture stone = Texture::FromColor(2, 2, Color::kBlue);
+  ASSERT_TRUE(TextureStore::SaveToBmp(stone, bmp_path.string()));
+
+  const std::filesystem::path map_path = temp_dir_ / "mixed.map";
+  std::ofstream out(map_path);
+  out << "2\n";
+  out << "1 FF0000\n";
+  out << "2 " << bmp_path.string() << "\n";
+  out << "2 2\n";
+  out << "1 2\n";
+  out << "0 0\n";
+  out.close();
+
+  Map map = Map::FromFile(map_path.string());
+  // Tile 1: Color
+  EXPECT_FALSE(map.HasTexture(0, 0));
+  EXPECT_EQ(map.GetTileType(0, 0).color, 0xFF0000);
+
+  // Tile 2: Texture
+  EXPECT_TRUE(map.HasTexture(1, 0));
+  EXPECT_EQ(map.GetTexture(1, 0).GetWidth(), 2);
+  EXPECT_EQ(map.GetTexture(1, 0).Sample(0, 0).GetValue(), Color::kBlue.GetValue());
+}
+
+TEST_F(MapTest, SpriteConstructorsAndEquality) {
+  Sprite s1(Vec2f{1.0f, 2.0f}, 5, 1.5);
+  Sprite s2(1.0f, 2.0f, 5, 1.5);
+  Sprite s3(1.0f, 2.0f, 6, 1.5);
+
+  EXPECT_EQ(s1, s2);
+  EXPECT_FALSE(s1 == s3);
+  EXPECT_EQ(s1.position.x(), 1.0f);
+  EXPECT_EQ(s1.position.y(), 2.0f);
+  EXPECT_EQ(s1.texture_id, 5);
+  EXPECT_DOUBLE_EQ(s1.scale, 1.5);
+}
+
+TEST_F(MapTest, ProgrammaticSpriteManagement) {
+  Map map = Map::FromFile(test_data_dir + "/valid_numeric.map");
+  EXPECT_EQ(map.GetSpriteCount(), 0u);
+  EXPECT_TRUE(map.GetSprites().empty());
+
+  map.AddSprite(Sprite(1.5f, 1.5f, 10, 1.0));
+  map.AddSprite(Sprite(2.5f, 2.5f, 11, 0.8));
+
+  EXPECT_EQ(map.GetSpriteCount(), 2u);
+  EXPECT_EQ(map.GetSprites().size(), 2u);
+  EXPECT_EQ(map.GetSprites()[0].texture_id, 10);
+  EXPECT_EQ(map.GetSprites()[1].texture_id, 11);
+
+  map.ClearSprites();
+  EXPECT_EQ(map.GetSpriteCount(), 0u);
+}
+
+TEST_F(MapTest, LoadsMapWithSpritesSection) {
+  const std::filesystem::path map_path = temp_dir_ / "with_sprites.map";
+  std::ofstream out(map_path);
+  out << "1\n";
+  out << "1 FF0000\n";
+  out << "2 2\n";
+  out << "1 1\n";
+  out << "1 0\n";
+  out << "2\n";
+  out << "1.5 1.5 10 1.0\n";
+  out << "2.5 3.0 11 0.75\n";
+  out.close();
+
+  Map map = Map::FromFile(map_path.string());
+  EXPECT_EQ(map.GetSpriteCount(), 2u);
+
+  const auto& sprites = map.GetSprites();
+  EXPECT_FLOAT_EQ(sprites[0].position.x(), 1.5f);
+  EXPECT_FLOAT_EQ(sprites[0].position.y(), 1.5f);
+  EXPECT_EQ(sprites[0].texture_id, 10);
+  EXPECT_DOUBLE_EQ(sprites[0].scale, 1.0);
+
+  EXPECT_FLOAT_EQ(sprites[1].position.x(), 2.5f);
+  EXPECT_FLOAT_EQ(sprites[1].position.y(), 3.0f);
+  EXPECT_EQ(sprites[1].texture_id, 11);
+  EXPECT_DOUBLE_EQ(sprites[1].scale, 0.75);
+}
+
+TEST_F(MapTest, LoadsLab02ShowcaseMap) {
+  const std::string showcase_map = project_root_dir + "/maps/lab02.map";
+  Map map = Map::FromFile(showcase_map);
+
+  EXPECT_EQ(map.GetWidth(), 12);
+  EXPECT_EQ(map.GetHeight(), 12);
+  EXPECT_TRUE(map.HasTexture(0, 0));
+  EXPECT_EQ(map.GetTexture(0, 0).GetWidth(), 64);
+  EXPECT_EQ(map.GetTexture(0, 0).GetHeight(), 64);
+
+  EXPECT_EQ(map.GetSpriteCount(), 5u);
+  EXPECT_FLOAT_EQ(map.GetSprites()[0].position.x(), 3.5f);
+  EXPECT_FLOAT_EQ(map.GetSprites()[0].position.y(), 1.2f);
+  for (const auto& sprite : map.GetSprites()) {
+    EXPECT_FALSE(map.IsWall(static_cast<int>(sprite.position.x()),
+                            static_cast<int>(sprite.position.y())));
+  }
+}
+
+TEST_F(MapTest, RejectsMalformedRowsAndSpriteSections) {
+  const auto path = temp_dir_ / "invalid.map";
+  for (const std::string body : {
+           "111\n1\n111\n", "111\n1001\n111\n", "111\n1 1\n",
+           "111\n1 1\n111\n2\n1.5 1.5 10\n",
+           "111\n1 1\n111\n-1\n",
+           "111\n1 1\n111\n1\n1.5 1.5 10 -1\n"}) {
+    std::ofstream(path) << "1\n1 FF0000\n3 3\n" << body;
+    EXPECT_THROW(Map::FromFile(path.string()), std::runtime_error) << body;
+  }
+}
+
+TEST_F(MapTest, RejectsUnregisteredIdInSparseRegistry) {
+  const auto path = temp_dir_ / "sparse.map";
+  std::ofstream(path) << "1\n3 FF0000\n2 2\n33\n32\n";
+  EXPECT_THROW(Map::FromFile(path.string()), std::out_of_range);
 }

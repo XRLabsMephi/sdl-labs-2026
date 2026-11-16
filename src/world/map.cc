@@ -1,8 +1,53 @@
 #include "map.h"
 
+#include <cctype>
+#include <cmath>
+#include <filesystem>
 #include <fstream>
 #include <sstream>
 #include <stdexcept>
+
+#include "render/texture_store.h"
+
+namespace {
+
+bool TryParseHexColor(const std::string& token, uint32_t& out_color) {
+  if (token.find('.') != std::string::npos ||
+      token.find('/') != std::string::npos ||
+      token.find('\\') != std::string::npos) {
+    return false;
+  }
+
+  std::string hex_str = token;
+  if (hex_str.rfind("0x", 0) == 0 || hex_str.rfind("0X", 0) == 0) {
+    hex_str = hex_str.substr(2);
+  }
+
+  if (hex_str.length() != 6 && hex_str.length() != 8) {
+    return false;
+  }
+
+  for (char c : hex_str) {
+    if (!std::isxdigit(static_cast<unsigned char>(c))) {
+      return false;
+    }
+  }
+
+  try {
+    size_t idx = 0;
+    const unsigned long val = std::stoul(hex_str, &idx, 16);
+    if (idx == hex_str.length()) {
+      out_color = static_cast<uint32_t>(val);
+      return true;
+    }
+  } catch (...) {
+    return false;
+  }
+
+  return false;
+}
+
+}  // namespace
 
 Map Map::FromFile(const std::string& filename) {
   std::ifstream file(filename);
@@ -13,25 +58,53 @@ Map Map::FromFile(const std::string& filename) {
 
   Map map;
 
-  map.tile_registry_.Register({0, Color::kBlack, false});
+  map.tile_registry_.Register(TileType{});
 
   int tile_type_count = 0;
-  if (!(file >> tile_type_count)) {
+  if (!(file >> tile_type_count) || tile_type_count < 0) {
     throw std::runtime_error("Failed to read tile type count from map file: " +
                              filename);
   }
 
   for (int i = 0; i < tile_type_count; ++i) {
     TileType tile_type;
-    uint32_t raw_color = 0;
-    if (!(file >> tile_type.id >> std::hex >> raw_color)) {
+    std::string token;
+    if (!(file >> tile_type.id >> token)) {
       throw std::runtime_error("Failed to read tile type definition at index " +
                                std::to_string(i));
     }
-    const uint8_t r = static_cast<uint8_t>((raw_color >> 16) & 0xFF);
-    const uint8_t g = static_cast<uint8_t>((raw_color >> 8) & 0xFF);
-    const uint8_t b = static_cast<uint8_t>(raw_color & 0xFF);
-    tile_type.color = Color(r, g, b);
+
+    uint32_t raw_color = 0;
+    if (TryParseHexColor(token, raw_color)) {
+      const uint8_t r = static_cast<uint8_t>((raw_color >> 16) & 0xFF);
+      const uint8_t g = static_cast<uint8_t>((raw_color >> 8) & 0xFF);
+      const uint8_t b = static_cast<uint8_t>(raw_color & 0xFF);
+      tile_type.color = Color(r, g, b);
+      tile_type.texture = TextureStore::CreateSolid(1, 1, tile_type.color);
+      tile_type.has_texture = false;
+    } else {
+      tile_type.texture_path = token;
+
+      std::string resolved_path = token;
+      if (!std::filesystem::exists(resolved_path)) {
+        const std::filesystem::path map_dir =
+            std::filesystem::path(filename).parent_path();
+        if (!map_dir.empty()) {
+          if (std::filesystem::exists(map_dir / token)) {
+            resolved_path = (map_dir / token).string();
+          } else if (map_dir.has_parent_path() &&
+                     std::filesystem::exists(map_dir.parent_path() / token)) {
+            resolved_path = (map_dir.parent_path() / token).string();
+          }
+        }
+      }
+
+      tile_type.texture = TextureStore::LoadFromFile(resolved_path);
+      tile_type.has_texture = true;
+      tile_type.color = tile_type.texture.Sample(tile_type.texture.GetWidth() / 2,
+                                                 tile_type.texture.GetHeight() / 2);
+    }
+
     tile_type.is_solid = (tile_type.id != 0);
     map.tile_registry_.Register(tile_type);
   }
@@ -39,7 +112,7 @@ Map Map::FromFile(const std::string& filename) {
   file >> std::dec;
 
   if (!(file >> map.width_ >> map.height_) || map.width_ <= 0 ||
-      map.height_ <= 0) {
+      map.height_ <= 0 || map.width_ > 4096 || map.height_ > 4096) {
     throw std::runtime_error("Invalid map dimensions in file: " + filename);
   }
 
@@ -52,7 +125,10 @@ Map Map::FromFile(const std::string& filename) {
     while (std::getline(file, line) && line.empty()) {
     }
 
-    if (file.fail() && line.empty()) {
+    if (!line.empty() && line.back() == '\r') {
+      line.pop_back();
+    }
+    if (file.fail()) {
       throw std::runtime_error("Premature end of file while reading row " +
                                std::to_string(y) + " in " + filename);
     }
@@ -64,15 +140,19 @@ Map Map::FromFile(const std::string& filename) {
       row_values.push_back(val);
     }
 
-    if (static_cast<int>(row_values.size()) == map.width_) {
+    if (static_cast<int>(row_values.size()) == map.width_ && iss.eof()) {
       for (int x = 0; x < map.width_; ++x) {
         int tile_type_id = row_values[x];
         map.tile_registry_.Get(tile_type_id);
         map.tiles_[y * map.width_ + x].type_id = tile_type_id;
       }
     } else {
+      if (static_cast<int>(line.size()) != map.width_) {
+        throw std::runtime_error("Invalid map row width at row " +
+                                 std::to_string(y) + " in " + filename);
+      }
       for (int x = 0; x < map.width_; ++x) {
-        char ch = (x < static_cast<int>(line.size())) ? line[x] : ' ';
+        char ch = line[x];
         int tile_type_id = 0;
         if (ch >= '0' && ch <= '9') {
           tile_type_id = ch - '0';
@@ -83,6 +163,43 @@ Map Map::FromFile(const std::string& filename) {
         map.tile_registry_.Get(tile_type_id);
         map.tiles_[y * map.width_ + x].type_id = tile_type_id;
       }
+    }
+  }
+
+  // Optional sprite section; absence is valid for LR-1 maps.
+  int sprite_count = 0;
+  file >> std::ws;
+  if (file.peek() != std::char_traits<char>::eof()) {
+    if (!(file >> sprite_count) || sprite_count < 0) {
+      throw std::runtime_error("Invalid sprite count in " + filename);
+    }
+    std::getline(file, line);
+    for (int i = 0; i < sprite_count; ++i) {
+      std::string sprite_line;
+      while (std::getline(file, sprite_line) && sprite_line.empty()) {
+      }
+      std::istringstream siss(sprite_line);
+      float sx = 0.0f;
+      float sy = 0.0f;
+      int tex_id = 0;
+      double scale = 1.0;
+      if (!(siss >> sx >> sy >> tex_id)) {
+        throw std::runtime_error("Invalid sprite at index " + std::to_string(i));
+      }
+      siss >> std::ws;
+      if (!siss.eof() && !(siss >> scale)) {
+        throw std::runtime_error("Invalid sprite scale");
+      }
+      siss >> std::ws;
+      if (!siss.eof() || !std::isfinite(sx) || !std::isfinite(sy) ||
+          !std::isfinite(scale) || scale <= 0.0 || tex_id < 0) {
+        throw std::runtime_error("Invalid sprite values");
+      }
+      map.sprites_.emplace_back(Vec2f{sx, sy}, tex_id, scale);
+    }
+    file >> std::ws;
+    if (!file.eof()) {
+      throw std::runtime_error("Unexpected data after sprites in " + filename);
     }
   }
 

@@ -2,6 +2,10 @@
 
 #include <SDL3/SDL.h>
 
+#include <algorithm>
+#include <chrono>
+#include <filesystem>
+#include <limits>
 #include <stdexcept>
 
 void SdlWindowDeleter::operator()(SDL_Window* window) const noexcept {
@@ -20,9 +24,45 @@ Application::Application(Config config)
     : config_(config),
       is_running_(true),
       map_(Map::FromFile(config_.map_file)),
-      frame_buffer_(config_.width, config_.height) {
-  InitSdl();
+      frame_buffer_(config_.width, config_.height),
+      depth_buffer_(static_cast<size_t>(config_.width),
+                    std::numeric_limits<double>::infinity()) {
   InitPlayerSpawn();
+  LoadSceneTextures();
+  try {
+    InitSdl();
+  } catch (...) {
+    presenter_.reset();
+    renderer_.reset();
+    window_.reset();
+    SDL_Quit();
+    throw;
+  }
+}
+
+void Application::LoadSceneTextures() {
+  // SpriteRenderer takes a dense ID-indexed table. Build it once at startup.
+  sprite_textures_.resize(13);
+  const auto asset_root = std::filesystem::path(config_.map_file)
+                              .parent_path().parent_path();
+  const char* paths[] = {"assets/wolf/sprites/barrel.bmp",
+                         "assets/wolf/sprites/lamp.bmp",
+                         "assets/wolf/sprites/medkit.bmp"};
+  for (const auto& sprite : map_.GetSprites()) {
+    if (texture_store_.Has(sprite.texture_id)) {
+      continue;
+    }
+    if (sprite.texture_id < 10 || sprite.texture_id > 12) {
+      throw std::runtime_error("Unknown sprite texture id: " +
+                               std::to_string(sprite.texture_id));
+    }
+    auto path = asset_root / paths[sprite.texture_id - 10];
+    if (!std::filesystem::exists(path)) {
+      path = paths[sprite.texture_id - 10];
+    }
+    texture_store_.Load(sprite.texture_id, path.string());
+    sprite_textures_[sprite.texture_id] = texture_store_.Get(sprite.texture_id);
+  }
 }
 
 Application::~Application() {
@@ -47,7 +87,6 @@ void Application::InitSdl() {
       "Software Graphics Labs - Wolfenstein 3D", config_.width, config_.height,
       window_flags);
   if (raw_window == nullptr) {
-    SDL_Quit();
     throw std::runtime_error(std::string("Failed to create SDL Window: ") +
                              SDL_GetError());
   }
@@ -55,8 +94,6 @@ void Application::InitSdl() {
 
   SDL_Renderer* raw_renderer = SDL_CreateRenderer(window_.get(), nullptr);
   if (raw_renderer == nullptr) {
-    window_.reset();
-    SDL_Quit();
     throw std::runtime_error(std::string("Failed to create SDL Renderer: ") +
                              SDL_GetError());
   }
@@ -70,16 +107,17 @@ void Application::InitSdl() {
 void Application::InitPlayerSpawn() {
   for (int y = 0; y < map_.GetHeight(); ++y) {
     for (int x = 0; x < map_.GetWidth(); ++x) {
-      if (!map_.IsWall(x, y)) {
-        player_.position = Vec2f{x + 0.5f, y + 0.5f};
+      const Vec2f position{x + 0.5f, y + 0.5f};
+      if (controller_.CanMoveTo(map_, position,
+                                controller_.GetConfig().collision_radius)) {
+        player_.position = position;
         player_.SetDirection(Vec2f{1.0f, 0.0f});
         return;
       }
     }
   }
 
-  player_.position = Vec2f{1.5f, 1.5f};
-  player_.SetDirection(Vec2f{1.0f, 0.0f});
+  throw std::runtime_error("Map contains no safe player spawn");
 }
 
 InputState Application::PollInput() {
@@ -141,9 +179,49 @@ Color Application::ResolveWallColor(const RayHit& hit) const {
   return wall_color;
 }
 
+void Application::DrawWallColumn(int x, const WallColumn& col) {
+  if (!col.ray_hit.hit || col.draw_start >= col.draw_end) {
+    return;
+  }
+
+  const int cell_x = col.ray_hit.cell_x;
+  const int cell_y = col.ray_hit.cell_y;
+
+  if (map_.InBounds(cell_x, cell_y) && map_.HasTexture(cell_x, cell_y)) {
+    const Texture& tex = map_.GetTexture(cell_x, cell_y);
+    int tex_x = static_cast<int>(col.ray_hit.wall_u * tex.GetWidth());
+    tex_x = std::clamp(tex_x, 0, tex.GetWidth() - 1);
+
+    const double line_height =
+        col.projected_height > 0.0 ? col.projected_height : 1.0;
+    const double wall_top = (config_.height - line_height) / 2.0;
+
+    for (int y = col.draw_start; y < col.draw_end; ++y) {
+      const double norm_y = (y - wall_top) / line_height;
+      int tex_y = static_cast<int>(norm_y * tex.GetHeight());
+      tex_y = std::clamp(tex_y, 0, tex.GetHeight() - 1);
+
+      Color c = tex.Sample(tex_x, tex_y);
+      if (col.ray_hit.side == WallSide::kY) {
+        const uint32_t val = c.GetValue();
+        const uint8_t r = static_cast<uint8_t>(((val >> 24) & 0xFF) * 0.75f);
+        const uint8_t g = static_cast<uint8_t>(((val >> 16) & 0xFF) * 0.75f);
+        const uint8_t b = static_cast<uint8_t>(((val >> 8) & 0xFF) * 0.75f);
+        const uint8_t a = static_cast<uint8_t>(val & 0xFF);
+        c = Color(r, g, b, a);
+      }
+      frame_buffer_.SetPixel(x, y, fog_.Apply(c, col.ray_hit.depth));
+    }
+  } else {
+    frame_buffer_.DrawVerticalLine(
+        x, col.draw_start, col.draw_end - 1,
+        fog_.Apply(ResolveWallColor(col.ray_hit), col.ray_hit.depth));
+  }
+}
+
 void Application::Run() {
-  // Constant fixed-step update every frame (no delta-time calculation)
-  constexpr float kFixedDt = 0.016f;
+  using Clock = std::chrono::steady_clock;
+  auto previous_time = Clock::now();
 
   while (is_running_) {
     const InputState input = PollInput();
@@ -151,23 +229,31 @@ void Application::Run() {
       break;
     }
 
-    controller_.Update(player_, map_, input, kFixedDt);
+    const auto now = Clock::now();
+    // Bound a stalled frame so the collision test cannot jump over a wall.
+    const float dt = std::min(
+        std::chrono::duration<float>(now - previous_time).count(), 0.05f);
+    previous_time = now;
+    controller_.Update(player_, map_, input, dt);
 
-    // Ceiling (dark slate) and floor (dark gray)
-    frame_buffer_.Clear(Color(50, 50, 60), Color(30, 30, 30));
-
-    const auto columns = raycaster_.CastColumns(
-        map_, player_.position, player_.direction, player_.camera_plane,
-        config_.width, config_.height);
-
-    for (int x = 0; x < config_.width; ++x) {
-      const auto& col = columns[x];
-      if (col.ray_hit.hit && col.draw_start < col.draw_end) {
-        frame_buffer_.DrawVerticalLine(x, col.draw_start, col.draw_end,
-                                       ResolveWallColor(col.ray_hit));
-      }
-    }
-
+    RenderFrame();
     presenter_->Present(frame_buffer_);
   }
+}
+
+void Application::RenderFrame() {
+  // Очистка кадра (потолок и пол)
+  frame_buffer_.Clear(Color(50, 50, 60), Color(30, 30, 30));
+
+  // Трассировка столбцов с заполнением буфера глубины для спрайтов
+  const auto columns = raycaster_.CastColumns(
+      map_, player_.position, player_.direction, player_.camera_plane,
+      config_.width, config_.height, depth_buffer_);
+
+  for (int x = 0; x < config_.width; ++x) {
+    DrawWallColumn(x, columns[static_cast<size_t>(x)]);
+  }
+
+  sprite_renderer_.Draw(map_.GetSprites(), player_, sprite_textures_,
+                        depth_buffer_, frame_buffer_, fog_);
 }

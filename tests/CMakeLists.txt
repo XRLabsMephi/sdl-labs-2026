@@ -16,6 +16,12 @@ add_executable(graphics_lab_tests
     world/map_test.cc
     wolf/raycaster_test.cc
     input/player_controller_test.cc
+    render/texture_store_test.cc
+    render/texture_test.cc
+    sprite/sprite_renderer_test.cc
+    effects/fog_test.cc
+    core/application_test.cc
+    core/config_test.cc
 )
 
 target_link_libraries(graphics_lab_tests PRIVATE
@@ -29,4 +35,6 @@ target_compile_definitions(graphics_lab_tests PRIVATE
 )
 
 include(GoogleTest)
-gtest_discover_tests(graphics_lab_tests)
+gtest_discover_tests(graphics_lab_tests
+    PROPERTIES ENVIRONMENT "SDL_VIDEODRIVER=dummy;SDL_RENDER_DRIVER=software"
+)

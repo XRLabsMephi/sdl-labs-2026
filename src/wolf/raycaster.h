@@ -24,6 +24,9 @@ struct WallColumn {
 
 class Raycaster {
  public:
+  // Значение глубины для промаха по контракту ЛР-2.
+  static constexpr double kNoHitDepth = 1e9;
+
   // Пускает один луч по сетке с единичными клетками: x растёт вправо, y вниз.
   // Начальная позиция должна быть внутри свободной клетки.
   // Компоненты направления должны быть конечными, а вектор ненулевым.
@@ -51,6 +54,15 @@ class Raycaster {
   [[nodiscard]] std::vector<WallColumn> CastColumns(
       const Map& map, const Vec2f& position, const Vec2f& direction,
       const Vec2f& camera_plane, int screen_width, int screen_height) const;
+
+  // Вариант для ЛР-2: одновременно заполняет буфер глубины для спрайтов.
+  // Размер буфера совпадает с числом столбцов; прежнее содержимое заменяется.
+  // Попадание даёт исходный RayHit::depth, промах — kNoHitDepth.
+  // Это глубина вдоль единичного направления камеры, не длина луча.
+  [[nodiscard]] std::vector<WallColumn> CastColumns(
+      const Map& map, const Vec2f& position, const Vec2f& direction,
+      const Vec2f& camera_plane, int screen_width, int screen_height,
+      std::vector<double>& out_depth_buffer) const;
 };
 
 #endif  // WOLF_RAYCASTER_H_
