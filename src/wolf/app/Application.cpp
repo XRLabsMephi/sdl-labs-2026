@@ -10,7 +10,17 @@
 #include "wolf/core/color.hpp"
 
 namespace {
-    //Player starting settings
+    // Benchmark flag
+    constexpr bool fBenchmark = false;
+
+    constexpr uint32_t IdleFPSlimit = 100;
+    constexpr uint32_t IdleMSwait = 1000 / IdleFPSlimit;
+
+    // Fog consts
+    constexpr double kFogStart = 3.0;
+    constexpr double kFogEnd   = 14.0;
+
+    // Player starting settings
     constexpr core::Vec2 kPlayerStartPos{2.5, 12.5};
     constexpr core::Vec2 kPlayerStartDir{1, -1};
 
@@ -19,14 +29,15 @@ namespace {
 
     constexpr double kPlayerFov  = FOV_DEGREES / RAD;
 
-    //PlayerController
+    // PlayerController
     constexpr double kPlayerMoveSpeed = 3.0;
     constexpr double kPlayerTurnSpeed = 2.5;
     constexpr double kPlayerRadius    = 0.2; // collision radius
 
-    //colors
+    // colors
     constexpr core::ColorRGBA kCeilingColor{145, 138, 101};
-    constexpr core::ColorRGBA kFloorColor  {83, 77, 47};
+    constexpr core::ColorRGBA kFloorColor  {83 , 77 , 47 };
+    constexpr core::ColorRGBA kFogColor    {160, 153, 107};
 }
 
 namespace app {
@@ -35,12 +46,14 @@ namespace app {
           presenter_(kWidth, kHeight, "Wolf Raycaster - Lab 02"),
           map_(world::Map::initMap(std::filesystem::path(WOLF_ASSETS_DIR) / "maps/map01.txt")),
           player_(kPlayerStartPos, kPlayerStartDir, kPlayerFov),
-          fog_(3.0, 14.0, {160, 153, 107}),
+          fog_(kFogStart, kFogEnd, kFogColor),
           controller_(kPlayerMoveSpeed, kPlayerTurnSpeed, kPlayerRadius) {
+
         const auto root = std::filesystem::path(WOLF_ASSETS_DIR) / "textures/backrooms";
         textureStore_.load(1, root / "wallpaper.png");
         textureStore_.load(2, root / "panels.png");
         textureStore_.load(3, root / "glass.png", 96);
+
         const auto spritesRoot = std::filesystem::path(WOLF_ASSETS_DIR) / "sprites";
         textureStore_.load(101, spritesRoot / "barrel.png");
         textureStore_.load(102, spritesRoot / "medkit.png");
@@ -52,6 +65,8 @@ namespace app {
             {.position = {7.3, 9.5},  .textureId = 103, .scale = 1.0},
             {.position = {11.5, 3.5}, .textureId = 101, .scale = 1.0},
         };
+
+        raycaster_.setFog(&fog_);
     }
 
     Application::~Application() = default;
@@ -61,6 +76,10 @@ namespace app {
 
         int    frameCount = 0;
         double fpsTimer   = 0.0;
+
+        // init render
+        renderFrame();
+        presenter_.present(framebuffer_);
 
         while (running_) {
             auto curTime = std::chrono::steady_clock::now();
@@ -73,10 +92,6 @@ namespace app {
                 break;
             }
 
-            controller_.update(input, player_, map_, dt);
-            renderFrame();
-            presenter_.present(framebuffer_);
-
             ++frameCount;
             fpsTimer += dt;
             if (fpsTimer >= 1.0) {
@@ -84,6 +99,25 @@ namespace app {
                 frameCount = 0;
                 fpsTimer   = 0.0;
             }
+            
+            if constexpr (fBenchmark) {
+                controller_.update(input, player_, map_, dt);
+                renderFrame();
+                presenter_.present(framebuffer_);
+            }
+            else {
+                if (input.empty()) {
+                    if constexpr (IdleFPSlimit <= 0)
+                        continue;
+
+                    SDL_Delay(IdleMSwait);
+                }
+                else {
+                    controller_.update(input, player_, map_, dt);
+                    renderFrame();
+                    presenter_.present(framebuffer_);
+                }   
+            }                     
         }
 
         return 0;
@@ -130,8 +164,8 @@ namespace app {
     void Application::renderFrame() {
         framebuffer_.clear(); // Reset per-pixel depth before the geometry passes.
         // direct access to the pixel buffer — no per-pixel bounds check
-        uint32_t* pixels = framebuffer_.color();
-        const int half   = kHeight / 2;
+        uint32_t*      pixels = framebuffer_.color();
+        const uint32_t half   = kHeight / 2;
 
         const uint32_t ceiling = kCeilingColor.pack();
         std::fill(pixels, pixels + (half + 1) * kWidth, ceiling); // ceil

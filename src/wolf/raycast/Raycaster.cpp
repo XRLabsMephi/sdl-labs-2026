@@ -5,12 +5,14 @@
 #include <algorithm>
 
 #include "wolf/core/color.hpp"
+#include "wolf/effects/Fog.hpp"
 
 namespace {
-    constexpr double   kSideShadeFactor = 0.7;   // shade y-sides
-    constexpr double   kEpsilon  = 1e-9;         // 0 division
-    constexpr double   kHugeDist = 1e30;         // no hit
-    constexpr uint32_t kMaxSteps = 1024;         // DDA limit
+    constexpr double   kSideShadeFactor = 0.7; // shade y-sides
+
+    constexpr double   kEpsilon  = 1e-9; // 0 division
+    constexpr double   kHugeDist = 1e30; // no hit
+    constexpr uint32_t kMaxSteps = 1024; // DDA limit
 
     // Colors
     core::ColorRGBA wallColor(uint32_t wallId, uint32_t side) {
@@ -34,10 +36,15 @@ namespace {
 }
 
 namespace raycast {
-    void Raycaster::castRay(const world::Player& player,
-                            const world::Map&    map,
-                            double               cameraX,
-                            const texture::TextureStore* textures) {
+    void Raycaster::setFog(const effects::Fog* fog) noexcept {
+        fog_ = fog;
+        fogColor_ = fog_->color().pack();
+    }
+
+    void Raycaster::castRay(const world::Player&         player,
+                            const world::Map&            map,
+                            const double                 cameraX,
+                            const texture::TextureStore* textures) noexcept {
 
         RayHit result{};
         rayHits_.clear();
@@ -185,7 +192,7 @@ namespace raycast {
     void Raycaster::render(const world::Player&         player,
                            const world::Map&            map,
                            const texture::TextureStore& textures,
-                           render::Framebuffer&         framebuffer) {
+                           render::Framebuffer&         framebuffer) noexcept {
 
         const uint32_t w = framebuffer.width();
         const uint32_t h = framebuffer.height();
@@ -195,13 +202,19 @@ namespace raycast {
             depthBuffer_.resize(w);
         }
 
-        const double mid         = h * 0.5;
-        const double   invW      = 2.0 / w;         // precompute 1/w once
+        const double mid  = h * 0.5;
+        const double invW = 2.0 / w;         // precompute 1/w once
 
         FrameCtx f = {
             framebuffer,
-            h
+            h,
+            w
         };
+
+        // Cache the fog end distance once per render call. When the fog was
+        // not injected, kHugeDist makes the check below never fire (real hits
+        // always have depth < kHugeDist), so the shortcut is disabled.
+        const double fogMax = (fog_ != nullptr) ? fog_->end() : kHugeDist;
 
         for (uint32_t x = 0; x < w; ++x) {
             // cameraX [-1, +1]: left to right
@@ -231,6 +244,7 @@ namespace raycast {
                 // Clip screen bounds, retaining the original height for near-wall UVs.
                 const uint32_t drawStart = static_cast<uint32_t>(std::clamp(
                     std::ceil(mid - lineHeight * 0.5 - 0.5), 0.0, static_cast<double>(h)));
+                    
                 const uint32_t drawEnd = static_cast<uint32_t>(std::clamp(
                     std::ceil(mid + lineHeight * 0.5 - 0.5), 0.0, static_cast<double>(h)));
 
@@ -242,6 +256,11 @@ namespace raycast {
                     drawEnd,
                     lineHeight,
                 };
+
+                if (rh.depth >= fogMax) {
+                    drawSolidFogColumn(f, c, rh);
+                    continue;
+                }
 
                 if (tex == nullptr || !tex->valid()) {
                     drawSolidColumn(f, c, rh);
@@ -256,9 +275,9 @@ namespace raycast {
     void Raycaster::drawTexturedColumn(const FrameCtx&  f,
                                        const ColumnCtx& c,
                                        const RayHit&    rh,
-                                       const texture::Texture& tex) {
+                                       const texture::Texture& tex) const noexcept {
 
-        int32_t texX = static_cast<int32_t>(rh.wallU * static_cast<double>(tex.width));
+        size_t texX = static_cast<size_t>(rh.wallU * static_cast<double>(tex.width));
         
         if (texX < 0)
             texX = 0;
@@ -267,10 +286,10 @@ namespace raycast {
             texX = tex.width - 1;
 
         const double step   = static_cast<double>(tex.height) / c.lineHeight;
-        double texPos = (c.drawStart + 0.5 - (f.h * 0.5 - c.lineHeight * 0.5)) * step;
+        double       texPos = std::max(1.0 - rh.depth, 0.0) * static_cast<double>(tex.height) / 2.0;
 
         for (uint32_t y = c.drawStart; y < c.drawEnd; ++y) {
-            int texY = static_cast<int>(texPos);
+            size_t texY = static_cast<size_t>(texPos);
 
             if (texY < 0)           
                 texY = 0;
@@ -300,13 +319,26 @@ namespace raycast {
 
     void Raycaster::drawSolidColumn(const FrameCtx&  f,
                                     const ColumnCtx& c,
-                                    const RayHit&    rh) {
+                                    const RayHit&    rh) const noexcept {
         
         // pack ONCE per column, not per pixel
         const auto color = wallColor(rh.wallId, rh.side);
 
         for (uint32_t y = c.drawStart; y < c.drawEnd; ++y) {
             f.framebuffer.drawFragment(c.x, y, color, rh.depth);
+        }
+    }
+
+    void Raycaster::drawSolidFogColumn(const FrameCtx&  f,
+                                       const ColumnCtx& c,
+                                       const RayHit&    rh) const noexcept {
+                                        
+        uint32_t* pixels = f.framebuffer.color();
+        float*    depths = f.framebuffer.depth();
+
+        for (uint32_t index = c.drawStart * f.w + c.x; index < c.drawEnd * f.w; index += f.w) {
+            pixels[index] = fogColor_;
+            depths[index] = rh.depth;
         }
     }
 }

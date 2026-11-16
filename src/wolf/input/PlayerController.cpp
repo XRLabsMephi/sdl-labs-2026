@@ -76,8 +76,10 @@ namespace input {
 
         for (const auto &c : corners) {
             core::Vec2 check = pos + c;
+
             int cx = (int) check.x;
             int cy = (int) check.y;
+
             if (map.isSolid(cx, cy)) {
                 return false;
             }
@@ -86,20 +88,24 @@ namespace input {
     }
 
     core::Vec2 PlayerController::findClosestFreePos(core::Vec2 pos, const world::Map &map) const {
+        size_t w       = map.width();
+        size_t h       = map.height();
         double minDist = std::numeric_limits<double>::max();
-        size_t mapWidth = map.width();
-        size_t mapHeight = map.width();
 
-        core::Vec2 res;
-        for (size_t i = 0; i < mapHeight; i++) {
-            for (size_t j = 0; j < mapWidth; j++) {
-                core::Vec2 cand = core::Vec2(i, j);
-                if (canStand(cand, map)) {
-                    double curDist = (cand - pos).length();
-                    if (curDist < minDist) {
-                        minDist = curDist;
-                        res = cand;
-                    }
+        core::Vec2 res = pos;
+        for (size_t y = 0; y < h; ++y) {
+            for (size_t x = 0; x < w; ++x) {
+                core::Vec2 cand = {static_cast<double>(x) + 0.5,
+                                   static_cast<double>(y) + 0.5};
+
+                if (!canStand(cand, map)) 
+                    continue;
+
+                double d = (cand - pos).length();
+                
+                if (d < minDist) {
+                    minDist = d;
+                    res = cand;
                 }
             }
         }
