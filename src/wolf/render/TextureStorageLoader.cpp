@@ -44,10 +44,12 @@ namespace render {
             auto [ptr, error_code] = std::from_chars(view.data(), end, id);
             if (error_code != std::errc{}) fail(std::format("mapping file line {}: invalid id", line));
 
-            const std::string_view path = trim({ptr, static_cast<size_t>(end - ptr)});
-            if (path.empty()) fail(std::format("mapping line {}: missing file path", line));
+            const std::string_view ascii_path_sv = trim({ptr, static_cast<size_t>(end - ptr)});
+            if (ascii_path_sv.empty()) fail(std::format("mapping line {}: missing file path", line));
 
-            entries.emplace_back((base_dir / fs::path(path)).string(), id);
+            std::u8string utf8_path_str(ascii_path_sv.begin(), ascii_path_sv.end());
+            auto full_path = base_dir / fs::path(utf8_path_str);
+            entries.emplace_back(full_path, id);
         }
 
         return entries;

@@ -1,4 +1,5 @@
 #pragma once
+#include <filesystem>
 #include <string>
 #include <vector>
 #include <SDL3/SDL_stdinc.h>
@@ -16,9 +17,9 @@ namespace render {
 
         Texture() = default;
 
-        explicit Texture(const std::string &filename);
+        explicit Texture(const std::filesystem::path& file);
 
-        static Texture createFromFile(const std::string &filename);
+        static Texture createFromFile(const std::filesystem::path& file);
 
         [[nodiscard]] Uint32 pixel(int x, int y) const { return pixels[x * height + y]; }
 

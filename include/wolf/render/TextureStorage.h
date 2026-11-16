@@ -18,14 +18,14 @@ namespace render {
          * @param filename name of the file
          * @return loaded Texture or placeholder on error
          */
-        static std::optional<Texture> loadOrEmpty(const std::string &filename);
+        static std::optional<Texture> loadOrEmpty(const std::filesystem::path& filename);
 
     public:
         /**
          * @brief Specifies the name of the file and id of the texture in the storage
          */
         struct TextureEntry {
-            std::string filename;
+            std::filesystem::path filename;
             size_t id = 0;
         };
 
@@ -54,7 +54,7 @@ namespace render {
          * @param filename the name of the texture file
          * @param id the id in the storage
          */
-        void addFromFile(const std::string& filename, size_t id);
+        void addFromFile(const std::filesystem::path& filename, size_t id);
 
         /**
          * @brief Loads textures from given entries into storage

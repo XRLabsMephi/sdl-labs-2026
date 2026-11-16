@@ -31,7 +31,7 @@ namespace render {
         }
     }
 
-    void TextureStorage::addFromFile(const std::string &filename, const size_t id) {
+    void TextureStorage::addFromFile(const std::filesystem::path& filename, const size_t id) {
         if (std::optional<Texture> texture = loadOrEmpty(filename)) add(texture.value(), id);
     }
 
@@ -64,7 +64,7 @@ namespace render {
         return contains(id) && textures_[id].has_value() ? textures_[id].value() : Texture::empty;
     }
 
-    std::optional<Texture> TextureStorage::loadOrEmpty(const std::string &filename) {
+    std::optional<Texture> TextureStorage::loadOrEmpty(const std::filesystem::path &filename) {
         try {
             Texture tmp(filename);
             return tmp;

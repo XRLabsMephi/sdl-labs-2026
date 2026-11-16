@@ -5,7 +5,7 @@
 int main() {
     app::Application application;
 
-    if (!application.initialize("assets/map.txt")) {
+    if (!application.initialize("assets\\map.txt")) {
         return EXIT_FAILURE;
     }
 

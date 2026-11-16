@@ -6,9 +6,8 @@
 #include <format>
 #include <memory>
 #include <filesystem>
-#include <fstream>
 #include <SDL3/SDL_surface.h>
-#include <algorithm>
+#include <iostream>
 
 #include "debug/Logger.h"
 
@@ -18,30 +17,37 @@ namespace {
             SDL_DestroySurface(surface);
         }
     };
+
+    const char* utf8_as_chars(const std::u8string& s) noexcept {
+        return reinterpret_cast<const char*>(s.c_str());
+    }
 }
 
 namespace render {
-    Texture::Texture(const std::string &filename) {
+    Texture::Texture(const std::filesystem::path& file) {
         namespace fs = std::filesystem;
         using SurfacePtr =  std::unique_ptr<SDL_Surface, SurfaceDeleter>;
-        fs::path path = filename;
 
-        std::string ext = path.extension().string();
+        std::string ext = file.extension().string();
         std::ranges::transform(
             ext,
             ext.begin(),
             [](const unsigned char c) { return static_cast<char>(std::tolower(c)); }
             );
 
-        //TODO Add support for JPG, Webp, and others
         if (ext != ".png") {
-            throw std::runtime_error(std::format("file \"{}\" must have .png extension", filename));
+            throw std::runtime_error(
+                std::format("file \"{}\" must have .png extension", utf8_as_chars(file.u8string()))
+                );
         }
 
-        SurfacePtr loaded(SDL_LoadPNG(path.string().c_str()));
+        SurfacePtr loaded(SDL_LoadPNG(utf8_as_chars(file.u8string())));
         if (!loaded) {
             throw std::runtime_error(
-                std::format("SDL_Surface creation from file \"{}\" failed: {}", filename, SDL_GetError())
+                std::format(
+                    "SDL_Surface creation from file \"{}\" failed: {}",
+                    utf8_as_chars(file.u8string()),
+                    SDL_GetError())
                 );
         }
 
@@ -49,7 +55,9 @@ namespace render {
         if (!surface) {
             throw std::runtime_error(
                 std::format(
-                    "SDL_Surface from file \"{}\" conversion to ARGB8888 failed: {}", filename, SDL_GetError()
+                    "SDL_Surface from file \"{}\" conversion to ARGB8888 failed: {}",
+                    utf8_as_chars(file.u8string()),
+                    SDL_GetError()
                     )
                 );
         }
@@ -79,7 +87,7 @@ namespace render {
         }
     }
 
-    Texture Texture::createFromFile(const std::string &filename){
-        return Texture(filename);
+    Texture Texture::createFromFile(const std::filesystem::path& file){
+        return Texture(file);
     }
 }

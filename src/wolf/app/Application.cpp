@@ -164,7 +164,7 @@ bool app::Application::initialize(const std::string& mapFilename) {
         }
 
         render::TextureStorageLoader(
-            root / "assets/textures/textures_mapping.txt"
+            root / "assets\\текстуры\\textures_mapping.txt"
             ).load(textureStorage_);
 
         frameBuffer_ = std::make_unique<render::FrameBuffer>(
