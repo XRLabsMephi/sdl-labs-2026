@@ -30,6 +30,9 @@ public:
 
     static const Color kBlack;
     static const Color kWhite;
+    static const Color kRed;
+    static const Color kGreen;
+    static const Color kBlue;
     static const Color kFog;
     static const Color kMagentaKey;  // Частый цвет-ключ для прозрачности в BMP
 
@@ -47,6 +50,9 @@ private:
 
 inline constexpr Color Color::kBlack{0, 0, 0};
 inline constexpr Color Color::kWhite{255, 255, 255};
+inline constexpr Color Color::kRed{255, 0, 0};
+inline constexpr Color Color::kGreen{0, 255, 0};
+inline constexpr Color Color::kBlue{0, 0, 255};
 inline constexpr Color Color::kFog{40, 40, 45};
 inline constexpr Color Color::kMagentaKey{255, 0, 255};
 

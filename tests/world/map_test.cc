@@ -152,7 +152,7 @@ TEST_F(MapTest, FlyweightPatternIntegrity) {
 
 TEST_F(MapTest, LoadsMapWithTexturePath) {
   const std::filesystem::path bmp_path = temp_dir_ / "brick.bmp";
-  Texture brick(4, 4, Color::kRed);
+  Texture brick = Texture::FromColor(4, 4, Color::kRed);
   ASSERT_TRUE(TextureStore::SaveToBmp(brick, bmp_path.string()));
 
   const std::filesystem::path map_path = temp_dir_ / "textured.map";
@@ -171,8 +171,8 @@ TEST_F(MapTest, LoadsMapWithTexturePath) {
   EXPECT_TRUE(map.HasTexture(0, 0));
   EXPECT_TRUE(map.GetTileType(0, 0).HasTexture());
   EXPECT_EQ(map.GetTexturePath(0, 0), bmp_path.string());
-  EXPECT_EQ(map.GetTexture(0, 0).width, 4);
-  EXPECT_EQ(map.GetTexture(0, 0).height, 4);
+  EXPECT_EQ(map.GetTexture(0, 0).GetWidth(), 4);
+  EXPECT_EQ(map.GetTexture(0, 0).GetHeight(), 4);
   EXPECT_EQ(map.GetTexture(0, 0).Sample(0, 0).GetValue(), Color::kRed.GetValue());
 
   // Empty tile (0) has no texture
@@ -194,7 +194,7 @@ TEST_F(MapTest, ThrowsOnMissingTextureFile) {
 
 TEST_F(MapTest, LoadsMixedColorsAndTextures) {
   const std::filesystem::path bmp_path = temp_dir_ / "stone.bmp";
-  Texture stone(2, 2, Color::kBlue);
+  Texture stone = Texture::FromColor(2, 2, Color::kBlue);
   ASSERT_TRUE(TextureStore::SaveToBmp(stone, bmp_path.string()));
 
   const std::filesystem::path map_path = temp_dir_ / "mixed.map";
@@ -214,7 +214,7 @@ TEST_F(MapTest, LoadsMixedColorsAndTextures) {
 
   // Tile 2: Texture
   EXPECT_TRUE(map.HasTexture(1, 0));
-  EXPECT_EQ(map.GetTexture(1, 0).width, 2);
+  EXPECT_EQ(map.GetTexture(1, 0).GetWidth(), 2);
   EXPECT_EQ(map.GetTexture(1, 0).Sample(0, 0).GetValue(), Color::kBlue.GetValue());
 }
 
@@ -283,10 +283,32 @@ TEST_F(MapTest, LoadsLab02ShowcaseMap) {
   EXPECT_EQ(map.GetWidth(), 12);
   EXPECT_EQ(map.GetHeight(), 12);
   EXPECT_TRUE(map.HasTexture(0, 0));
-  EXPECT_EQ(map.GetTexture(0, 0).width, 64);
-  EXPECT_EQ(map.GetTexture(0, 0).height, 64);
+  EXPECT_EQ(map.GetTexture(0, 0).GetWidth(), 64);
+  EXPECT_EQ(map.GetTexture(0, 0).GetHeight(), 64);
 
   EXPECT_EQ(map.GetSpriteCount(), 5u);
-  EXPECT_FLOAT_EQ(map.GetSprites()[0].position.x(), 2.5f);
-  EXPECT_FLOAT_EQ(map.GetSprites()[0].position.y(), 2.5f);
+  EXPECT_FLOAT_EQ(map.GetSprites()[0].position.x(), 3.5f);
+  EXPECT_FLOAT_EQ(map.GetSprites()[0].position.y(), 1.2f);
+  for (const auto& sprite : map.GetSprites()) {
+    EXPECT_FALSE(map.IsWall(static_cast<int>(sprite.position.x()),
+                            static_cast<int>(sprite.position.y())));
+  }
+}
+
+TEST_F(MapTest, RejectsMalformedRowsAndSpriteSections) {
+  const auto path = temp_dir_ / "invalid.map";
+  for (const std::string body : {
+           "111\n1\n111\n", "111\n1001\n111\n", "111\n1 1\n",
+           "111\n1 1\n111\n2\n1.5 1.5 10\n",
+           "111\n1 1\n111\n-1\n",
+           "111\n1 1\n111\n1\n1.5 1.5 10 -1\n"}) {
+    std::ofstream(path) << "1\n1 FF0000\n3 3\n" << body;
+    EXPECT_THROW(Map::FromFile(path.string()), std::runtime_error) << body;
+  }
+}
+
+TEST_F(MapTest, RejectsUnregisteredIdInSparseRegistry) {
+  const auto path = temp_dir_ / "sparse.map";
+  std::ofstream(path) << "1\n3 FF0000\n2 2\n33\n32\n";
+  EXPECT_THROW(Map::FromFile(path.string()), std::out_of_range);
 }

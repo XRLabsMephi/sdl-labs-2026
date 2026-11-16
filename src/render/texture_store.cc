@@ -78,15 +78,15 @@ bool TextureStore::SaveToBmp(const Texture& texture,
   }
 
   SDL_Surface* surface = SDL_CreateSurface(
-      texture.width, texture.height, SDL_PIXELFORMAT_RGBA8888);
+      texture.GetWidth(), texture.GetHeight(), SDL_PIXELFORMAT_RGBA8888);
   if (surface == nullptr) {
     return false;
   }
 
-  for (int y = 0; y < texture.height; ++y) {
+  for (int y = 0; y < texture.GetHeight(); ++y) {
     uint32_t* row = reinterpret_cast<uint32_t*>(
         static_cast<uint8_t*>(surface->pixels) + y * surface->pitch);
-    std::copy_n(texture.pixels.data() + y * texture.width, texture.width, row);
+    std::copy_n(texture.GetPixels().data() + y * texture.GetWidth(), texture.GetWidth(), row);
   }
 
   const bool success = SDL_SaveBMP(surface, filepath.c_str());
@@ -165,5 +165,5 @@ Texture TextureStore::CreateSolid(int width, int height, Color color) {
   if (width <= 0 || height <= 0) {
     return Texture();
   }
-  return Texture(width, height, color);
+  return Texture::FromColor(width, height, color);
 }

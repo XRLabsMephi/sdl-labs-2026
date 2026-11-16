@@ -1,9 +1,20 @@
 #include "frame_buffer.h"
 
 #include <algorithm>
+#include <stdexcept>
+
+namespace {
+size_t PixelCount(int width, int height) {
+    if (width <= 0 || height <= 0 || width > 8192 || height > 8192 ||
+        static_cast<size_t>(width) * height > 16 * 1024 * 1024) {
+        throw std::invalid_argument("Invalid framebuffer dimensions");
+    }
+    return static_cast<size_t>(width) * height;
+}
+}
 
 FrameBuffer::FrameBuffer(int width, int height)
-    : width_(width), height_(height), pixels_(width * height, Color::kBlack.GetValue()) {}
+    : width_(width), height_(height), pixels_(PixelCount(width, height), Color::kBlack.GetValue()) {}
 
 void FrameBuffer::Clear(Color ceiling_color, Color floor_color) {
     int half_height = height_ / 2;

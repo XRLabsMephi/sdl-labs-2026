@@ -18,10 +18,14 @@ class Texture {
   [[nodiscard]] int GetWidth() const { return width_; }
   [[nodiscard]] int GetHeight() const { return height_; }
   [[nodiscard]] bool IsEmpty() const { return pixels_.empty(); }
+  [[nodiscard]] bool IsValid() const { return !IsEmpty(); }
+  [[nodiscard]] const std::vector<uint32_t>& GetPixels() const { return pixels_; }
+  bool operator==(const Texture&) const = default;
 
   // Координаты берутся по модулю размера, в том числе отрицательные.
   [[nodiscard]] Color Sample(int x, int y) const;
   [[nodiscard]] uint32_t SampleRaw(int x, int y) const;
+  [[nodiscard]] Color SampleUV(double u, double v) const;
 
  private:
   [[nodiscard]] int Wrap(int value, int modulo) const;

@@ -45,6 +45,9 @@ struct TileType {
 class TileRegistry {
  public:
   void Register(const TileType& tile_type) {
+    if (tile_type.id < 0) {
+      throw std::invalid_argument("Negative tile id");
+    }
     if (tile_type.id >= static_cast<int>(types_.size())) {
       types_.resize(tile_type.id + 1);
     }
@@ -52,7 +55,7 @@ class TileRegistry {
   }
 
   const TileType& Get(TileId id) const {
-    if (id < 0 || id >= static_cast<int>(types_.size())) {
+    if (id < 0 || id >= static_cast<int>(types_.size()) || types_[id].id != id) {
       throw std::out_of_range("TileType not found: " + std::to_string(id));
     }
     return types_[id];

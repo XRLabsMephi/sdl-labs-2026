@@ -22,30 +22,30 @@ class TextureStoreTest : public ::testing::Test {
 
 TEST_F(TextureStoreTest, TextureDefaultInitialization) {
   Texture tex;
-  EXPECT_EQ(tex.width, 0);
-  EXPECT_EQ(tex.height, 0);
-  EXPECT_TRUE(tex.pixels.empty());
+  EXPECT_EQ(tex.GetWidth(), 0);
+  EXPECT_EQ(tex.GetHeight(), 0);
+  EXPECT_TRUE(tex.GetPixels().empty());
   EXPECT_FALSE(tex.IsValid());
-  EXPECT_EQ(tex.sample(0, 0), 0u);
+  EXPECT_EQ(tex.SampleRaw(0, 0), Color::kBlack.GetValue());
   EXPECT_EQ(tex.Sample(0, 0).GetValue(), Color::kBlack.GetValue());
 }
 
 TEST_F(TextureStoreTest, TextureSolidColorConstruction) {
-  Texture tex(4, 4, Color::kRed);
-  EXPECT_EQ(tex.width, 4);
-  EXPECT_EQ(tex.height, 4);
-  EXPECT_EQ(tex.pixels.size(), 16u);
+  Texture tex = Texture::FromColor(4, 4, Color::kRed);
+  EXPECT_EQ(tex.GetWidth(), 4);
+  EXPECT_EQ(tex.GetHeight(), 4);
+  EXPECT_EQ(tex.GetPixels().size(), 16u);
   EXPECT_TRUE(tex.IsValid());
 
   for (int y = 0; y < 4; ++y) {
     for (int x = 0; x < 4; ++x) {
-      EXPECT_EQ(tex.sample(x, y), Color::kRed.GetValue());
+      EXPECT_EQ(tex.SampleRaw(x, y), Color::kRed.GetValue());
       EXPECT_EQ(tex.Sample(x, y).GetValue(), Color::kRed.GetValue());
     }
   }
 }
 
-TEST_F(TextureStoreTest, TextureSampleClamping) {
+TEST_F(TextureStoreTest, TextureSampleWrapping) {
   Texture tex(2, 2, std::vector<uint32_t>{
       Color::kRed.GetValue(), Color::kGreen.GetValue(),
       Color::kBlue.GetValue(), Color::kWhite.GetValue()
@@ -56,15 +56,15 @@ TEST_F(TextureStoreTest, TextureSampleClamping) {
   EXPECT_EQ(tex.Sample(0, 1).GetValue(), Color::kBlue.GetValue());
   EXPECT_EQ(tex.Sample(1, 1).GetValue(), Color::kWhite.GetValue());
 
-  // Clamping negative coordinates to (0, 0) -> Red
-  EXPECT_EQ(tex.Sample(-5, -10).GetValue(), Color::kRed.GetValue());
-  EXPECT_EQ(tex.Sample(-1, 0).GetValue(), Color::kRed.GetValue());
+  // Integer texel coordinates wrap, matching the sprite renderer contract.
+  EXPECT_EQ(tex.Sample(-5, -10).GetValue(), Color::kGreen.GetValue());
+  EXPECT_EQ(tex.Sample(-1, 0).GetValue(), Color::kGreen.GetValue());
 
-  // Clamping excessive coordinates to (1, 1) -> White
-  EXPECT_EQ(tex.Sample(10, 10).GetValue(), Color::kWhite.GetValue());
-  EXPECT_EQ(tex.Sample(1, 10).GetValue(), Color::kWhite.GetValue());
+  // Excessive coordinates wrap as well.
+  EXPECT_EQ(tex.Sample(10, 10).GetValue(), Color::kRed.GetValue());
+  EXPECT_EQ(tex.Sample(1, 10).GetValue(), Color::kGreen.GetValue());
 
-  // Clamping mixed coordinates
+  // Mixed coordinates wrap.
   EXPECT_EQ(tex.Sample(-2, 1).GetValue(), Color::kBlue.GetValue());
   EXPECT_EQ(tex.Sample(1, -2).GetValue(), Color::kGreen.GetValue());
 }
@@ -90,8 +90,8 @@ TEST_F(TextureStoreTest, RegisterAndGetById) {
   EXPECT_TRUE(store.Empty());
   EXPECT_EQ(store.Size(), 0u);
 
-  Texture brick(8, 8, Color::kRed);
-  Texture stone(8, 8, Color::kBlue);
+  Texture brick = Texture::FromColor(8, 8, Color::kRed);
+  Texture stone = Texture::FromColor(8, 8, Color::kBlue);
 
   store.Register(1, brick);
   store.Register(2, stone);
@@ -106,7 +106,7 @@ TEST_F(TextureStoreTest, RegisterAndGetById) {
   EXPECT_EQ(store.Get(2), stone);
 
   // Overwriting existing id
-  Texture new_brick(8, 8, Color::kGreen);
+  Texture new_brick = Texture::FromColor(8, 8, Color::kGreen);
   store.Register(1, new_brick);
   EXPECT_EQ(store.Size(), 2u);
   EXPECT_EQ(store.Get(1), new_brick);
@@ -114,8 +114,8 @@ TEST_F(TextureStoreTest, RegisterAndGetById) {
 
 TEST_F(TextureStoreTest, RegisterAutoAssignsId) {
   TextureStore store;
-  int id1 = store.Register(Texture(4, 4, Color::kRed));
-  int id2 = store.Register(Texture(4, 4, Color::kGreen));
+  int id1 = store.Register(Texture::FromColor(4, 4, Color::kRed));
+  int id2 = store.Register(Texture::FromColor(4, 4, Color::kGreen));
 
   EXPECT_NE(id1, id2);
   EXPECT_TRUE(store.Has(id1));
@@ -131,7 +131,7 @@ TEST_F(TextureStoreTest, ThrowsOnMissingId) {
 
 TEST_F(TextureStoreTest, FindReturnsPointerOrNullptr) {
   TextureStore store;
-  Texture tex(4, 4, Color::kBlue);
+  Texture tex = Texture::FromColor(4, 4, Color::kBlue);
   store.Register(5, tex);
 
   EXPECT_NE(store.Find(5), nullptr);
@@ -144,7 +144,7 @@ TEST_F(TextureStoreTest, FallbackTextureHandling) {
   EXPECT_FALSE(store.HasFallback());
   EXPECT_THROW((void)store.Get(123), std::out_of_range);
 
-  Texture fallback(4, 4, Color::kWhite);
+  Texture fallback = Texture::FromColor(4, 4, Color::kWhite);
   store.SetFallback(fallback);
   EXPECT_TRUE(store.HasFallback());
 
@@ -152,7 +152,7 @@ TEST_F(TextureStoreTest, FallbackTextureHandling) {
   EXPECT_EQ(store.Get(123), fallback);
 
   // Still returns real texture if present
-  Texture real(4, 4, Color::kBlack);
+  Texture real = Texture::FromColor(4, 4, Color::kBlack);
   store.Register(10, real);
   EXPECT_EQ(store.Get(10), real);
 
@@ -164,8 +164,8 @@ TEST_F(TextureStoreTest, FallbackTextureHandling) {
 
 TEST_F(TextureStoreTest, CreateCheckerboard) {
   Texture checker = TextureStore::CreateCheckerboard(4, 4, 2, Color::kBlack, Color::kWhite);
-  EXPECT_EQ(checker.width, 4);
-  EXPECT_EQ(checker.height, 4);
+  EXPECT_EQ(checker.GetWidth(), 4);
+  EXPECT_EQ(checker.GetHeight(), 4);
   EXPECT_TRUE(checker.IsValid());
 
   // Block (0,0)-(1,1) is Black
@@ -187,10 +187,10 @@ TEST_F(TextureStoreTest, CreateCheckerboard) {
 
 TEST_F(TextureStoreTest, CreateSolid) {
   Texture solid = TextureStore::CreateSolid(3, 3, Color::kGreen);
-  EXPECT_EQ(solid.width, 3);
-  EXPECT_EQ(solid.height, 3);
+  EXPECT_EQ(solid.GetWidth(), 3);
+  EXPECT_EQ(solid.GetHeight(), 3);
   EXPECT_TRUE(solid.IsValid());
-  for (uint32_t p : solid.pixels) {
+  for (uint32_t p : solid.GetPixels()) {
     EXPECT_EQ(p, Color::kGreen.GetValue());
   }
 }
@@ -227,9 +227,9 @@ TEST_F(TextureStoreTest, SaveAndLoadBmpRoundtrip) {
 
   // Load back using static method
   Texture loaded = TextureStore::LoadFromFile(file_path);
-  EXPECT_EQ(loaded.width, original.width);
-  EXPECT_EQ(loaded.height, original.height);
-  EXPECT_EQ(loaded.pixels.size(), original.pixels.size());
+  EXPECT_EQ(loaded.GetWidth(), original.GetWidth());
+  EXPECT_EQ(loaded.GetHeight(), original.GetHeight());
+  EXPECT_EQ(loaded.GetPixels().size(), original.GetPixels().size());
   EXPECT_EQ(loaded, original);
 
   // Load into store using TryLoad
@@ -241,9 +241,9 @@ TEST_F(TextureStoreTest, SaveAndLoadBmpRoundtrip) {
 
 TEST_F(TextureStoreTest, ClearAndSize) {
   TextureStore store;
-  store.Register(1, Texture(2, 2, Color::kRed));
-  store.Register(2, Texture(2, 2, Color::kBlue));
-  store.Register(3, Texture(2, 2, Color::kGreen));
+  store.Register(1, Texture::FromColor(2, 2, Color::kRed));
+  store.Register(2, Texture::FromColor(2, 2, Color::kBlue));
+  store.Register(3, Texture::FromColor(2, 2, Color::kGreen));
 
   EXPECT_EQ(store.Size(), 3u);
   EXPECT_FALSE(store.Empty());
