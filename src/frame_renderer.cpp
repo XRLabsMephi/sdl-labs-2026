@@ -67,8 +67,15 @@ void Frame_renderer::drawFloor(const Player& main_pl, int screenWidth, int scree
 			//if (screenHeight / 2 - y == 0) continue; // Сама линия горизонта, чтобы не делить на 0
 
 			// Расстояние до пола для этой строки
-			double rowDistance = (0.5 * settings::map_scale * projectionDistance) / abs(
-				screenHeight / 2 - y);
+			int cr = abs(screenHeight / 2 - y);
+			double rowDistance;
+			if (cr == 0) {
+				rowDistance = 1e9;
+			}
+			else {
+				rowDistance = (0.5 * settings::map_scale * projectionDistance) / abs(
+					screenHeight / 2 - y);
+			}
 
 			double rayDist = rowDistance / std::cos(FOV / 2.0);
 

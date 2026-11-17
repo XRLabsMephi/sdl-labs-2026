@@ -58,50 +58,51 @@ void Game_state_controller::try_pick_items(Player& main_pl, Playfield& play_fiel
 	else if (main_pl.get_score() * 2 >= play_field.getMax_food()) {
 		textures_[8].loadFromFile("textures/teleport_half_lock.bmp");
 	}
-
+	bool flag = false;
 	for (auto& teleport : play_field.teleports) {
 		if (std::hypot(teleport.x - main_pl.get_X(), teleport.y - main_pl.get_Y())
 			< 0.4 * settings::map_scale) {
 			if (main_pl.get_score() == play_field.getMax_food()) {
-				director.push_result(timeRemaining);
-				load_level(main_pl, play_field, textures_);
-				int cur = cnt;
-				cur %= 10;
-				//cur = 8;
-				if (state != 3 && cur > 6) {
-					state = 3;
-					textures_[1].loadFromFile("textures/level_3/wall01.bmp");
-					textures_[2].loadFromFile("textures/level_3/wall02.bmp");
-					textures_[3].loadFromFile("textures/level_3/wall03.bmp");
-					textures_[4].loadFromFile("textures/level_3/floor.bmp");
-					textures_[5].loadFromFile("textures/level_3/skybox.bmp");
-					textures_[6].loadFromFile("textures/level_3/sprite01.bmp");
-					textures_[7].loadFromFile("textures/level_3/sprite02.bmp");
-				}
-				else if (state != 2 && cur > 3 && cur <= 6) {
-					state = 2;
-					textures_[1].loadFromFile("textures/level_2/wall01.bmp");
-					textures_[2].loadFromFile("textures/level_2/wall02.bmp");
-					textures_[3].loadFromFile("textures/level_2/wall03.bmp");
-					textures_[4].loadFromFile("textures/level_2/floor.bmp");
-					textures_[5].loadFromFile("textures/level_2/skybox.bmp");
-					textures_[6].loadFromFile("textures/level_2/sprite01.bmp");
-					textures_[7].loadFromFile("textures/level_2/sprite02.bmp");
-				}
-				else if (state != 1 && cur <= 3) {
-					state = 1;
-					textures_[1].loadFromFile("textures/level_1/wall01.bmp");
-					textures_[2].loadFromFile("textures/level_1/wall02.bmp");
-					textures_[3].loadFromFile("textures/level_1/wall03.bmp");
-					textures_[4].loadFromFile("textures/level_1/floor.bmp");
-					textures_[5].loadFromFile("textures/level_1/skybox.bmp");
-					textures_[6].loadFromFile("textures/level_1/sprite01.bmp");
-					textures_[7].loadFromFile("textures/level_1/sprite02.bmp");
-				}
+				flag = true;
+				break;
 			}
-			else {
-				//std::cout << "You collected " << main_pl.get_score() << " food out of " << play_field.getMax_food() << '\n';
-			}
+		}
+	}
+
+	if (flag) {
+		director.push_result(timeRemaining);
+		load_level(main_pl, play_field, textures_);
+		int cur = cnt;
+		cur %= 10;
+		if (state != 3 && cur > 6) {
+			state = 3;
+			textures_[1].loadFromFile("textures/level_3/wall01.bmp");
+			textures_[2].loadFromFile("textures/level_3/wall02.bmp");
+			textures_[3].loadFromFile("textures/level_3/wall03.bmp");
+			textures_[4].loadFromFile("textures/level_3/floor.bmp");
+			textures_[5].loadFromFile("textures/level_3/skybox.bmp");
+			textures_[6].loadFromFile("textures/level_3/sprite01.bmp");
+			textures_[7].loadFromFile("textures/level_3/sprite02.bmp");
+		}
+		else if (state != 2 && cur > 3 && cur <= 6) {
+			state = 2;
+			textures_[1].loadFromFile("textures/level_2/wall01.bmp");
+			textures_[2].loadFromFile("textures/level_2/wall02.bmp");
+			textures_[3].loadFromFile("textures/level_2/wall03.bmp");
+			textures_[4].loadFromFile("textures/level_2/floor.bmp");
+			textures_[5].loadFromFile("textures/level_2/skybox.bmp");
+			textures_[6].loadFromFile("textures/level_2/sprite01.bmp");
+			textures_[7].loadFromFile("textures/level_2/sprite02.bmp");
+		}
+		else if (state != 1 && cur <= 3) {
+			state = 1;
+			textures_[1].loadFromFile("textures/level_1/wall01.bmp");
+			textures_[2].loadFromFile("textures/level_1/wall02.bmp");
+			textures_[3].loadFromFile("textures/level_1/wall03.bmp");
+			textures_[4].loadFromFile("textures/level_1/floor.bmp");
+			textures_[5].loadFromFile("textures/level_1/skybox.bmp");
+			textures_[6].loadFromFile("textures/level_1/sprite01.bmp");
+			textures_[7].loadFromFile("textures/level_1/sprite02.bmp");
 		}
 	}
 
