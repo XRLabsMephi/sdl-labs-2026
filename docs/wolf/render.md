@@ -224,3 +224,294 @@ SDL_Renderer is destroyed before SDL_Window.
 SDL_Quit is called after SDL resources are released.
 
 Application::run() is called once per application instance.
+
+## Lab 2 conventions
+
+The following conventions define the interfaces for Lab 2.
+All new types belong to namespace wolf.
+
+### Responsibilities
+
+Participant 1:
+- TextureStore and resource loading.
+- Texture identifiers and resource paths.
+- Sprite placement and scene preparation.
+- Integration in Application.
+
+Participant 2:
+- Wall texture coordinates and wall texture rendering.
+- Wall depth buffer.
+- Compatible depth values for walls and sprites.
+
+Participant 3:
+- Texture and texture sampling.
+- Sprite and SpriteRenderer.
+- Sprite projection, sorting and transparency.
+- Fog shared by wall and sprite rendering.
+
+### Pixel format and Texture
+
+Textures use the existing Color type from wolf/core/Color.hpp.
+Pixels are stored in CPU memory in row-major order:
+pixels[y * width + x].
+
+The texture origin is the top-left corner.
+X increases to the right, Y increases downwards.
+
+Texture has the following interface:
+
+```cpp
+struct Texture {
+    int width = 0;
+    int height = 0;
+    std::vector<Color> pixels;
+
+    Color sample(int x, int y) const;
+};
+```
+
+A successfully loaded texture has positive dimensions and
+exactly width * height pixels.
+
+sample() returns a pixel by value.
+For coordinates outside the texture, it returns
+Color{0, 0, 0, 0} without accessing invalid memory.
+
+Texture does not contain SDL objects and does not depend on SDL.
+Texture coordinates use nearest-neighbor sampling.
+
+### TextureStore
+
+TextureStore owns the loaded textures.
+Its public interface is:
+
+```cpp
+class TextureStore {
+public:
+    void load(int id, const std::string& filename);
+    const Texture& get(int id) const;
+
+private:
+    std::map<int, Texture> textures_;
+};
+```
+
+load() loads a BMP file and stores it under the given identifier.
+Identifiers must be positive and unique.
+Loading an existing identifier is an error.
+
+get() returns a const reference to an existing texture.
+It does not load files and does not create missing textures.
+
+An invalid identifier, missing resource, invalid image or
+duplicate identifier causes std::runtime_error with a
+descriptive message.
+
+Application::run() handles these errors.
+
+SDL loading and conversion are implemented in TextureStore.cpp.
+The public header does not expose SDL types.
+
+The loader converts images to SDL_PIXELFORMAT_RGBA32 and
+copies rows into Texture, respecting SDL_Surface::pitch.
+Temporary SDL surfaces are released after loading,
+including error paths.
+
+Textures are loaded before the main loop.
+They are not replaced or removed during rendering.
+Renderers receive TextureStore through a const reference.
+
+### Resource identifiers and paths
+
+Identifiers 1-99 are reserved for wall textures.
+Identifiers 100 and above are reserved for sprite textures.
+Zero is not a texture identifier.
+
+Map cell values keep their existing meaning:
+- 0: empty space.
+- Positive value: wall identifier.
+
+A wall identifier directly selects the same texture identifier.
+
+The current map uses wall identifiers 1-5.
+All five textures must be loaded:
+
+- 1: assets/wolf/textures/wall01.bmp
+- 2: assets/wolf/textures/wall02.bmp
+- 3: assets/wolf/textures/wall03.bmp
+- 4: assets/wolf/textures/wall04.bmp
+- 5: assets/wolf/textures/wall05.bmp
+
+Initial sprite identifiers:
+
+- 101: assets/wolf/sprites/barrel.bmp
+- 102: assets/wolf/sprites/lamp.bmp
+- 103: assets/wolf/sprites/medkit.bmp
+
+Resource paths are relative to the repository root.
+The application is run with the repository root as
+its working directory.
+
+### Sprite transparency
+
+Transparency is stored in Color::a.
+TextureStore preserves the alpha channel of source images.
+
+Initial sprite assets use binary alpha:
+- 0: fully transparent.
+- 255: fully opaque.
+
+SpriteRenderer skips pixels with alpha 0 before applying fog.
+Skipped pixels do not modify FrameBuffer.
+Partial alpha blending is not required initially.
+
+Sprite assets must provide transparency supported by the loader.
+Images without an alpha channel are treated as fully opaque.
+No special RGB color is reserved for transparency.
+
+### Sprite data and scene ownership
+
+Sprite has the following interface:
+
+```cpp
+struct Sprite {
+    Vec2 position;
+    int textureId = 0;
+    double scale = 1.0;
+};
+```
+
+position is expressed in the same world coordinates as Player.
+One map cell equals one world unit.
+The center of cell (x, y) is (x + 0.5, y + 0.5).
+
+scale is a positive finite multiplier.
+At scale 1.0, the sprite has a world height of one unit.
+Its width follows the texture aspect ratio.
+
+Application owns TextureStore and std::vector<Sprite>.
+The initial sprite list is created before the main loop.
+A separate scene file loader is not required initially.
+
+Sprites are placed in empty map cells with finite coordinates.
+Each sprite references a loaded texture.
+Initial sprites do not participate in player collision checks.
+
+### Depth contract
+
+Wall and sprite depth means forward distance along the
+unit camera direction, not Euclidean distance to the object.
+
+For a sprite:
+
+```cpp
+Vec2 relative{
+    sprite.position.x - player.position.x,
+    sprite.position.y - player.position.y
+};
+
+double depth =
+    relative.x * player.direction.x +
+    relative.y * player.direction.y;
+```
+
+Sprites with depth <= 0.0001 are not rendered.
+
+Raycaster fills one depth value for each framebuffer column.
+The depth buffer size equals FrameBuffer::width().
+A column without a wall receives positive infinity.
+
+A sprite column is drawn only when:
+
+```cpp
+spriteDepth < depthBuffer[x]
+```
+
+Sprites are drawn from farthest to nearest using camera depth.
+
+### Fog
+
+Fog has the following interface:
+
+```cpp
+struct Fog {
+    double start = 5.0;
+    double end = 15.0;
+    Color color{100, 100, 100, 255};
+
+    Color apply(Color source, double depth) const;
+};
+```
+
+The configuration must satisfy:
+0 <= start < end, with both values finite.
+
+The fog factor is:
+
+```cpp
+factor = std::clamp(
+    (depth - start) / (end - start),
+    0.0,
+    1.0
+);
+```
+
+RGB components are interpolated between source and fog color.
+The source alpha component is preserved.
+
+The same Fog object and depth convention are used for
+walls and sprites.
+
+### Rendering interfaces
+
+The Lab 2 wall rendering interface is:
+
+```cpp
+void Raycaster::render(
+    FrameBuffer& frame,
+    const Map& map,
+    const Player& player,
+    const TextureStore& textures,
+    const Fog& fog
+);
+```
+
+Raycaster::getDepthBuffer() keeps its existing interface.
+
+SpriteRenderer provides:
+
+```cpp
+void render(
+    FrameBuffer& frame,
+    const std::vector<Sprite>& sprites,
+    const Player& player,
+    const TextureStore& textures,
+    const std::vector<double>& depthBuffer,
+    const Fog& fog
+) const;
+```
+
+Texture, Sprite, SpriteRenderer, Raycaster and Fog do not
+depend on SDL.
+
+### Frame order
+
+Before the main loop:
+1. Load the map.
+2. Create and validate the player.
+3. Load wall and sprite textures.
+4. Prepare the sprite list.
+5. Create renderers and framebuffer.
+
+Each frame:
+1. Process SDL events and read input.
+2. Calculate dt.
+3. Apply camera rotation and player movement.
+4. Draw the ceiling and floor.
+5. Render textured walls and fill the depth buffer.
+6. Render sprites using the wall depth buffer.
+7. Draw the crosshair over the completed scene.
+8. Present FrameBuffer through SdlPresenter.
+
+Mouse rotation is applied before calculating movement
+for that frame.
