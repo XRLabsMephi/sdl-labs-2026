@@ -1,0 +1,20 @@
+#pragma once
+
+#include "wolf/core/Vec2.hpp"
+
+namespace wolf {
+
+    struct Player {
+        Vec2 position{1.5, 1.5};
+        Vec2 direction{1.0, 0.0};
+        Vec2 velocity{0.0, 0.0};
+        double dashCooldown = 0.0;
+        double dashRemaining = 0.0;
+        Vec2 dashDirection{1.0, 0.0};
+        double sprintTime = 0.0;
+
+        // tan(30 градусов): горизонтальное поле зрения 60 градусов.
+        Vec2 cameraPlane{0.0, 0.5773502691896257};
+    };
+
+}
