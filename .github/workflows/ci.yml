@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - Blobick_wolf_lab01
+      - Blobick_wolf_lab02
 
   pull_request:
     branches:
