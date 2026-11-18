@@ -1,7 +1,7 @@
-#include <iostream>
+#include <SDL3/SDL_main.h>
+#include "application.h"
 
-int main()
-{
-    std::cout << "Software Graphics Labs\n";
-    return 0;
+int main(int argc, char* argv[]) {
+	Application app;
+	return app.run();
 }
