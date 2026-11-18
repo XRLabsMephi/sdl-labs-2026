@@ -7,7 +7,7 @@
 namespace wolf::sprite {
 
     void SpriteRenderer::render(render::FrameBuffer& fb, const world::Player& player, const std::vector<Sprite>& sprites,
-            const std::vector<double>& depthBuffer, const texture::TextureStore& textureStore) {
+            const std::vector<double>& depthBuffer, const texture::TextureStore& textureStore, const effects::Fog& fog) {
         int width = fb.getWidth();
         int height = fb.getHeight();
         if (width <= 0 || height <= 0) {
@@ -66,6 +66,7 @@ namespace wolf::sprite {
                         if ((color >> 24) == 0) {
                             continue;
                         }
+                        color = fog.apply(color, transformY);
                         fb.setPixel(row, y, color);
                     }
                 }

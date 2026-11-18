@@ -87,8 +87,8 @@ namespace wolf::app {
     }
 
     void Application::render() {
-        raycaster.render(*frameBuffer, player, map, textureStore_);
-        spriteRenderer_.render(*frameBuffer, player, sprites_, raycaster.getDepthBuffer(), textureStore_);
+        raycaster.render(*frameBuffer, player, map, textureStore_, fog_);
+        spriteRenderer_.render(*frameBuffer, player, sprites_, raycaster.getDepthBuffer(), textureStore_, fog_);
         presenter->present(*frameBuffer);
     }
 

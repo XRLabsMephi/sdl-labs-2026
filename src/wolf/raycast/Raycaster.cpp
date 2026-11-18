@@ -2,6 +2,7 @@
 #include "wolf/core/Color.hpp"
 #include <cmath>
 #include <algorithm>
+#include "wolf/effects/Fog.hpp"
 
 
 namespace wolf::raycast {
@@ -69,7 +70,7 @@ namespace wolf::raycast {
 
 
     void Raycaster::render(render::FrameBuffer &fb, const world::Player &player, const world::Map &map,
-                           const texture::TextureStore &textureStore) {
+                           const texture::TextureStore &textureStore, const effects::Fog& fog) {
         int width = fb.getWidth();
         int height = fb.getHeight();
         depthBuffer.resize(width, 1e30);
@@ -104,6 +105,7 @@ namespace wolf::raycast {
                             std::uint32_t b = wallColor & 0xFF;
                             wallColor = (a << 24) | ((r / 2) << 16) | ((g / 2) << 8) | (b / 2);
                         }
+                        wallColor = fog.apply(wallColor, hit.wallDist);
                         fb.setPixel(x, y, wallColor);
                     }
                 }

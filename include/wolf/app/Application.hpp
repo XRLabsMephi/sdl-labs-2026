@@ -48,5 +48,6 @@ namespace wolf::app {
 
         sprite::SpriteRenderer spriteRenderer_;
         std::vector<sprite::Sprite> sprites_;
+        effects::Fog fog_;
     };
 }
