@@ -10,6 +10,7 @@
 #include "wolf/raycast/Raycaster.hpp"
 #include "wolf/texture/TextureStore.hpp"
 #include "wolf/sprite/SpriteRenderer.hpp"
+#include "wolf/sprite/Sprite.hpp"
 #include <iostream>
 
 namespace wolf::app {

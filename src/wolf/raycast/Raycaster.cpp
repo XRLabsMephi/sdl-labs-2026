@@ -110,4 +110,7 @@ namespace wolf::raycast {
             }
         }
     }
+    [[nodiscard]] const std::vector<double>& Raycaster::getDepthBuffer() const noexcept {
+        return depthBuffer;
+    }
 }

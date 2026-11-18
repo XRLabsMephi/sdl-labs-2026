@@ -34,8 +34,9 @@ namespace wolf::sprite {
             int spriteHeight = static_cast<int>(std::abs(height / transformY) * sprite.scale);
             int spriteWidth = static_cast<int>(std::abs(height / transformY) * sprite.scale);
 
-            int drawStartY = -spriteHeight / 2 + height / 2;
-            int drawEndY = spriteHeight / 2 + height / 2;
+            int vMoveScreen = static_cast<int>((height / transformY) * (1.0 - sprite.scale) / 2.0);
+            int drawStartY = -spriteHeight / 2 + height / 2 + vMoveScreen;
+            int drawEndY = spriteHeight / 2 + height / 2 + vMoveScreen;
             drawStartY = std::max(0, drawStartY);
             drawEndY = std::min(height, drawEndY);
 
@@ -54,7 +55,7 @@ namespace wolf::sprite {
                     int textureX = static_cast<int>(256 * (row - (-spriteWidth / 2 + spriteScreenX))
                         * textura.width / spriteWidth) / 256;
                     for (int y = drawStartY; y < drawEndY; ++y) {
-                        int d = y * 256 - height * 128 + spriteHeight * 128;
+                        int d = (y - vMoveScreen) * 256 - height * 128 + spriteHeight * 128;
                         int textureY = ((d * textura.height) / spriteHeight) / 256;
                         std::uint32_t color = textura.sample(textureX, textureY);
                         if ((color >> 24) == 0) {

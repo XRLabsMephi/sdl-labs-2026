@@ -9,6 +9,7 @@ namespace wolf::raycast {
     class Raycaster {
      public:
         void render(render::FrameBuffer& fb, const world::Player& player, const world::Map& map, const texture::TextureStore& textureStore);
+        [[nodiscard]] const std::vector<double>& getDepthBuffer() const noexcept;
      private:
         RayHit DDA_Ray(const world::Player& player, const world::Map& map, double cameraX);
         std::vector<double> depthBuffer;
