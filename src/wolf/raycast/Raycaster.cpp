@@ -58,9 +58,12 @@ namespace wolf::raycast {
         }
         if (hitResult.side == 0) {
             hitResult.wallDist = (sideDistX - deltaDistX);
+            hitResult.wallU = player.position.y + hitResult.wallDist * rayDirY;
         } else {
             hitResult.wallDist = (sideDistY - deltaDistY);
+            hitResult.wallU = player.position.x + hitResult.wallDist * rayDirX;
         }
+        hitResult.wallU -= std::floor(hitResult.wallU);
         return hitResult;
     }
 

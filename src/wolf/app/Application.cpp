@@ -38,6 +38,11 @@ namespace wolf::app {
         }
         try {
             textureStore_.load(1, "assets/wolf/textures/wall01.bmp");
+            textureStore_.load(2, "assets/wolf/textures/wall02.bmp");
+            textureStore_.load(3, "assets/wolf/textures/wall03.bmp");
+            textureStore_.load(10, "assets/wolf/sprites/barrel.bmp");
+            sprites_.push_back({ {2.5, 2.5}, 10, 1.0 });
+            sprites_.push_back({ {5.5, 5.5}, 10, 1.0 });
         } catch (std::exception& e) {
             throw std::runtime_error(std::string("Could not load wall01.bmp: ") + e.what());
         }
