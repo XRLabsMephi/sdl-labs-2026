@@ -7,7 +7,6 @@
 namespace wolf::texture {
     void TextureStore::load(int id, const std::string& filepath) {
         std::unique_ptr<SDL_Surface, decltype(&SDL_DestroySurface)> rawSurface(SDL_LoadBMP(filepath.c_str()), SDL_DestroySurface);
-
         if (!rawSurface) {
             throw std::runtime_error("failed to load texture from " + filepath);
         }
@@ -19,6 +18,9 @@ namespace wolf::texture {
         Texture tex;
         tex.width = surface->w;
         tex.height = surface->h;
+        if (tex.width <= 0 || tex.height <= 0) {
+            throw std::runtime_error("failed to load texture from " + filepath);
+        }
         tex.pixels.resize(static_cast<std::size_t>(tex.width) * static_cast<std::size_t>(tex.height));
         const auto* srcPixels = static_cast<const std::uint32_t*>(surface->pixels);
         const int step = surface->pitch / static_cast<int>(sizeof(std::uint32_t));

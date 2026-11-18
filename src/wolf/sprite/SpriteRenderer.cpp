@@ -1,6 +1,7 @@
 #include "wolf/sprite/SpriteRenderer.hpp"
 #include <cmath>
 #include <algorithm>
+#include <stdexcept>
 #include <vector>
 
 namespace wolf::sprite {
@@ -9,7 +10,9 @@ namespace wolf::sprite {
             const std::vector<double>& depthBuffer, const texture::TextureStore& textureStore) {
         int width = fb.getWidth();
         int height = fb.getHeight();
-
+        if (width <= 0 || height <= 0) {
+            throw std::runtime_error("width and height must be greater than 0");
+        }
         std::vector<Sprite> sortedSprites = sprites;
         std::sort(sortedSprites.begin(), sortedSprites.end(),
             [&player](const Sprite& a, const Sprite& b) {
@@ -33,7 +36,9 @@ namespace wolf::sprite {
 
             int spriteHeight = static_cast<int>(std::abs(height / transformY) * sprite.scale);
             int spriteWidth = static_cast<int>(std::abs(height / transformY) * sprite.scale);
-
+            if (spriteHeight <= 0 || spriteWidth <= 0) {
+                throw std::runtime_error("sprite height and width must be greater than 0");
+            }
             int vMoveScreen = static_cast<int>((height / transformY) * (1.0 - sprite.scale) / 2.0);
             int drawStartY = -spriteHeight / 2 + height / 2 + vMoveScreen;
             int drawEndY = spriteHeight / 2 + height / 2 + vMoveScreen;
