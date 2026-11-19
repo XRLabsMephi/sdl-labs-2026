@@ -2,6 +2,12 @@
 #include <format>
 #include <render/SdlPresenter.h>
 
+#include "debug/Logger.h"
+
+namespace {
+    constexpr const char *component = "PRSNTR";
+}
+
 void render::SdlPresenter::SDL_Renderer_Deleter::operator()(SDL_Renderer *renderer) const noexcept {
     SDL_DestroyRenderer(renderer);
 }
@@ -10,28 +16,36 @@ void render::SdlPresenter::SDL_Texture_Deleter::operator()(SDL_Texture *texture)
     SDL_DestroyTexture(texture);
 }
 
+void render::SdlPresenter::fail(std::string_view message) {
+    error_message = message;
+}
+
 render::SdlPresenter::SdlPresenter(SDL_Window *window) {
     if (!window) { throw std::invalid_argument("window cannot be null"); }
 
     int width = 0, height = 0;
     if (!SDL_GetWindowSizeInPixels(window, &width, &height)) {
-        throw std::runtime_error(std::format("failed to get window size: {}", SDL_GetError()));
+        fail(std::format("failed to get window size: {}", SDL_GetError()));
+        throw std::runtime_error(error_message);
     }
 
     if (width == 0 || height == 0) {
-        throw std::runtime_error(std::format("invalid window size: {} * {}", width, height));
+        fail(std::format("invalid window size: {} * {}", width, height));
+        throw std::runtime_error(error_message);
     }
 
     width_ = static_cast<buf_size_t>(width);
     height_ = static_cast<buf_size_t>(height);
 
     if (width_ > std::numeric_limits<buf_size_t>::max() / height_) {
-        throw std::length_error("failed to create presenter: Buffer dimensions are too large");
+        fail("failed to create presenter: Buffer dimensions are too large");
+        throw std::length_error(error_message);
     }
 
     SDL_Renderer *raw_renderer = SDL_CreateRenderer(window, nullptr);
     if (!raw_renderer) {
-        throw std::runtime_error(std::format("failed to create renderer: {}", SDL_GetError()));
+        fail(std::format("failed to create renderer: {}", SDL_GetError()));
+        throw std::runtime_error(error_message);
     }
     renderer_.reset(raw_renderer);
 
@@ -41,7 +55,8 @@ render::SdlPresenter::SdlPresenter(SDL_Window *window) {
         SDL_TEXTUREACCESS_STREAMING,
         height, width);
     if (!raw_texture) {
-        throw std::runtime_error(std::format("failed to create texture: {}", SDL_GetError()));
+        fail(std::format("failed to create texture: {}", SDL_GetError()));
+        throw std::runtime_error(error_message);
     }
     texture_.reset(raw_texture);
 }
@@ -61,30 +76,6 @@ bool render::SdlPresenter::present(const FrameBuffer &buffer) {
         error_message = std::format("failed to lock texture: {}", SDL_GetError());
         return false;
     }
-    //AFTER HEATED DISCUSSION WAS ALTERED TO CURRENT VERSION
-    /*
-    // using tiling approach in drawing.
-    constexpr buf_size_t BLOCK_SIZE = 16; // 16 * 16 = 256 pixels per block (tile)
-    const uint32_t *buf_data_ptr = buffer.raw_data();
-    uint8_t *texture_pixels_ptr = static_cast<uint8_t *>(pixels);
-    //dividing frame into tiles BLOCK_SIZE x BLOCK_SIZE pixels
-    for (size_t block_row = 0; block_row < height_; block_row += BLOCK_SIZE) {
-        const size_t max_row = std::min(block_row + BLOCK_SIZE, height_); // to control out of bounds UB
-
-        for (size_t block_column = 0; block_column < width_; block_column += BLOCK_SIZE) {
-            const size_t max_column = std::min(block_column + BLOCK_SIZE, width_); // to control out of bounds UB
-
-            for (size_t row = block_row; row < max_row; ++row) {
-                for (size_t column = block_column; column < max_column; ++column) {
-                    // getting address in texture in row-major manner because optimized writing is more important
-                    uint8_t *pixel_address = texture_pixels_ptr + row * pitch + column * sizeof(uint32_t);
-
-                    //writing directly to the VRAM
-                    *reinterpret_cast<uint32_t *>(pixel_address) = buf_data_ptr[column * height_ + row];
-                }
-            }
-        }
-    }*/
 
     // GPU-transposed-flipped rendering: setting up texture as height_ x width_ and transforming it in query to GPU
     const size_t bytes_per_row = height_ * sizeof(uint32_t);
@@ -126,10 +117,9 @@ bool render::SdlPresenter::present(const FrameBuffer &buffer) {
     }
 
     if (!SDL_RenderPresent(renderer_.get())) {
-        error_message = std::format("failed to present texture: {}", SDL_GetError());
+        fail(std::format("failed to present render: {}", SDL_GetError()));
         return false;
     }
-
     return true;
 }
 

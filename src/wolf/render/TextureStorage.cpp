@@ -1,7 +1,5 @@
 #include "render/TextureStorage.h"
 
-#include <format>
-
 #include <ranges>
 
 #include "debug/Logger.h"
@@ -11,7 +9,7 @@ namespace {
 }
 
 namespace render {
-    TextureStorage::TextureStorage(size_t size) {
+    TextureStorage::TextureStorage(size_t size){
         reset(size);
     }
 
@@ -27,46 +25,46 @@ namespace render {
         textures_[id] = std::move(texture);
     }
 
-    void TextureStorage::add(std::vector<std::pair<Texture, size_t>> textures) {
+    void TextureStorage::add(const std::vector<std::pair<Texture, size_t>>& textures) {
         for (auto &[texture, id]: textures) {
-            add(std::move(texture), id);
+            add(texture, id);
         }
     }
 
     void TextureStorage::addFromFile(const std::string &filename, const size_t id) {
-        add(loadOrEmpty(filename), id);
+        if (std::optional<Texture> texture = loadOrEmpty(filename)) add(texture.value(), id);
     }
 
     void TextureStorage::addFromEntries(const std::vector<TextureEntry> &entries) {
         for (auto& [filename, id]: entries) {
-            add(loadOrEmpty(filename), id);
+            if (std::optional<Texture> texture = loadOrEmpty(filename)) add(texture.value(), id);
         }
     }
 
     void TextureStorage::reset(size_t size) {
         max_id_ = size == 0 ? 0 : size - 1;
-        textures_.assign(size, Texture::empty);
+        textures_.assign(size, std::nullopt);
         used_.assign(size, false);
     }
 
     void TextureStorage::resize(size_t size) {
         max_id_ = size == 0 ? 0 : size - 1;
-        textures_.resize(size, Texture::empty);
+        textures_.resize(size, std::nullopt);
         used_.resize(size);
     }
 
     bool TextureStorage::contains(size_t id) const noexcept { return id < used_.size() && used_[id]; }
 
-    const Texture& TextureStorage::get(size_t id) const {
-        return textures_[id];
+    const Texture& TextureStorage::get(size_t id) const{
+        return textures_[id].value();
     }
 
 
     const Texture& TextureStorage::getOrEmpty(size_t id) const noexcept {
-        return contains(id) ? textures_[id] : Texture::empty;
+        return contains(id) && textures_[id].has_value() ? textures_[id].value() : Texture::empty;
     }
 
-    Texture TextureStorage::loadOrEmpty(const std::string &filename) {
+    std::optional<Texture> TextureStorage::loadOrEmpty(const std::string &filename) {
         try {
             Texture tmp(filename);
             return tmp;
@@ -77,7 +75,7 @@ namespace render {
                 std::format("failed to load texture: {}, using placeholder", ex.what()),
                 ""
                 );
-            return Texture::empty;
+            return std::nullopt;
         }
     }
 }

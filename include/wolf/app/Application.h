@@ -13,34 +13,38 @@
 #include <render/TextureStorage.h>
 #include <world/Map.h>
 #include <world/Player.h>
+#include <render/SpriteRenderer.h>
+#include <render/ViewSettings.h>
 
 namespace app {
 
     class Application {
-    private:
         struct WindowDeleter {
             void operator()(SDL_Window* window) const noexcept {
                 SDL_DestroyWindow(window);
             }
         };
 
-        std::unique_ptr<SDL_Window, WindowDeleter> window;
+        std::unique_ptr<SDL_Window, WindowDeleter> window_;
 
-        world::Map map;
-        world::Player player;
+        world::Map map_;
+        world::Player player_;
 
-        input::InputState input;
-        input::PlayerController playerController;
+        input::InputState input_;
+        input::PlayerController playerController_;
 
-        render::TextureStorage textureStorage;
-        std::unique_ptr<render::FrameBuffer> frameBuffer;
-        std::unique_ptr<raycast::RayCaster> rayCaster;
-        std::unique_ptr<render::SdlPresenter> presenter;
+        render::TextureStorage textureStorage_;
+        std::unique_ptr<render::FrameBuffer> frameBuffer_;
+        std::unique_ptr<raycast::RayCaster> rayCaster_;
+        std::unique_ptr<render::SpriteRenderer> spriteRenderer_;
+        std::unique_ptr<render::SdlPresenter> presenter_;
+        ViewSettings viewSettings_;
 
-        bool running = false;
-        bool initialized = false;
-        bool sdlInitialized = false;
-        bool focused = false;
+
+        bool running_ = false;
+        bool initialized_ = false;
+        bool sdlInitialized_ = false;
+        bool focused_ = false;
 
         void processEvents();
         void update(double deltaTime);
@@ -57,12 +61,12 @@ namespace app {
         void run();
         void shutdown() noexcept;
 
-        bool isRunning() const {
-            return running;
+        [[nodiscard]] bool isRunning() const {
+            return running_;
         }
 
         void stop() {
-            running = false;
+            running_ = false;
         }
     };
 

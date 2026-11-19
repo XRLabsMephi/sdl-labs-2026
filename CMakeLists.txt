@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.22.1)
 
 project(SoftwareGraphicsLabs LANGUAGES CXX)
 
-find_package(SDL3 REQUIRED CONFIG)
+find_package(SDL3 3.4 REQUIRED CONFIG)
 
 set(HEADERS
         include/wolf/app/Application.h
@@ -20,8 +20,10 @@ set(HEADERS
         include/wolf/debug/Logger.h
         include/wolf/render/Texture.h
         include/wolf/render/TextureStorage.h
-        include/wolf/render/TextureStorageInflator.h
+        include/wolf/render/TextureStorageLoader.h
         include/wolf/render/Fog.h
+        include/wolf/render/SpriteRenderer.h
+        include/wolf/render/ViewSettings.h
 )
 
 set(SOURCES
@@ -36,7 +38,8 @@ set(SOURCES
         src/wolf/input/InputState.cpp
         src/wolf/render/Texture.cpp
         src/wolf/render/TextureStorage.cpp
-        src/wolf/render/TextureStorageInflator.cpp
+        src/wolf/render/TextureStorageLoader.cpp
+        src/wolf/render/SpriteRenderer.cpp
 )
 
 add_executable(graphics_lab src/wolf/main.cpp ${HEADERS} ${SOURCES})
@@ -50,7 +53,7 @@ target_link_libraries(graphics_lab PRIVATE SDL3::SDL3)
 target_compile_features(graphics_lab PRIVATE cxx_std_20)
 
 target_compile_options(graphics_lab PRIVATE
-        $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Wall -Wextra -Wpedantic>
+        $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Wall -Wextra -Wpedantic -O3>
         $<$<CXX_COMPILER_ID:MSVC>:/W4 /permissive->
 )
 

@@ -22,6 +22,9 @@ namespace core {
             y += other.y;
             return *this;
         }
+        Vector2 operator*(double scalar){
+            return {x * scalar, y * scalar};
+        }
         double length() const{
             return Vector2::length(*this);
         }

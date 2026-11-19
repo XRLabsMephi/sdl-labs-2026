@@ -8,6 +8,7 @@
 #include <filesystem>
 #include <fstream>
 #include <SDL3/SDL_surface.h>
+#include <algorithm>
 
 #include "debug/Logger.h"
 
@@ -26,8 +27,11 @@ namespace render {
         fs::path path = filename;
 
         std::string ext = path.extension().string();
-        std::ranges::transform(ext, ext.begin(),
-        [](const unsigned char c) { return static_cast<char>(std::tolower(c)); });
+        std::ranges::transform(
+            ext,
+            ext.begin(),
+            [](const unsigned char c) { return static_cast<char>(std::tolower(c)); }
+            );
 
         //TODO Add support for JPG, Webp, and others
         if (ext != ".png") {
@@ -50,11 +54,19 @@ namespace render {
                 );
         }
 
+        //на будущее
+        /*if (!SDL_PremultiplySurfaceAlpha(surface.get(), false)) {
+            throw std::runtime_error(
+                std::format(
+                    "SDL_Surface from file \"{}\" premultiplying failed: {}", filename, SDL_GetError()
+                    )
+                );
+        }*/
+
         width = surface->w;
         height = surface->h;
         pixels.resize(static_cast<size_t>(width) * height);
 
-        //TODO implement tiling loading
         const auto *base = static_cast<const Uint8 *>(surface->pixels);
         for (int y = 0; y < height; ++y) {
             const Uint8 *row = base + static_cast<size_t>(y) * surface->pitch;

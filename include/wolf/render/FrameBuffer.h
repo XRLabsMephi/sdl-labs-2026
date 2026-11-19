@@ -7,7 +7,6 @@
 #include "core/Color.h"
 
 namespace render {
-    using Color = core::Color;
     template<typename T>
     using vector = std::vector<T>;
     using buf_size_t = size_t;
@@ -17,9 +16,9 @@ namespace render {
     */
     struct DrawCallParams {
         const Uint32* tex_col = nullptr; /**< Texture pixels column*/
-        std::int64_t tex_y_start = 0; /**< Mapping from screen to texture coordinates in 16.16 fixed precision format.*/
-        std::int64_t tex_step = 0; /**< Texture pixels step per screen pixel, in 16.16 fixed precision format*/
-        float depth = 0; /**< Depth of the object in the frame (z_buf value). Influences the color*/
+        int tex_y_start = 0; /**< Mapping from screen to texture coordinates in 16.16 fixed precision format.*/
+        int tex_step = 0; /**< Texture pixels step per screen pixel, in 16.16 fixed precision format*/
+        double depth = 0; /**< Depth of the object in the frame (z_buf value). Influences the color*/
         Uint8 brightness = 0; /**< Dynamic shadowing coefficient*/
     };
 
@@ -40,8 +39,11 @@ namespace render {
         /**
          * @brief Sets the fog parameters: color and factor
          */
-        void set_fog_params(Color fog_color, float min_fog_depth, float max_fog_depth);
+        void set_fog_params(core::Color fog_color, float min_fog_depth, float max_fog_depth);
 
+        /**
+         * @brief Sets the fog parameters: color and factor
+         */
         /**
          * @brief Returns width of the buffer
          */
@@ -61,13 +63,7 @@ namespace render {
          * @brief Fills whole buffer
          * @param color the color to apply
          */
-        void clear(Color color);
-
-        /**
-         * @brief Fills whole buffer
-         * @param params draw call parameters (see @c DrawCallParams)
-         */
-        void clear(const DrawCallParams &params);
+        void clear(core::Color color);
 
         /**
          * @brief Colors single pixel at point
@@ -76,16 +72,7 @@ namespace render {
          * @param color color to apply
          * @attention Points outside buffer rejects
          */
-        void set(int x, int y, Color color);
-
-        /**
-         * @brief Colors single pixel at point
-         * @param x x coordinate
-         * @param y y coordinate
-         * @param params draw call parameters (see @c DrawCallParams)
-         * @attention Points outside buffer rejects
-         */
-        void set(int x, int y, const DrawCallParams &params);
+        void set(int x, int y, core::Color color);
 
         /**
         * @brief Draws vertical line
@@ -94,20 +81,20 @@ namespace render {
         * @param y1 end y coordinate
         * @param color color to apply
         */
-        void vline(int x, int y0, int y1, Color color);
+        void vline(int x, int y0, int y1, core::Color color);
 
         /**
-         * @brief Draws vertical line
+         * @brief Draws vertical line without color blending
          * @param x x coordinate
          * @param y0 start y coordinate
          * @param y1 end y coordinate
          * @param params draw call parameters (see @c DrawCallParams)
          */
-        template<bool IsSprite>
+        template<bool OpaqueDraw>
         void vline(int x, int y0, int y1, const DrawCallParams &params);
 
         /**
-         * @brief Draws vertical line
+         * @brief Draws vertical line with color blending
          * @param x x coordinate
          * @param y0 start y coordinate
          * @param y1 end y coordinate
@@ -122,7 +109,7 @@ namespace render {
          * @param x1 end x coordinate
          * @param color color to apply
          */
-        void hline(int y, int x0, int x1, Color color);
+        void hline(int y, int x0, int x1, core::Color color);
 
         /**
          * @brief Draws horizontal line
@@ -141,7 +128,7 @@ namespace render {
          * @param y1 bottom-right y coordinate
          * @param color color to apply
          */
-        void rectangle(int x0, int y0, int x1, int y1, Color color);
+        void rectangle(int x0, int y0, int x1, int y1, core::Color color);
 
         /**
          * @brief Draws rectangle.

@@ -1,11 +1,12 @@
 #include <app/Application.h>
 #include <debug/Logger.h>
-#include <render/TextureStorageInflator.h>
+#include <render/TextureStorageLoader.h>
 
 #include <exception>
 #include <filesystem>
 #include <iostream>
 #include <string>
+#include <numbers>
 
 namespace {
 
@@ -14,19 +15,24 @@ constexpr char WINDOW_TITLE[] = "RayCaster";
 constexpr int WINDOW_WIDTH = 1024;
 constexpr int WINDOW_HEIGHT = 768;
 
+constexpr int EYE_HEIGHT = WINDOW_HEIGHT / 2;
+
 constexpr int FRAME_WIDTH = WINDOW_WIDTH;
 constexpr int FRAME_HEIGHT = WINDOW_HEIGHT;
 constexpr core::Color FOG_COLOR{72, 76, 84};
 constexpr float MIN_FOG_DEPTH = 2.0f;
 constexpr float MAX_FOG_DEPTH = 12.0f;
 
-constexpr SDL_WindowFlags WINDOW_FLAGS = 0;
+constexpr SDL_WindowFlags WINDOW_FLAGS = SDL_WINDOW_RESIZABLE;
+
 
 constexpr double NANOSECONDS_PER_SECOND = 1e-9;
 
 constexpr double MOVE_SPEED = 3.0;
 constexpr double ROTATION_SPEED = 2.0;
 constexpr double MOUSE_SENSITIVITY = 0.002;
+
+constexpr double FIELD_OF_VIEW = std::numbers::pi / 3;
 
 enum class ApplicationError {
     MapLoading = 1,
@@ -72,7 +78,7 @@ app::Application::~Application() {
 }
 
 bool app::Application::initialize(const std::string& mapFilename) {
-    if (initialized) {
+    if (initialized_) {
         return true;
     }
 
@@ -84,7 +90,7 @@ bool app::Application::initialize(const std::string& mapFilename) {
         const fs::path root = base ? fs::path(base) : fs::current_path();
         const fs::path mapPath = root / mapFilename;
 
-        if (!map.loadFromFile(mapPath.string())) {
+        if (!map_.loadFromFile(mapPath.string())) {
             reportError(
                 ApplicationError::MapLoading,
                 "Failed to load map.",
@@ -94,9 +100,9 @@ bool app::Application::initialize(const std::string& mapFilename) {
             return false;
         }
 
-        if (!map.canOccupy(
-                map.getSpawnPosition(),
-                player.getRadius()
+        if (!map_.canOccupy(
+                map_.getSpawnPosition(),
+                player_.getRadius()
             )) {
             reportError(
                 ApplicationError::InvalidSpawn,
@@ -107,12 +113,15 @@ bool app::Application::initialize(const std::string& mapFilename) {
             return false;
         }
 
-        player.setPosition(map.getSpawnPosition());
+        player_.setPosition(map_.getSpawnPosition());
+        player_.setPosition(map_.getSpawnPosition());
+        player_.setEyeHeigth(EYE_HEIGHT);
+        player_.setAngle(FIELD_OF_VIEW);
 
         // Initialize all controller settings before the first update.
-        playerController.setMoveSpeed(MOVE_SPEED);
-        playerController.setRotationSpeed(ROTATION_SPEED);
-        playerController.setMouseSensitivity(MOUSE_SENSITIVITY);
+        playerController_.setMoveSpeed(MOVE_SPEED);
+        playerController_.setRotationSpeed(ROTATION_SPEED);
+        playerController_.setMouseSensitivity(MOUSE_SENSITIVITY);
 
         if (!SDL_Init(SDL_INIT_VIDEO)) {
             reportError(
@@ -124,9 +133,9 @@ bool app::Application::initialize(const std::string& mapFilename) {
             return false;
         }
 
-        sdlInitialized = true;
+        sdlInitialized_ = true;
 
-        window.reset(
+        window_.reset(
             SDL_CreateWindow(
                 WINDOW_TITLE,
                 WINDOW_WIDTH,
@@ -135,7 +144,7 @@ bool app::Application::initialize(const std::string& mapFilename) {
             )
         );
 
-        if (!window) {
+        if (!window_) {
             reportError(
                 ApplicationError::WindowCreation,
                 SDL_GetError(),
@@ -146,7 +155,7 @@ bool app::Application::initialize(const std::string& mapFilename) {
             return false;
         }
 
-        if (!SDL_SetWindowRelativeMouseMode(window.get(), true)) {
+        if (!SDL_SetWindowRelativeMouseMode(window_.get(), true)) {
             logging::warning(
                 "APP",
                 std::string("Failed to enable relative mouse mode: ")
@@ -154,33 +163,44 @@ bool app::Application::initialize(const std::string& mapFilename) {
             );
         }
 
-        render::TextureStorageInflator(
-            root / "assets" / "textures" / "textures_mapping.txt"
-        ).inflate(textureStorage);
+        render::TextureStorageLoader(
+            root / "assets/textures/textures_mapping.txt"
+            ).load(textureStorage_);
 
-        frameBuffer = std::make_unique<render::FrameBuffer>(
+        frameBuffer_ = std::make_unique<render::FrameBuffer>(
             FRAME_WIDTH,
             FRAME_HEIGHT
         );
 
-        frameBuffer->set_fog_params(FOG_COLOR, MIN_FOG_DEPTH, MAX_FOG_DEPTH);
+        frameBuffer_->set_fog_params(FOG_COLOR, MIN_FOG_DEPTH, MAX_FOG_DEPTH);
 
+        viewSettings_ = ViewSettings{};
         // RayCaster borrows the player, map, frame buffer and textures.
-        rayCaster = std::make_unique<raycast::RayCaster>(
-            FRAME_WIDTH,
-            FRAME_HEIGHT,
-            player,
-            map,
-            *frameBuffer,
-            textureStorage
+        rayCaster_ = std::make_unique<raycast::RayCaster>(
+            player_,
+            map_,
+            *frameBuffer_,
+            textureStorage_,
+            viewSettings_
+        );
+
+        rayCaster_->set_fog_params(FOG_COLOR, MIN_FOG_DEPTH, MAX_FOG_DEPTH);
+
+        spriteRenderer_ = std::make_unique<render::SpriteRenderer>(
+            player_,
+            map_,
+            *frameBuffer_,
+            textureStorage_,
+            viewSettings_,
+            rayCaster_->getDepthBuffer()
         );
 
         // The presenter borrows the window; Application retains ownership.
-        presenter = std::make_unique<render::SdlPresenter>(
-            window.get()
+        presenter_ = std::make_unique<render::SdlPresenter>(
+            window_.get()
         );
 
-        const std::string presenterError = presenter->getError();
+        const std::string presenterError = presenter_->getError();
 
         if (!presenterError.empty()) {
             reportError(
@@ -193,21 +213,21 @@ bool app::Application::initialize(const std::string& mapFilename) {
             return false;
         }
 
-        input.reset();
+        input_.reset();
 
-        focused =
-            (SDL_GetWindowFlags(window.get()) & SDL_WINDOW_INPUT_FOCUS)
-            != 0;
+        focused_ =
+                (SDL_GetWindowFlags(window_.get()) & SDL_WINDOW_INPUT_FOCUS)
+                != 0;
 
         logging::info(
             "APP",
             "Application initialized successfully."
         );
 
-        initialized = true;
+        initialized_ = true;
 
         return true;
-    } catch (const std::exception& error) {
+    } catch (const std::exception &error) {
         reportError(
             ApplicationError::InitializationException,
             error.what(),
@@ -229,7 +249,7 @@ bool app::Application::initialize(const std::string& mapFilename) {
 }
 
 void app::Application::run() {
-    if (!initialized) {
+    if (!initialized_) {
         reportError(
             ApplicationError::NotInitialized,
             "Application must be initialized before running.",
@@ -239,54 +259,64 @@ void app::Application::run() {
         return;
     }
 
-    if (running) {
+    if (running_) {
         return;
     }
 
-    running = true;
+    running_ = true;
 
     try {
         logging::info("APP", "Starting the main loop.");
 
         Uint64 previousTime = SDL_GetTicksNS();
-
-        while (running) {
+        Uint64 fpsStartTime = previousTime;
+        Uint64 fpsFrameCount = 0;
+        while (running_) {
             const Uint64 currentTime = SDL_GetTicksNS();
 
             // Convert elapsed time from nanoseconds to seconds.
             const double deltaTime =
-                static_cast<double>(currentTime - previousTime)
-                * NANOSECONDS_PER_SECOND;
+                    static_cast<double>(currentTime - previousTime)
+                    * NANOSECONDS_PER_SECOND;
 
             previousTime = currentTime;
 
-            input.beginFrame();
+            input_.beginFrame();
             processEvents();
 
-            if (!running) {
+            if (!running_) {
                 break;
             }
 
             update(deltaTime);
 
-            // Clear the previous frame before drawing the current scene.
-            frameBuffer->clear(core::Color::black);
+            rayCaster_->renderScene();
+            spriteRenderer_->renderSprites();
 
-            rayCaster->renderScene();
-
-            if (!presenter->present(*frameBuffer)) {
+            if (!presenter_->present(*frameBuffer_)) {
                 reportError(
                     ApplicationError::FramePresentation,
-                    presenter->getError(),
+                    presenter_->getError(),
                     "Application::run SdlPresenter::present"
                 );
 
                 stop();
+            } else {
+                ++fpsFrameCount;
+                const Uint64 fpsCurrentTime = SDL_GetTicksNS();
+                const double fpsElapsedSeconds =
+                        static_cast<double>(fpsCurrentTime - fpsStartTime) * NANOSECONDS_PER_SECOND;
+                if (fpsElapsedSeconds >= 1.0) {
+                    const double fps = static_cast<double>(fpsFrameCount) / fpsElapsedSeconds;
+                    std::cout << fps << std::endl;
+                    fpsFrameCount = 0;
+                    fpsStartTime = fpsCurrentTime;
+                }
             }
         }
 
         logging::info("APP", "The main loop has stopped.");
-    } catch (const std::exception& error) {
+    } catch (const std::exception &error) {
         reportError(
             ApplicationError::RuntimeException,
             error.what(),
@@ -313,65 +343,62 @@ void app::Application::processEvents() {
                 return;
 
             case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
-                if (event.window.windowID ==
-                    SDL_GetWindowID(window.get())) {
+                if (event.window.windowID == SDL_GetWindowID(window_.get())) {
                     stop();
                     return;
                 }
                 break;
 
             case SDL_EVENT_KEY_DOWN:
-                if (focused && event.key.key == SDLK_ESCAPE) {
+                if (focused_ && event.key.key == SDLK_ESCAPE) {
                     stop();
                     return;
                 }
 
-                if (focused) {
-                    input.handleEvent(event);
+                if (focused_) {
+                    input_.handleEvent(event);
                 }
                 break;
 
             case SDL_EVENT_WINDOW_FOCUS_LOST:
-                if (event.window.windowID == SDL_GetWindowID(window.get())) {
-                    focused = false;
+                if (event.window.windowID == SDL_GetWindowID(window_.get())) {
+                    focused_ = false;
 
-                    if (!SDL_SetWindowRelativeMouseMode(window.get(), false)) {
+                    if (!SDL_SetWindowRelativeMouseMode(window_.get(), false)) {
                         SDL_Log("Failed to release mouse: %s", SDL_GetError());
                     }
 
-                    input.reset();
+                    input_.reset();
                 }
                 break;
 
             case SDL_EVENT_WINDOW_FOCUS_GAINED:
-                if (event.window.windowID ==
-                    SDL_GetWindowID(window.get())) {
-                    focused = true;
-                    input.reset();
+                if (event.window.windowID == SDL_GetWindowID(window_.get())) {
+                    focused_ = true;
+                    input_.reset();
                 }
                 break;
 
             case SDL_EVENT_MOUSE_BUTTON_DOWN:
-                if (focused &&
-                    event.button.windowID == SDL_GetWindowID(window.get()) &&
+                if (focused_ && event.button.windowID == SDL_GetWindowID(window_.get()) &&
                     event.button.button == SDL_BUTTON_LEFT) {
-                    if (!SDL_SetWindowRelativeMouseMode(window.get(), true)) {
+                    if (!SDL_SetWindowRelativeMouseMode(window_.get(), true)) {
                         SDL_Log("Failed to capture mouse: %s", SDL_GetError());
                     }
-                    }
+                }
                 break;
 
             case SDL_EVENT_MOUSE_MOTION:
-                if (focused &&
-                    event.motion.windowID == SDL_GetWindowID(window.get()) &&
-                    SDL_GetWindowRelativeMouseMode(window.get())) {
-                    input.handleEvent(event);
-                    }
+                if (focused_ &&
+                    event.motion.windowID == SDL_GetWindowID(window_.get()) &&
+                    SDL_GetWindowRelativeMouseMode(window_.get())) {
+                    input_.handleEvent(event);
+                }
                 break;
 
             default:
-                if (focused) {
-                    input.handleEvent(event);
+                if (focused_) {
+                    input_.handleEvent(event);
                 }
                 break;
         }
@@ -379,36 +406,36 @@ void app::Application::processEvents() {
 }
 
 void app::Application::update(double deltaTime) {
-    if (!focused) {
+    if (!focused_) {
         return;
     }
 
-    playerController.update(
-        player,
-        map,
-        input,
+    playerController_.update(
+        player_,
+        map_,
+        input_,
         deltaTime
     );
 }
 
 void app::Application::shutdown() noexcept {
-    running = false;
-    initialized = false;
-    focused = false;
+    running_ = false;
+    initialized_ = false;
+    focused_ = false;
 
-    input.reset();
+    input_.reset();
 
     // Release renderer resources before destroying the borrowed window.
-    presenter.reset();
+    presenter_.reset();
 
     // Destroy objects holding references before their referenced resources.
-    rayCaster.reset();
-    frameBuffer.reset();
+    rayCaster_.reset();
+    frameBuffer_.reset();
 
-    window.reset();
+    window_.reset();
 
-    if (sdlInitialized) {
+    if (sdlInitialized_) {
         SDL_Quit();
-        sdlInitialized = false;
+        sdlInitialized_ = false;
     }
 }
