@@ -1,12 +1,6 @@
+#include <debug/Logger.h>
 #include <stdexcept>
 #include <input/InputState.h>
-
-namespace {
-    constexpr SDL_Scancode MOVE_FORWARD_KEY = SDL_SCANCODE_W;
-    constexpr SDL_Scancode MOVE_BACKWARD_KEY = SDL_SCANCODE_S;
-    constexpr SDL_Scancode MOVE_LEFT_KEY = SDL_SCANCODE_A;
-    constexpr SDL_Scancode MOVE_RIGHT_KEY = SDL_SCANCODE_D;
-}
 
 void input::InputState::handleEvent(const SDL_Event& event) {
     switch (event.type) {
@@ -14,33 +8,11 @@ void input::InputState::handleEvent(const SDL_Event& event) {
         case SDL_EVENT_KEY_UP: {
             const bool active = event.type == SDL_EVENT_KEY_DOWN;
 
-            switch (event.key.scancode) {
-                case MOVE_FORWARD_KEY:
-                    setActionActive(Action::MoveForward, active);
+            for (std::size_t i = 0; i < bindings.size(); ++i) {
+                if (event.key.scancode == bindings[i]) {
+                    setActionActive(static_cast<Action>(i), active);
                     break;
-
-                case MOVE_BACKWARD_KEY:
-                    setActionActive(Action::MoveBackward, active);
-                    break;
-
-                case MOVE_LEFT_KEY:
-                    setActionActive(Action::MoveLeft, active);
-                    break;
-
-                case MOVE_RIGHT_KEY:
-                    setActionActive(Action::MoveRight, active);
-                    break;
-
-                case SDL_SCANCODE_LEFT:
-                    setActionActive(Action::TurnLeft, active);
-                    break;
-
-                case SDL_SCANCODE_RIGHT:
-                    setActionActive(Action::TurnRight, active);
-                    break;
-
-                default:
-                    break;
+                }
             }
 
             break;
@@ -68,7 +40,7 @@ double input::InputState::getAxis(MovementAxis axis) const {
             return axisValue(Action::MoveLeft, Action::MoveRight);
     }
 
-    throw std::invalid_argument("Unknown movement axis");
+    throw logging::Error(logging::ErrorCode::InputAxis, "Unknown movement axis");
 }
 
 double input::InputState::getAxis(RotationAxis axis) const {
@@ -77,7 +49,7 @@ double input::InputState::getAxis(RotationAxis axis) const {
             return axisValue(Action::TurnRight, Action::TurnLeft);
     }
 
-    throw std::invalid_argument("Unknown rotation axis");
+    throw logging::Error(logging::ErrorCode::InputAxis, "Unknown rotation axis");
 }
 
 double input::InputState::axisValue(

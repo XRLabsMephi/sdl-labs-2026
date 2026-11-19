@@ -39,6 +39,9 @@ namespace app {
         std::unique_ptr<render::SpriteRenderer> spriteRenderer_;
         std::unique_ptr<render::SdlPresenter> presenter_;
         ViewSettings viewSettings_;
+        SDL_Scancode exitKey_ = SDL_SCANCODE_ESCAPE;
+        bool relativeMouse_ = true;
+        bool showFps_ = true;
 
 
         bool running_ = false;
@@ -56,7 +59,7 @@ namespace app {
         Application(const Application&) = delete;
         Application& operator=(const Application&) = delete;
 
-        bool initialize(const std::string& mapFilename);
+        bool initialize(const std::string& settingsFilename);
 
         void run();
         void shutdown() noexcept;

@@ -15,11 +15,11 @@ namespace render {
 
     void TextureStorage::add(Texture texture, size_t id) {
         if (id >= textures_.size()) {
-            throw std::out_of_range(
+            throw logging::Error(logging::ErrorCode::TextureId,
                 std::format("texture id {} out of range (size {})", id, textures_.size()));
         }
         if (used_[id]) {
-            throw std::invalid_argument(std::format("duplicate id {} assigning", id));
+            throw logging::Error(logging::ErrorCode::TextureDuplicate, std::format("duplicate id {} assigning", id));
         }
         used_[id] = true;
         textures_[id] = std::move(texture);
@@ -71,7 +71,7 @@ namespace render {
         } catch (const std::exception & ex) {
             logging::error(
                 component,
-                1,
+                logging::ErrorCode::TextureRead,
                 std::format("failed to load texture: {}, using placeholder", ex.what()),
                 ""
                 );

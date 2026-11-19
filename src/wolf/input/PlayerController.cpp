@@ -1,14 +1,9 @@
+#include <debug/Logger.h>
 #include <input/PlayerController.h>
 
 #include <algorithm>
 #include <cmath>
 #include <limits>
-
-namespace {
-
-constexpr double MAX_MOVEMENT_STEP = 0.1;
-
-}
 
 void input::PlayerController::update(
     world::Player& player,
@@ -79,8 +74,8 @@ void input::PlayerController::tryMove(
     const double radius = player.getRadius();
 
     const double stepLength = radius > 0.0
-        ? std::min(MAX_MOVEMENT_STEP, radius)
-        : MAX_MOVEMENT_STEP;
+        ? std::min(maxMovementStep, radius)
+        : maxMovementStep;
 
     const double requiredSteps = std::ceil(distance / stepLength);
 
@@ -152,4 +147,10 @@ void input::PlayerController::updateRotation(
     if (std::isfinite(rotation) && rotation != 0.0) {
         player.rotate(rotation);
     }
+}
+void input::PlayerController::setMaxMovementStep(double step) {
+    if (!std::isfinite(step) || step <= 0.0) {
+        throw logging::Error(logging::ErrorCode::MovementStep, "Invalid movement step");
+    }
+    maxMovementStep = step;
 }

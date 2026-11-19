@@ -1,7 +1,9 @@
 #include <app/Application.h>
+#include <config/ProjectSettings.h>
 #include <debug/Logger.h>
 #include <render/TextureStorageLoader.h>
 
+#include <algorithm>
 #include <exception>
 #include <filesystem>
 #include <iostream>
@@ -10,52 +12,22 @@
 
 namespace {
 
-constexpr char WINDOW_TITLE[] = "RayCaster";
-
-constexpr int WINDOW_WIDTH = 1024;
-constexpr int WINDOW_HEIGHT = 768;
-
-constexpr int EYE_HEIGHT = WINDOW_HEIGHT / 2;
-
-constexpr int FRAME_WIDTH = WINDOW_WIDTH;
-constexpr int FRAME_HEIGHT = WINDOW_HEIGHT;
-constexpr core::Color FOG_COLOR{72, 76, 84};
-constexpr float MIN_FOG_DEPTH = 2.0f;
-constexpr float MAX_FOG_DEPTH = 12.0f;
-
-constexpr SDL_WindowFlags WINDOW_FLAGS = SDL_WINDOW_RESIZABLE;
-
-
 constexpr double NANOSECONDS_PER_SECOND = 1e-9;
-
-constexpr double MOVE_SPEED = 3.0;
-constexpr double ROTATION_SPEED = 2.0;
-constexpr double MOUSE_SENSITIVITY = 0.002;
-
-constexpr double FIELD_OF_VIEW = std::numbers::pi / 3;
-
-enum class ApplicationError {
-    MapLoading = 1,
-    InvalidSpawn,
-    SdlInitialization,
-    WindowCreation,
-    PresenterInitialization,
-    InitializationException,
-    NotInitialized,
-    FramePresentation,
-    RuntimeException
-};
+using logging::ErrorCode;
 
 // Preserve the original error even if writing to the log file fails.
 void reportError(
-    ApplicationError code,
+    ErrorCode code,
     const std::string& message,
     const std::string& context
 ) noexcept {
     try {
+        constexpr std::string_view components[] = {
+            "APP", "APP", "CONFIG", "MAP", "PLAYER", "PROJECT", "FRAME", "PRSNTR", "TEXTURE", "LOGGER"
+        };
         logging::error(
-            "APP",
-            static_cast<int>(code),
+            components[static_cast<int>(code) / 100],
+            code,
             message,
             context
         );
@@ -77,7 +49,7 @@ app::Application::~Application() {
     shutdown();
 }
 
-bool app::Application::initialize(const std::string& mapFilename) {
+bool app::Application::initialize(const std::string& settingsFilename) {
     if (initialized_) {
         return true;
     }
@@ -88,11 +60,15 @@ bool app::Application::initialize(const std::string& mapFilename) {
         namespace fs = std::filesystem;
         const char* base = SDL_GetBasePath();
         const fs::path root = base ? fs::path(base) : fs::current_path();
-        const fs::path mapPath = root / mapFilename;
+        const auto settings = config::load(root / settingsFilename);
+        const fs::path mapPath = root / settings.map;
+        player_.setRadius(settings.player_radius);
+        relativeMouse_ = settings.relative_mouse;
+        showFps_ = settings.show_fps;
 
         if (!map_.loadFromFile(mapPath.string())) {
             reportError(
-                ApplicationError::MapLoading,
+                ErrorCode::MapLoading,
                 "Failed to load map.",
                 "Application::initialize File=\"" + mapPath.string() + "\""
             );
@@ -105,7 +81,7 @@ bool app::Application::initialize(const std::string& mapFilename) {
                 player_.getRadius()
             )) {
             reportError(
-                ApplicationError::InvalidSpawn,
+                ErrorCode::InvalidSpawn,
                 "The player cannot occupy the spawn position.",
                 "Application::initialize"
             );
@@ -114,18 +90,19 @@ bool app::Application::initialize(const std::string& mapFilename) {
         }
 
         player_.setPosition(map_.getSpawnPosition());
-        player_.setPosition(map_.getSpawnPosition());
-        player_.setEyeHeigth(EYE_HEIGHT);
-        player_.setAngle(FIELD_OF_VIEW);
+        player_.setEyeHeight(settings.eye_height);
+        player_.setAngle(settings.field_of_view_deg * std::numbers::pi / 180.0);
 
         // Initialize all controller settings before the first update.
-        playerController_.setMoveSpeed(MOVE_SPEED);
-        playerController_.setRotationSpeed(ROTATION_SPEED);
-        playerController_.setMouseSensitivity(MOUSE_SENSITIVITY);
+        playerController_.setMoveSpeed(settings.move_speed);
+        playerController_.setRotationSpeed(settings.rotation_speed);
+        playerController_.setMouseSensitivity(settings.mouse_sensitivity);
+
+        playerController_.setMaxMovementStep(settings.max_movement_step);
 
         if (!SDL_Init(SDL_INIT_VIDEO)) {
             reportError(
-                ApplicationError::SdlInitialization,
+                ErrorCode::SdlInitialization,
                 SDL_GetError(),
                 "Application::initialize SDL_Init"
             );
@@ -135,18 +112,35 @@ bool app::Application::initialize(const std::string& mapFilename) {
 
         sdlInitialized_ = true;
 
+        std::array<SDL_Scancode, static_cast<std::size_t>(input::Action::Count)> keys{};
+        const auto scancode = [](const std::string& name) {
+            const auto key = SDL_GetScancodeFromName(name.c_str());
+            if (key == SDL_SCANCODE_UNKNOWN) {
+                throw logging::Error(ErrorCode::InputBinding, "Unknown key: " + name);
+            }
+            return key;
+        };
+        exitKey_ = scancode(settings.exit_key);
+        for (std::size_t i = 0; i < keys.size(); ++i) {
+            keys[i] = scancode(settings.movement_keys[i]);
+            if (keys[i] == exitKey_ || std::find(keys.begin(), keys.begin() + i, keys[i]) != keys.begin() + i) {
+                throw logging::Error(ErrorCode::InputBinding, "Duplicate key: " + settings.movement_keys[i]);
+            }
+        }
+        input_.setBindings(keys);
+
         window_.reset(
             SDL_CreateWindow(
-                WINDOW_TITLE,
-                WINDOW_WIDTH,
-                WINDOW_HEIGHT,
-                WINDOW_FLAGS
+                settings.title.c_str(),
+                settings.window_width,
+                settings.window_height,
+                settings.resizable ? SDL_WINDOW_RESIZABLE : 0
             )
         );
 
         if (!window_) {
             reportError(
-                ApplicationError::WindowCreation,
+                ErrorCode::WindowCreation,
                 SDL_GetError(),
                 "Application::initialize SDL_CreateWindow"
             );
@@ -155,26 +149,22 @@ bool app::Application::initialize(const std::string& mapFilename) {
             return false;
         }
 
-        if (!SDL_SetWindowRelativeMouseMode(window_.get(), true)) {
-            logging::warning(
-                "APP",
-                std::string("Failed to enable relative mouse mode: ")
-                + SDL_GetError()
-            );
+        if (relativeMouse_ && !SDL_SetWindowRelativeMouseMode(window_.get(), true)) {
+            reportError(ErrorCode::MouseMode, SDL_GetError(), "Enable relative mouse mode");
         }
 
         render::TextureStorageLoader(
-            root / "assets/textures/textures_mapping.txt"
+            root / settings.texture_mapping
             ).load(textureStorage_);
 
         frameBuffer_ = std::make_unique<render::FrameBuffer>(
-            FRAME_WIDTH,
-            FRAME_HEIGHT
+            settings.frame_width,
+            settings.frame_height
         );
 
-        frameBuffer_->set_fog_params(FOG_COLOR, MIN_FOG_DEPTH, MAX_FOG_DEPTH);
+        frameBuffer_->set_fog_params(settings.fog_color, settings.fog_start, settings.fog_end);
 
-        viewSettings_ = ViewSettings{};
+        viewSettings_ = settings.view;
         // RayCaster borrows the player, map, frame buffer and textures.
         rayCaster_ = std::make_unique<raycast::RayCaster>(
             player_,
@@ -184,7 +174,7 @@ bool app::Application::initialize(const std::string& mapFilename) {
             viewSettings_
         );
 
-        rayCaster_->set_fog_params(FOG_COLOR, MIN_FOG_DEPTH, MAX_FOG_DEPTH);
+        rayCaster_->set_fog_params(settings.fog_color, settings.fog_start, settings.fog_end);
 
         spriteRenderer_ = std::make_unique<render::SpriteRenderer>(
             player_,
@@ -197,14 +187,14 @@ bool app::Application::initialize(const std::string& mapFilename) {
 
         // The presenter borrows the window; Application retains ownership.
         presenter_ = std::make_unique<render::SdlPresenter>(
-            window_.get()
+            window_.get(), settings.frame_width, settings.frame_height
         );
 
         const std::string presenterError = presenter_->getError();
 
         if (!presenterError.empty()) {
             reportError(
-                ApplicationError::PresenterInitialization,
+                ErrorCode::PresenterInitialization,
                 presenterError,
                 "Application::initialize SdlPresenter"
             );
@@ -227,9 +217,13 @@ bool app::Application::initialize(const std::string& mapFilename) {
         initialized_ = true;
 
         return true;
+    } catch (const logging::Error& error) {
+        reportError(error.code, error.what(), "Application::initialize");
+        shutdown();
+        return false;
     } catch (const std::exception &error) {
         reportError(
-            ApplicationError::InitializationException,
+            ErrorCode::InitializationException,
             error.what(),
             "Application::initialize"
         );
@@ -238,7 +232,7 @@ bool app::Application::initialize(const std::string& mapFilename) {
         return false;
     } catch (...) {
         reportError(
-            ApplicationError::InitializationException,
+            ErrorCode::InitializationException,
             "Unknown initialization error.",
             "Application::initialize"
         );
@@ -251,7 +245,7 @@ bool app::Application::initialize(const std::string& mapFilename) {
 void app::Application::run() {
     if (!initialized_) {
         reportError(
-            ApplicationError::NotInitialized,
+            ErrorCode::NotInitialized,
             "Application must be initialized before running.",
             "Application::run"
         );
@@ -295,13 +289,13 @@ void app::Application::run() {
 
             if (!presenter_->present(*frameBuffer_)) {
                 reportError(
-                    ApplicationError::FramePresentation,
+                    ErrorCode::FramePresentation,
                     presenter_->getError(),
                     "Application::run SdlPresenter::present"
                 );
 
                 stop();
-            } else {
+            } else if (showFps_) {
                 ++fpsFrameCount;
                 const Uint64 fpsCurrentTime = SDL_GetTicksNS();
                 const double fpsElapsedSeconds =
@@ -316,15 +310,17 @@ void app::Application::run() {
         }
 
         logging::info("APP", "The main loop has stopped.");
+    } catch (const logging::Error& error) {
+        reportError(error.code, error.what(), "Application::run");
     } catch (const std::exception &error) {
         reportError(
-            ApplicationError::RuntimeException,
+            ErrorCode::RuntimeException,
             error.what(),
             "Application::run"
         );
     } catch (...) {
         reportError(
-            ApplicationError::RuntimeException,
+            ErrorCode::RuntimeException,
             "Unknown runtime error.",
             "Application::run"
         );
@@ -350,7 +346,7 @@ void app::Application::processEvents() {
                 break;
 
             case SDL_EVENT_KEY_DOWN:
-                if (focused_ && event.key.key == SDLK_ESCAPE) {
+                if (focused_ && event.key.scancode == exitKey_) {
                     stop();
                     return;
                 }
@@ -365,7 +361,7 @@ void app::Application::processEvents() {
                     focused_ = false;
 
                     if (!SDL_SetWindowRelativeMouseMode(window_.get(), false)) {
-                        SDL_Log("Failed to release mouse: %s", SDL_GetError());
+                        reportError(ErrorCode::MouseMode, SDL_GetError(), "Release relative mouse mode");
                     }
 
                     input_.reset();
@@ -382,8 +378,8 @@ void app::Application::processEvents() {
             case SDL_EVENT_MOUSE_BUTTON_DOWN:
                 if (focused_ && event.button.windowID == SDL_GetWindowID(window_.get()) &&
                     event.button.button == SDL_BUTTON_LEFT) {
-                    if (!SDL_SetWindowRelativeMouseMode(window_.get(), true)) {
-                        SDL_Log("Failed to capture mouse: %s", SDL_GetError());
+                    if (relativeMouse_ && !SDL_SetWindowRelativeMouseMode(window_.get(), true)) {
+                        reportError(ErrorCode::MouseMode, SDL_GetError(), "Capture relative mouse mode");
                     }
                 }
                 break;
@@ -429,6 +425,7 @@ void app::Application::shutdown() noexcept {
     presenter_.reset();
 
     // Destroy objects holding references before their referenced resources.
+    spriteRenderer_.reset();
     rayCaster_.reset();
     frameBuffer_.reset();
 

@@ -14,14 +14,14 @@ FrameBuffer::FrameBuffer(int width, int height)
       , height_(0)
       , int_width_(0)
       , int_height_(0) {
-    if (width <= 0) { throw std::invalid_argument("width must be > 0"); }
-    if (height <= 0) { throw std::invalid_argument("height must be > 0"); }
+    if (width <= 0) { throw logging::Error(logging::ErrorCode::FrameDimensions, "width must be > 0"); }
+    if (height <= 0) { throw logging::Error(logging::ErrorCode::FrameDimensions, "height must be > 0"); }
 
     width_ = static_cast<buf_size_t>(width);
     height_ = static_cast<buf_size_t>(height);
 
     if (width_ > std::numeric_limits<buf_size_t>::max() / height_) {
-        throw std::length_error("Buffer dimensions are too large");
+        throw logging::Error(logging::ErrorCode::FrameSize, "Buffer dimensions are too large");
     }
 
     int_width_ = width;
@@ -120,7 +120,8 @@ void FrameBuffer::vline(int x, int y0, int y1, const DrawCallParams &params) {
     }
 
     if (step >= 65536) {
-        for (int y = y0, tex_y = tex_y_start; y <= y1; ++y, tex_y += step) {
+        std::int64_t tex_y = tex_y_start;
+        for (int y = y0; y <= y1; ++y, tex_y += step) {
             render_run(tex_y >> 16, y, 1);
         }
         return;

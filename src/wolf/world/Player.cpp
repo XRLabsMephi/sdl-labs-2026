@@ -1,3 +1,4 @@
+#include <debug/Logger.h>
 #include <world/Player.h>
 
 #include <cmath>
@@ -12,7 +13,7 @@ namespace {
 
 void world::Player::rotate(double angleDelta) {
     if (!std::isfinite(angleDelta)) {
-        throw std::invalid_argument("Invalid player rotation");
+        throw logging::Error(logging::ErrorCode::PlayerRotation, "Invalid player rotation");
     }
 
     angleDelta = std::fmod(angleDelta, FULL_TURN);

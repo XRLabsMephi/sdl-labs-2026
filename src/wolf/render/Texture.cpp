@@ -35,19 +35,19 @@ namespace render {
 
         //TODO Add support for JPG, Webp, and others
         if (ext != ".png") {
-            throw std::runtime_error(std::format("file \"{}\" must have .png extension", filename));
+            throw logging::Error(logging::ErrorCode::TextureRead, std::format("file \"{}\" must have .png extension", filename));
         }
 
         SurfacePtr loaded(SDL_LoadPNG(path.string().c_str()));
         if (!loaded) {
-            throw std::runtime_error(
+            throw logging::Error(logging::ErrorCode::TextureRead,
                 std::format("SDL_Surface creation from file \"{}\" failed: {}", filename, SDL_GetError())
                 );
         }
 
         SurfacePtr surface(SDL_ConvertSurface(loaded.get(), SDL_PIXELFORMAT_ARGB8888));
         if (!surface) {
-            throw std::runtime_error(
+            throw logging::Error(logging::ErrorCode::TextureRead,
                 std::format(
                     "SDL_Surface from file \"{}\" conversion to ARGB8888 failed: {}", filename, SDL_GetError()
                     )
@@ -56,7 +56,7 @@ namespace render {
 
         //на будущее
         /*if (!SDL_PremultiplySurfaceAlpha(surface.get(), false)) {
-            throw std::runtime_error(
+            throw logging::Error(logging::ErrorCode::TextureRead,
                 std::format(
                     "SDL_Surface from file \"{}\" premultiplying failed: {}", filename, SDL_GetError()
                     )

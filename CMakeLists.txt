@@ -5,6 +5,9 @@ project(SoftwareGraphicsLabs LANGUAGES CXX)
 find_package(SDL3 3.4 REQUIRED CONFIG)
 
 set(HEADERS
+        include/wolf/config/ProjectSettings.h
+        include/wolf/render/Projection.h
+        include/wolf/render/TextureProjection.h
         include/wolf/app/Application.h
         include/wolf/core/Vec2.h
         include/wolf/core/Color.h
@@ -27,6 +30,7 @@ set(HEADERS
 )
 
 set(SOURCES
+        src/wolf/config/ProjectSettings.cpp
         src/wolf/app/Application.cpp
         src/wolf/input/PlayerController.cpp
         src/wolf/raycast/RayCaster.cpp

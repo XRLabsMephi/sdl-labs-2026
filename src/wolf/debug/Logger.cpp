@@ -21,7 +21,7 @@ std::ofstream& getLogFile() {
     static std::ofstream file("log.txt", std::ios::app);
 
     if (!file.is_open()) {
-        throw std::runtime_error("Failed to open log.txt");
+        throw logging::Error(logging::ErrorCode::LogOpen, "Failed to open log.txt");
     }
 
     return file;
@@ -54,7 +54,7 @@ void logging::write(
     const std::tm* localTime = std::localtime(&now);
 
     if (localTime == nullptr) {
-        throw std::runtime_error("Failed to obtain local time");
+        throw logging::Error(logging::ErrorCode::LogTime, "Failed to obtain local time");
     }
 
     std::tm time = *localTime;
@@ -82,7 +82,7 @@ void logging::write(
     file.flush();
 
     if (!file) {
-        throw std::runtime_error("Failed to write to log.txt");
+        throw logging::Error(logging::ErrorCode::LogWrite, "Failed to write to log.txt");
     }
 
     sessionStarted = true;
@@ -104,15 +104,15 @@ void logging::warning(
 
 void logging::error(
     std::string_view component,
-    int code,
+    ErrorCode code,
     std::string_view message,
     std::string_view context
 ) {
     std::ostringstream text;
 
     text << "==>>> ERROR (code="
-         << std::dec << code
-         << ", 0x" << std::hex << code
+         << std::dec << static_cast<int>(code)
+         << ", 0x" << std::hex << static_cast<int>(code)
          << "): Msg: " << message
          << " | Context: " << context;
 

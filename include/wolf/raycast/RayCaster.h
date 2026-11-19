@@ -7,29 +7,12 @@
 #include <render/FrameBuffer.h>
 #include <render/TextureStorage.h>
 #include <world/Player.h>
-#include <render/TextureStorage.h>
 #include <render/Fog.h>
-#include <render/ViewSettings.h>
+#include <render/Projection.h>
+#include <debug/Logger.h>
 
 namespace raycast{
-    namespace settings{
-        inline core::Color WALL_COLOR = core::Color(255, 175, 119);
-        inline core::Color GROUND_COLOR = core::Color::lerp_rgb(core::Color::black, core::Color::white, 255 * 3 / 10);
-        inline core::Color SKY_COLOR = core::Color(147, 89, 124);
-
-        inline double minimal_brightness = 0.6;
-        inline double darkening_distance = 30.0;
-
-        inline bool angle_projection_mode = false;
-    }
-
-
     using Vector2 = core::Vector2;
-    /**@brief The class that implements casting rays and set drawing parameters*/
-    enum Effects{
-        None,
-        FishEye
-    };
     /** @brief Encapsulates ray casting logic*/
     class RayCaster{
     public:
@@ -45,7 +28,7 @@ namespace raycast{
             view_settings_(view_settings),
             depth_buffer_(frame_width_)
         {if (frame_width_ <= 1 || frame_height_ <= 0){
-            throw std::invalid_argument("Invalid frame resolution");
+            throw logging::Error(logging::ErrorCode::RayFrame, "Invalid frame resolution");
         }}
         /**
         * Cast rays for each column of screen.
@@ -84,6 +67,6 @@ namespace raycast{
 
         //draw column in FrameBuffer
         void drawByRayHit(const std::pair<double, double>& cos_vertical_horizontal,
-                          double depth, double tan_half_fov, int column) const;
+                          double depth, const render::Projection& projection, int column) const;
     };
 }

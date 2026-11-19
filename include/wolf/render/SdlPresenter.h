@@ -27,7 +27,7 @@ namespace render {
          * @brief initializes Sdl_Presenter to draw to given window
          * @param window Window that image will be rendered to
          */
-        explicit SdlPresenter(SDL_Window* window);
+        SdlPresenter(SDL_Window* window, int width, int height);
 
         /**
          * @brief Prints FrameBuffer into Texture and draws it on the screen

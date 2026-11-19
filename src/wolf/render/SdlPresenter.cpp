@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <cstring>
 #include <format>
 #include <render/SdlPresenter.h>
@@ -20,18 +21,11 @@ void render::SdlPresenter::fail(std::string_view message) {
     error_message = message;
 }
 
-render::SdlPresenter::SdlPresenter(SDL_Window *window) {
-    if (!window) { throw std::invalid_argument("window cannot be null"); }
+render::SdlPresenter::SdlPresenter(SDL_Window *window, int width, int height) {
+    if (!window) { throw logging::Error(logging::ErrorCode::PresenterInitialization, "window cannot be null"); }
 
-    int width = 0, height = 0;
-    if (!SDL_GetWindowSizeInPixels(window, &width, &height)) {
-        fail(std::format("failed to get window size: {}", SDL_GetError()));
-        throw std::runtime_error(error_message);
-    }
-
-    if (width == 0 || height == 0) {
-        fail(std::format("invalid window size: {} * {}", width, height));
-        throw std::runtime_error(error_message);
+    if (width <= 0 || height <= 0) {
+        throw logging::Error(logging::ErrorCode::PresenterInitialization, "Invalid frame size");
     }
 
     width_ = static_cast<buf_size_t>(width);
@@ -39,13 +33,13 @@ render::SdlPresenter::SdlPresenter(SDL_Window *window) {
 
     if (width_ > std::numeric_limits<buf_size_t>::max() / height_) {
         fail("failed to create presenter: Buffer dimensions are too large");
-        throw std::length_error(error_message);
+        throw logging::Error(logging::ErrorCode::PresenterInitialization, error_message);
     }
 
     SDL_Renderer *raw_renderer = SDL_CreateRenderer(window, nullptr);
     if (!raw_renderer) {
         fail(std::format("failed to create renderer: {}", SDL_GetError()));
-        throw std::runtime_error(error_message);
+        throw logging::Error(logging::ErrorCode::PresenterInitialization, error_message);
     }
     renderer_.reset(raw_renderer);
 
@@ -56,7 +50,7 @@ render::SdlPresenter::SdlPresenter(SDL_Window *window) {
         height, width);
     if (!raw_texture) {
         fail(std::format("failed to create texture: {}", SDL_GetError()));
-        throw std::runtime_error(error_message);
+        throw logging::Error(logging::ErrorCode::PresenterInitialization, error_message);
     }
     texture_.reset(raw_texture);
 }
@@ -98,10 +92,18 @@ bool render::SdlPresenter::present(const FrameBuffer &buffer) {
         return false;
     }
 
+    const double scale = std::min(static_cast<double>(out_width) / width_,
+                                  static_cast<double>(out_height) / height_);
+    const float draw_width = static_cast<float>(width_ * scale);
+    const float draw_height = static_cast<float>(height_ * scale);
+    if (!SDL_RenderClear(renderer_.get())) {
+        fail(std::format("failed to clear renderer: {}", SDL_GetError()));
+        return false;
+    }
     const SDL_FRect dst{
-        static_cast<float>(out_width - out_height) / 2.0f,
-        static_cast<float>(out_height - out_width) / 2.0f,
-        static_cast<float>(out_height), static_cast<float>(out_width)
+        (out_width - draw_height) / 2.0f,
+        (out_height - draw_width) / 2.0f,
+        draw_height, draw_width
     };
 
     if (!SDL_RenderTextureRotated(

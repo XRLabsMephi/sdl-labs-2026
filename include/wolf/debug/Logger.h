@@ -1,9 +1,32 @@
 #pragma once
 
 #include <chrono>
+#include <string>
 #include <string_view>
+#include <stdexcept>
 
 namespace logging {
+    enum class ErrorCode {
+        SdlInitialization = 100, WindowCreation, InitializationException, NotInitialized,
+        RuntimeException, MouseMode,
+        ConfigOpen = 200, ConfigValue,
+        MapLoading = 300, InvalidSpawn,
+        PlayerRotation = 400, MovementStep, InputAxis, InputBinding,
+        RayFrame = 500, RayCamera, SpriteDepthBuffer,
+        FrameDimensions = 600, FrameSize,
+        PresenterInitialization = 700, FramePresentation,
+        TextureMapping = 800, TextureId, TextureDuplicate, TextureRead,
+        LogOpen = 900, LogTime, LogWrite
+    };
+
+    class Error : public std::runtime_error {
+    public:
+        const ErrorCode code;
+
+        Error(ErrorCode code, const std::string& message)
+            : std::runtime_error(message), code(code) {}
+    };
+
     void info(
         std::string_view component,
         std::string_view message
@@ -16,7 +39,7 @@ namespace logging {
 
     void error(
         std::string_view component,
-        int code,
+        ErrorCode code,
         std::string_view message,
         std::string_view context
     );

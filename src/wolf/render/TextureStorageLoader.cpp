@@ -11,12 +11,10 @@
 #include "debug/Logger.h"
 
 namespace {
-    constexpr const char *component = "TXINFL";
     constexpr size_t MAX_ID_LIMIT = 4095;
 
     void fail(const std::string &msg) {
-        logging::error(component, 2, msg, "");
-        throw std::runtime_error(std::format("{} error", component));
+        throw logging::Error(logging::ErrorCode::TextureMapping, msg);
     };
 
     std::string_view trim(std::string_view s) {

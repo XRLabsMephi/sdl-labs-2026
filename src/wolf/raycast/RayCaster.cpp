@@ -3,74 +3,64 @@
 #include <iostream>
 #include <cmath>
 #include <limits>
-#include <cassert>
+#include <algorithm>
+#include <render/TextureProjection.h>
 #include <utility>
 
 using namespace raycast;
-using namespace raycast::settings;
+using logging::Error;
+using logging::ErrorCode;
 
-void RayCaster::drawByRayHit(const std::pair<double, double>& cos_vertical_horizontal, double depth,
-                             double tan_half_fov, int column) const{
-    const int W_H = frame_height_; // the height of wall in pixels
-    const int P_H = player_.getEyeHeight(); // the height of player in pixels
+void RayCaster::drawByRayHit(const std::pair<double, double>& normal_cos, double depth,
+                             const render::Projection& projection, int column) const {
+    const int horizon = static_cast<int>(projection.horizon());
+    frame_buffer_.vline(column, 0, horizon - 1, view_settings_.sky_color);
+    frame_buffer_.vline(column, horizon, frame_height_ - 1, view_settings_.ground_color);
+    if (!ray_cast_hit.has_hit_ || depth <= eps || !std::isfinite(depth)) return;
 
-    //calculating for shadows
-    double brightness_procent_cos = ray_cast_hit.face_index_ == IntersectionSide::Vertical ?
-                                cos_vertical_horizontal.first : cos_vertical_horizontal.second;
-    //for smooth changing
-    double brightness_procent_depth = std::max(0.0, (1.0 - (depth/darkening_distance)));
-    double brightness_procent = (std::max(0.5, brightness_procent_cos)) * brightness_procent_depth;
-    double brightness = (1.0-minimal_brightness) * brightness_procent + minimal_brightness;
+    const double top = projection.screenY(1.0, depth);
+    const double bottom = projection.screenY(0.0, depth);
+    const auto clip = [this](double y) {
+        return static_cast<int>(std::ceil(std::clamp(y, 0.0, static_cast<double>(frame_height_))));
+    };
+    const int first = clip(top);
+    const int end = clip(bottom);
+    if (first >= end) return;
 
-    Uint8 fog_factor = fog_.factor(depth);
-    auto get_color_with_fog = [this, &fog_factor](core::Color color)
-    {return core::Color::fromBits(fog_.applyFog(static_cast<Uint32>(color), fog_factor));};
+    const auto fog = fog_.factor(depth);
+    const auto wall = core::Color::fromBits(
+        fog_.applyFog(static_cast<Uint32>(view_settings_.wall_color), fog));
+    frame_buffer_.vline(column, first, end - 1, wall);
+    if (ray_cast_hit.wall_id_ < 2) return;
 
-    //draw sky and ground
-    frame_buffer_.vline(column, 0, frame_height_ - P_H, SKY_COLOR);
-    frame_buffer_.vline(column, frame_height_ - P_H + 1, frame_height_, GROUND_COLOR);
-
-
-    const RayHit& ray_hit = ray_cast_hit;
-    bool with_texture = ray_hit.wall_id_ >= 2;
-    const render::Texture& texture = storage_.getOrEmpty(static_cast<size_t>(ray_cast_hit.wall_id_));
-    if (&texture == &render::Texture::empty){
-        with_texture = false;
-    }
-
-    if (ray_hit.has_hit_){
-        const double SC_D = (frame_width_ - 1)/(2 * tan_half_fov * W_H); //distance between camera and virtual screen
-        const double SC_RAY_DEPTH_rel = SC_D/depth;
-        int y0 = static_cast<int>(P_H * (1 - SC_RAY_DEPTH_rel)); //bottom border of wall projection in pixels(can be negative)
-        int y1 = static_cast<int>(P_H + SC_RAY_DEPTH_rel * (W_H - P_H)); //top border of wall projection in pixels(can be more than frame_height_)
-        const Uint32* tex_column_ptr = texture.column(static_cast<int>(ray_cast_hit.wall_u_ * texture.width));
-        int length_of_wall = y1 - y0 + 1;
-        //draw wall
-        frame_buffer_.vline(column, frame_height_ - y1, frame_height_ - y0, get_color_with_fog(WALL_COLOR));
-        if (with_texture){
-            double step = static_cast<double>(texture.height)/static_cast<double>(length_of_wall);
-            auto castToFixedFloat = [](double value){double int_value, frac_value =  std::modf(value, &int_value);
-                return (static_cast<int>(int_value) << 16) | static_cast<int>(frac_value * (1 << 16));};
-            //int tex_start = castToFixedFloat(std::max(0, y1 - frame_height_) * step); //frameBuffer implements this
-            int tex_start = 0;
-            int tex_step = castToFixedFloat(step); //cast to 16.16 format
-            render::DrawCallParams params = {tex_column_ptr, tex_start, tex_step, depth, static_cast<Uint8>(255 * brightness)};
-            frame_buffer_.vline<false>(column, frame_height_ - y0, frame_height_ - y1, params);
-        }
+    const auto& texture = storage_.getOrEmpty(static_cast<size_t>(ray_cast_hit.wall_id_));
+    if (&texture == &render::Texture::empty) return;
+    if (texture.width <= 0 || texture.height <= 0) return;
+    const int tex_x = std::clamp(static_cast<int>(ray_cast_hit.wall_u_ * texture.width),
+                                0, texture.width - 1);
+    const double cosine = ray_cast_hit.face_index_ == IntersectionSide::Vertical
+        ? normal_cos.first : normal_cos.second;
+    const double light = std::max(0.5, cosine)
+        * std::max(0.0, 1.0 - depth / view_settings_.darkening_distance);
+    const auto brightness = static_cast<Uint8>(
+        255 * (view_settings_.minimal_brightness + (1.0 - view_settings_.minimal_brightness) * light));
+    render::DrawCallParams params{texture.column(tex_x), 0, 0, depth, brightness};
+    int y0, y_end;
+    if (render::projectTextureColumn(top, bottom, frame_height_, texture.height, y0, y_end, params)) {
+        frame_buffer_.vline<false>(column, y0, y_end - 1, params);
     }
 }
 
-
-void RayCaster::renderScene(){
-
-    Vector2 camera_direction = player_.getDirection();
-    double field_of_view = player_.getAngle(); // the angle of view in radians (вопрос какой угол)
-
-    //check Player contract
-    assert(!(camera_direction.x == 0.0 && camera_direction.y == 0.0) && "[Error] Zero ray direction.");
-    assert(std::abs(camera_direction.length() - 1.0) < eps  && "[Error] Not normalized vector of camera direction.");
-    assert(!(std::fabs(field_of_view) > pi - angle_eps) && "[Error] Field-of-view angle out of range.");
-
+void RayCaster::renderScene() {
+    const Vector2 camera_direction = player_.getDirection();
+    const double field_of_view = player_.getAngle();
+    if (!std::isfinite(camera_direction.length()) ||
+        std::abs(camera_direction.length() - 1.0) > eps ||
+        !(field_of_view > angle_eps && field_of_view < pi - angle_eps)) {
+        throw Error(ErrorCode::RayCamera, "Invalid camera direction or field of view");
+    }
+    const render::Projection projection(frame_width_, frame_height_, field_of_view,
+                                        player_.getEyeHeight(), view_settings_);
     double tan_half_fov = tan(field_of_view / 2.0f);
 
     //Further, we turn camera direction by -pi/2 to get orthogonal vector and transform it to necessary for current fov length
@@ -92,101 +82,15 @@ void RayCaster::renderScene(){
     auto next_direction = [&rotate, &shift](const Vector2& direction, bool angle_mode = false){
         if (angle_mode){return Vector2{direction.x * rotate.x + direction.y * rotate.y,
                                       -direction.x * rotate.y + direction.y * rotate.x};}
-        return Vector2{direction} + shift;
+        return direction + shift;
     };
 
-    for (int xi = 0; xi < frame_width_; ++xi, ray_direction = next_direction(ray_direction, angle_projection_mode)){ //calculate next direction of ray
+    for (int xi = 0; xi < frame_width_; ++xi, ray_direction = next_direction(ray_direction, view_settings_.angle_projection)){ //calculate next direction of ray
         castRay(ray_direction);
-        double depth;
-        if (!view_settings_.fish_eye){depth = ray_cast_hit.t_distance_ * ray_direction.dot(camera_direction);}
-        else {depth = ray_cast_hit.t_distance_ * ray_direction.length();}
-        depth_buffer_[xi] = depth;
-        drawByRayHit(cos_vertical_horizontal, depth, tan_half_fov, xi);
-    }
-
-    drawSprites(camera_direction, tan_half_fov, wallDepths);
-}
-
-void RayCaster::drawSprites(
-    Vector2 forward,
-    double tanHalfFov,
-    const std::vector<double>& wallDepths
-) const {
-    struct VisibleSprite {
-        const world::Sprite* sprite;
-        double cameraX;
-        double depth;
-    };
-
-    const Vector2 right{forward.y, -forward.x};
-    const double halfWidth = (frame_width_ - 1) / 2.0;
-    const double horizontalFocalLength = halfWidth / tanHalfFov;
-    const double horizon = frame_height_ / 2.0;
-    constexpr std::int64_t TEXTURE_UNIT = 1 << 16;
-
-    std::vector<VisibleSprite> visible;
-    for (const auto& sprite : map_.getSprites()) {
-        const Vector2 relative = sprite.position - player_.getPosition();
-        const double depth = relative.dot(forward);
-        if (depth > eps) {
-            visible.push_back({&sprite, relative.dot(right), depth});
-        }
-    }
-
-    // Blend nearer sprites over farther sprites and the wall pass.
-    std::stable_sort(visible.begin(), visible.end(),
-        [](const VisibleSprite& lhs, const VisibleSprite& rhs) {
-            return lhs.depth > rhs.depth;
-        });
-
-    for (const auto& [sprite, cameraX, depth] : visible) {
-        const auto& texture = textures_.getOrEmpty(sprite->textureId);
-        const double centerX = halfWidth + horizontalFocalLength * cameraX / depth;
-        const double projectedHeight = frame_height_ * (sprite->scale / depth);
-        const double projectedWidth = horizontalFocalLength * (sprite->scale / depth)
-            * (static_cast<double>(texture.width) / texture.height);
-
-        // Align the base of the sprite with the base of a wall at the same depth.
-        const double bottom = horizon + horizon / depth;
-        const double top = bottom - projectedHeight;
-        const double left = centerX - projectedWidth / 2.0;
-        const double rightEdge = centerX + projectedWidth / 2.0;
-        if (!std::isfinite(projectedWidth) || !std::isfinite(projectedHeight) ||
-            projectedWidth <= 0.0 || projectedHeight <= 0.0) {
-            continue;
-        }
-
-        // Keep the original bounds for texture coordinates after clipping.
-        const auto clip = [](double edge, int limit) {
-            return static_cast<int>(std::ceil(std::clamp(edge, 0.0, static_cast<double>(limit))));
-        };
-        const int x0 = clip(left, frame_width_);
-        const int xEnd = clip(rightEdge, frame_width_);
-        const int y0 = clip(top, frame_height_);
-        const int yEnd = clip(bottom, frame_height_);
-        if (x0 >= xEnd || y0 >= yEnd) {
-            continue;
-        }
-
-        const auto lastTexel = static_cast<std::int64_t>(texture.height) * TEXTURE_UNIT - 1;
-        const double textureStep = static_cast<double>(texture.height) * TEXTURE_UNIT / projectedHeight;
-        const auto texY = static_cast<std::int64_t>(
-            std::clamp((y0 - top) / projectedHeight, 0.0, 1.0) * lastTexel
-        );
-        const auto step = yEnd - y0 > 1
-            ? std::min(static_cast<std::int64_t>(textureStep), (lastTexel - texY) / (yEnd - y0 - 1))
-            : 0;
-
-        for (int x = x0; x < xEnd; ++x) {
-            if (depth >= wallDepths[x]) {
-                continue;
-            }
-            const int texX = std::min(texture.width - 1,
-                static_cast<int>(std::clamp((x - left) / projectedWidth, 0.0, 1.0) * texture.width));
-            frame_buffer_.vline_sprite(x, y0, yEnd - 1, {
-                texture.column(texX), texY, step, static_cast<float>(depth), 255
-            });
-        }
+        const double depth = ray_cast_hit.t_distance_ * ray_direction.dot(camera_direction);
+        depth_buffer_[xi] = ray_cast_hit.has_hit_ ? depth : std::numeric_limits<double>::infinity();
+        drawByRayHit(cos_vertical_horizontal,
+                     projection.renderDepth(depth, projection.slopeAt(xi)), projection, xi);
     }
 }
 

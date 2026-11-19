@@ -28,12 +28,18 @@ namespace input {
             static_cast<std::size_t>(Action::Count);
 
         std::array<bool, actionCount> actions{};
+        std::array<SDL_Scancode, actionCount> bindings{
+            SDL_SCANCODE_W, SDL_SCANCODE_S, SDL_SCANCODE_A, SDL_SCANCODE_D,
+            SDL_SCANCODE_LEFT, SDL_SCANCODE_RIGHT
+        };
 
         double mouseDeltaX = 0.0;
 
         double axisValue(Action negative, Action positive) const;
 
     public:
+        void setBindings(const std::array<SDL_Scancode, actionCount>& keys) { bindings = keys; }
+
         void beginFrame() {
             mouseDeltaX = 0.0;
         }

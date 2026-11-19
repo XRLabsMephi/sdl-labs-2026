@@ -6,6 +6,7 @@
 namespace input {
     class PlayerController {
     private:
+        double maxMovementStep = 0.1;
         double moveSpeed = 3.0;
         double rotationSpeed = 2.0;
         double mouseSensitivity = 0.002;
@@ -29,6 +30,8 @@ namespace input {
         ) const;
 
     public:
+        void setMaxMovementStep(double step);
+
         void update(
             world::Player& player,
             const world::Map& map,

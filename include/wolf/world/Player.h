@@ -12,7 +12,7 @@ namespace world {
         double rotation = 0.0;
         double angle = std::numbers::pi / 3;
         double radius = 0.2;
-        int eyeHeight = 512;
+        double eyeHeight = 0.5;
 
     public:
         core::Vector2 getPosition() const {
@@ -23,8 +23,8 @@ namespace world {
             position = newPosition;
         }
 
-        void setEyeHeigth(int newEyeHeigth) {
-            eyeHeight = newEyeHeigth;
+        void setEyeHeight(double newEyeHeight) {
+            eyeHeight = newEyeHeight;
         }
 
         void setAngle(double newAngle) {
@@ -45,9 +45,11 @@ namespace world {
             return radius;
         }
 
-        int getEyeHeight() const {
+        double getEyeHeight() const {
             return eyeHeight;
         }
+
+        void setRadius(double value) { radius = value; }
 
         void rotate(double angleDelta);
 
