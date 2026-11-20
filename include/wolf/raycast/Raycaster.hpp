@@ -16,10 +16,7 @@ namespace raycast {
     public:
         Raycaster() = default;
 
-        // Hands the raycaster the scene's fog. drawSolidFogColumn() and the
-        // depth check read color() / end() from it, so the fog parameters are
-        // never duplicated here. Passing nullptr disables the shortcut.
-        // Lifetime: fog must outlive the raycaster.
+        // Set fog for raycaster
         void setFog(const effects::Fog* fog) noexcept;
 
         // Renders walls into framebuffer.

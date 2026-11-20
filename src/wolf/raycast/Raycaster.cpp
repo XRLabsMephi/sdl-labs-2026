@@ -159,12 +159,6 @@ namespace raycast {
 
                 core::Vec2 Ray = LastPoint - pos;
 
-                /*
-                    Ray == rayDir * t == [dir + plane * cameraX] * t
-                    depth = (Ray, dir) / |dir| == t * ([dir + plane * cameraX], dir) == t * [1 + (plane * cameraX, dir)] == t
-                    depth = t = Ray / rayDir
-                */
-
                 if (result.side == 0) { // wall is parallel to y, LastPoint.x = int
                     result.depth = Ray.x / rayDir.x;
                     result.wallU = LastPoint.y - (double)result.mapY;
@@ -182,6 +176,7 @@ namespace raycast {
                     result.depth = kEpsilon;
 
                 rayHits_.push_back(result);
+
                 // Keep marching through transparent cells. Stop at a fully opaque
                 // material or the map boundary; cutout coverage is resolved per pixel.
                 if (!map.isInBounds(mapX, mapY) || !textures || textures->isOpaque(result.wallId)) break;
@@ -211,9 +206,7 @@ namespace raycast {
             w
         };
 
-        // Cache the fog end distance once per render call. When the fog was
-        // not injected, kHugeDist makes the check below never fire (real hits
-        // always have depth < kHugeDist), so the shortcut is disabled.
+        // Optimise render of fully fogged walls
         const double fogMax = (fog_ != nullptr) ? fog_->end() : kHugeDist;
 
         for (uint32_t x = 0; x < w; ++x) {
@@ -321,7 +314,7 @@ namespace raycast {
                                     const ColumnCtx& c,
                                     const RayHit&    rh) const noexcept {
         
-        // pack ONCE per column, not per pixel
+        // pack once per column, not per pixel
         const auto color = wallColor(rh.wallId, rh.side);
 
         for (uint32_t y = c.drawStart; y < c.drawEnd; ++y) {

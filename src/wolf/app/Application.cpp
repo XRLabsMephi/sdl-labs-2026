@@ -14,7 +14,7 @@ namespace {
     constexpr bool fBenchmark = false;
 
     constexpr uint32_t IdleFPSlimit = 100;
-    constexpr uint32_t IdleMSwait = 1000 / IdleFPSlimit;
+    uint32_t IdleMSwait;
 
     // Fog consts
     constexpr double kFogStart = 3.0;
@@ -33,6 +33,7 @@ namespace {
     constexpr double kPlayerMoveSpeed = 3.0;
     constexpr double kPlayerTurnSpeed = 2.5;
     constexpr double kPlayerRadius    = 0.2; // collision radius
+    constexpr double kMaxDt           = 1.0 / 6.0;
 
     // colors
     constexpr core::ColorRGBA kCeilingColor{145, 138, 101};
@@ -81,9 +82,19 @@ namespace app {
         renderFrame();
         presenter_.present(framebuffer_);
 
+        if constexpr (IdleFPSlimit == 0) {
+            IdleMSwait = 0;
+        }
+        else {
+            IdleMSwait = 1000 / IdleFPSlimit;
+        }
+
         while (running_) {
             auto curTime = std::chrono::steady_clock::now();
+            
             double dt = std::chrono::duration<double>(curTime - prevTime).count();
+            double physDt = std::min(dt, kMaxDt);
+
             prevTime = curTime;
 
             input::InputState input = pollInput();
@@ -99,25 +110,18 @@ namespace app {
                 frameCount = 0;
                 fpsTimer   = 0.0;
             }
-            
-            if constexpr (fBenchmark) {
-                controller_.update(input, player_, map_, dt);
-                renderFrame();
-                presenter_.present(framebuffer_);
-            }
-            else {
-                if (input.empty()) {
-                    if constexpr (IdleFPSlimit <= 0)
-                        continue;
 
+            controller_.update(input, player_, map_, physDt);
+            renderFrame();
+            presenter_.present(framebuffer_);
+
+            // SDL_Delay(100);
+            
+            if constexpr (!fBenchmark && IdleFPSlimit != 0) {
+                if (input.empty()) {
                     SDL_Delay(IdleMSwait);
                 }
-                else {
-                    controller_.update(input, player_, map_, dt);
-                    renderFrame();
-                    presenter_.present(framebuffer_);
-                }   
-            }                     
+            }                
         }
 
         return 0;
