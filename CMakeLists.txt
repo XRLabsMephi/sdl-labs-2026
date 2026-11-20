@@ -1,20 +1,72 @@
-cmake_minimum_required(VERSION 3.24)
+cmake_minimum_required(VERSION 3.22.1)
 
 project(SoftwareGraphicsLabs LANGUAGES CXX)
 
-add_executable(graphics_lab
-    src/main.cpp
+find_package(SDL3 3.4 REQUIRED CONFIG)
+
+set(HEADERS
+        include/wolf/app/Application.h
+        include/wolf/core/Vec2.h
+        include/wolf/core/Color.h
+        include/wolf/world/Map.h
+        include/wolf/world/Sprite.h
+        include/wolf/world/Player.h
+        include/wolf/render/FrameBuffer.h
+        include/wolf/render/SdlPresenter.h
+        include/wolf/raycast/RayCaster.h
+        include/wolf/raycast/RayHit.h
+        include/wolf/input/InputState.h
+        include/wolf/input/PlayerController.h
+        include/wolf/debug/Logger.h
+        include/wolf/render/Texture.h
+        include/wolf/render/TextureStorage.h
+        include/wolf/render/TextureStorageLoader.h
+        include/wolf/render/Fog.h
+        include/wolf/render/SpriteRenderer.h
+        include/wolf/render/ViewSettings.h
 )
+
+set(SOURCES
+        src/wolf/app/Application.cpp
+        src/wolf/input/PlayerController.cpp
+        src/wolf/raycast/RayCaster.cpp
+        src/wolf/render/FrameBuffer.cpp
+        src/wolf/render/SdlPresenter.cpp
+        src/wolf/world/Map.cpp
+        src/wolf/debug/Logger.cpp
+        src/wolf/world/Player.cpp
+        src/wolf/input/InputState.cpp
+        src/wolf/render/Texture.cpp
+        src/wolf/render/TextureStorage.cpp
+        src/wolf/render/TextureStorageLoader.cpp
+        src/wolf/render/SpriteRenderer.cpp
+)
+
+add_executable(graphics_lab src/wolf/main.cpp ${HEADERS} ${SOURCES})
+
+target_include_directories(graphics_lab PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/wolf
+)
+
+target_link_libraries(graphics_lab PRIVATE SDL3::SDL3)
 
 target_compile_features(graphics_lab PRIVATE cxx_std_20)
 
 target_compile_options(graphics_lab PRIVATE
-    -Wall
-    -Wextra
-    -Wpedantic
+        $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Wall -Wextra -Wpedantic -O3>
+        $<$<CXX_COMPILER_ID:MSVC>:/W4 /permissive->
 )
 
 set_target_properties(graphics_lab PROPERTIES
     CXX_EXTENSIONS OFF
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
 )
+
+# Keep runtime assets beside the executable, including in multi-config builds.
+add_custom_target(graphics_lab_assets
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${CMAKE_CURRENT_SOURCE_DIR}/assets"
+        "$<TARGET_FILE_DIR:graphics_lab>/assets"
+    VERBATIM
+)
+add_dependencies(graphics_lab graphics_lab_assets)
