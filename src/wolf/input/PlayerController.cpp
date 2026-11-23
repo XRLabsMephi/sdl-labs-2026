@@ -33,24 +33,32 @@ namespace wolf::input {
         }
 
         //вектор перемещения
-        double moveX = 0.0;
-        double moveY = 0.0;
+        double dirX = 0.0;
+        double dirY = 0.0;
         if (input.moveForward) {
-            moveX += player.direction.x * move_fps;
-            moveY += player.direction.y * move_fps;
+            dirX += player.direction.x;
+            dirY += player.direction.y;
         }
         if (input.moveBackward) {
-            moveX -= player.direction.x * move_fps;
-            moveY -= player.direction.y * move_fps;
+            dirX -= player.direction.x;
+            dirY -= player.direction.y;
         }
         if (input.moveRight) {
-            moveX += player.cameraPlane.x * move_fps;
-            moveY += player.cameraPlane.y * move_fps;
+            dirX += player.cameraPlane.x;
+            dirY += player.cameraPlane.y;
         }
         if (input.moveLeft) {
-            moveX -= player.cameraPlane.x * move_fps;
-            moveY -= player.cameraPlane.y * move_fps;
+            dirX -= player.cameraPlane.x;
+            dirY -= player.cameraPlane.y;
         }
+
+        double length = std::sqrt(dirX * dirX + dirY * dirY);
+        if (length > 0.0) {
+            dirX /= length;
+            dirY /= length;
+        }
+        double moveX = dirX * move_fps;
+        double moveY = dirY * move_fps;
         if (map.getCell(static_cast<int>(player.position.x + moveX), static_cast<int>(player.position.y)) == 0) {
             player.position.x += moveX;
         }

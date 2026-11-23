@@ -11,19 +11,28 @@ namespace wolf::sprite {
         int width = fb.getWidth();
         int height = fb.getHeight();
         if (width <= 0 || height <= 0) {
-            throw std::runtime_error("width and height must be greater than 0");
+            return;
         }
-        std::vector<Sprite> sortedSprites = sprites;
-        std::sort(sortedSprites.begin(), sortedSprites.end(),
-            [&player](const Sprite& a, const Sprite& b) {
-                double firstDist = (player.position.x - a.position.x) * (player.position.x - a.position.x) +
-                               (player.position.y - a.position.y) * (player.position.y - a.position.y);
-                double secDist = (player.position.x - b.position.x) * (player.position.x - b.position.x) +
-                               (player.position.y - b.position.y) * (player.position.y - b.position.y);
-                return firstDist > secDist;
-            });
-
-        for (const auto& sprite : sortedSprites) {
+        struct SpriteToRender {
+            Sprite sprite;
+            double depth;
+        };
+        std::vector<SpriteToRender> spritesToRender;
+        for (const auto& sprite : sprites) {
+            double spriteX = sprite.position.x - player.position.x;
+            double spriteY = sprite.position.y - player.position.y;
+            double invDet = 1.0 / (player.cameraPlane.x * player.direction.y - player.direction.x * player.cameraPlane.y);
+            double transformY = invDet * (-player.cameraPlane.y * spriteX + player.cameraPlane.x * spriteY);
+            if (transformY > 0.1) {
+                spritesToRender.push_back({sprite, transformY});
+            }
+        }
+        std::sort(spritesToRender.begin(), spritesToRender.end(),
+        [](const SpriteToRender& a, const SpriteToRender& b) {
+            return a.depth > b.depth;
+        });
+        for (const auto& e : spritesToRender) {
+            const Sprite& sprite = e.sprite;
             double spriteX = sprite.position.x - player.position.x;
             double spriteY = sprite.position.y - player.position.y;
             double invDet = 1.0 / (player.cameraPlane.x * player.direction.y - player.direction.x * player.cameraPlane.y);
@@ -63,7 +72,7 @@ namespace wolf::sprite {
                         int d = (y - vMoveScreen) * 256 - height * 128 + spriteHeight * 128;
                         int textureY = ((d * textura.height) / spriteHeight) / 256;
                         std::uint32_t color = textura.sample(textureX, textureY);
-                        if ((color >> 24) == 0) {
+                        if ((color & 0xFFFFFF) == 0xFF00FF) {
                             continue;
                         }
                         color = fog.apply(color, transformY);
