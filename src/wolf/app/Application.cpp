@@ -5,8 +5,11 @@
 #include "wolf/raycast/Raycaster.hpp"
 #include "wolf/render/FrameBuffer.hpp"
 #include "wolf/render/SdlPresenter.hpp"
+#include "wolf/texture/DemoTextures.hpp"
+#include "wolf/texture/TextureStore.hpp"
 #include "wolf/world/Map.hpp"
 #include "wolf/world/Player.hpp"
+#include "wolf/world/Scene.hpp"
 
 #include <SDL3/SDL.h>
 
@@ -92,6 +95,17 @@ int Application::run()
     try
     {
         const Map map = Map::loadFromFile("assets/wolf/maps/map01.txt");
+        TextureStore textures;
+        loadWallTextures(textures);
+        loadSpriteTextures(textures);
+        const Scene scene = Scene::loadFromFile("assets/wolf/maps/scene01.txt", map);
+        for (const Sprite& sprite : scene.sprites())
+        {
+            if (!textures.contains(sprite.textureId))
+            {
+                throw std::runtime_error("Scene references an unknown sprite texture");
+            }
+        }
         Player player;
         resetPlayerIfInsideWall(player, map);
         FrameBuffer frame(320, 200);
