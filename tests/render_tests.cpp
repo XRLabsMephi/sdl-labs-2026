@@ -1,5 +1,8 @@
 #include "wolf/raycast/Raycaster.hpp"
+#include "wolf/render/Fog.hpp"
 #include "wolf/render/FrameBuffer.hpp"
+#include "wolf/render/SpriteRenderer.hpp"
+#include "wolf/render/TextureStore.hpp"
 #include "wolf/world/Map.hpp"
 #include "wolf/world/Player.hpp"
 
@@ -95,6 +98,12 @@ void testDdaAndPerspective()
     require(nearHit.hit && nearHit.cellX == 1 && nearHit.cellY == 2 && nearHit.wallId == 3,
             "DDA did not stop at the first wall");
     require(std::abs(nearHit.depth - 0.5) < 1e-9, "First-wall depth is wrong");
+    require(std::abs(nearHit.wallU - 0.5) < 1e-9, "Wrong texture coordinate on X wall");
+    player.direction = {0.0, 1.0};
+    player.cameraPlane = {-0.66, 0.0};
+    player.position.x = 2.25;
+    require(std::abs(raycaster.cast(map, player, 0.0).wallU - 0.25) < 1e-9,
+            "Y wall should use the X coordinate for its texture");
 }
 
 void testProjectionAndClipping()
@@ -121,6 +130,53 @@ void testProjectionAndClipping()
     }
 }
 
+void testTexturedScene()
+{
+    wolf::TextureStore textures;
+    textures.loadBmp(1, "assets/wolf/textures/brick.bmp");
+    textures.loadBmp(4, "assets/wolf/textures/barrel.bmp", true);
+    textures.loadBmp(5, "assets/wolf/textures/lamp.bmp", true);
+    const wolf::Fog fog{2.0, 8.0};
+    const wolf::Player player;
+    const wolf::Raycaster raycaster;
+    const wolf::SpriteRenderer sprites;
+    wolf::FrameBuffer frame(80, 50);
+    std::vector<double> depths(frame.width());
+
+    raycaster.renderTextured(boxedMap(), player, textures, fog, frame, depths);
+    require(std::abs(depths[40] - 1.5) < 1e-9, "Textured pass did not save wall depth");
+    const auto& brick = textures.at(1);
+    require(frame.data()[25 * 80 + 40] == brick.sample(brick.width / 2, brick.height / 2),
+            "Textured wall did not sample the center of the image");
+    require(fog.apply(0xFF000000, 2.0) == 0xFF000000
+            && fog.apply(0xFF000000, 8.0) == fog.color
+            && fog.apply(0xFF000000, 5.0) == 0xFF1F242C, "Fog gradient is wrong");
+
+    const wolf::Sprite barrel{{1.5, 2.5}, 4, 0.8};
+    const wolf::Sprite lamp{{1.2, 2.5}, 5, 0.8};
+    const auto center = [&frame] { return frame.data()[25 * 80 + 40]; };
+    const auto background = center();
+    const auto transparentCorner = frame.data()[5 * 80 + 20];
+    sprites.render(std::span(&barrel, 1), player, textures, depths, fog, frame);
+    const auto barrelPixel = center();
+    require(barrelPixel != background, "Front sprite is missing");
+    require(frame.data()[5 * 80 + 20] == transparentCorner, "Transparent sprite background covered the wall");
+    const wolf::Sprite nearFirst[]{barrel, lamp};
+    sprites.render(nearFirst, player, textures, depths, fog, frame);
+    require(center() == barrelPixel, "The farther sprite covered the nearer sprite");
+
+    raycaster.renderTextured(boxedMap(), player, textures, fog, frame, depths);
+    const auto rightBackground = frame.data()[25 * 80 + 42];
+    const auto leftBackground = frame.data()[25 * 80 + 38];
+    for (int x = 40; x < frame.width(); ++x)
+    {
+        depths[x] = 0.5;
+    }
+    sprites.render(std::span(&barrel, 1), player, textures, depths, fog, frame);
+    require(frame.data()[25 * 80 + 42] == rightBackground, "Wall did not occlude the right half");
+    require(frame.data()[25 * 80 + 38] != leftBackground, "Wall occluded the visible half");
+}
+
 } // namespace
 
 int main()
@@ -128,4 +184,5 @@ int main()
     testFrameBuffer();
     testDdaAndPerspective();
     testProjectionAndClipping();
+    testTexturedScene();
 }
