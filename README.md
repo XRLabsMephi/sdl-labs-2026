@@ -4,9 +4,8 @@
 
 ## Участники и модули
 
-- №1: `Map`, `Player`, `PlayerController`, `Application` — карта, управление и основной цикл.
-- №2: `Raycaster`, `RayHit` — лучи, DDA и перспектива.
-- №3: `FrameBuffer`, `SdlPresenter` — пиксели кадра и вывод через SDL3.
+- №1: `Map`, `Player`, `PlayerController`, `Application`, `TextureStore`, `Scene` — карта, управление, ресурсы и основной цикл.
+- №2: `Raycaster`, `RayHit`, `FrameBuffer`, `SdlPresenter`, `SpriteRenderer`, `Fog` — лучи, перспектива, пиксели кадра, спрайты и туман.
 
 ## Сборка и запуск
 
