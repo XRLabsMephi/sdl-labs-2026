@@ -11,6 +11,7 @@ add_executable(graphics_lab
     src/wolf/raycast/Raycaster.cpp
     src/wolf/render/FrameBuffer.cpp
     src/wolf/render/SdlPresenter.cpp
+    src/wolf/texture/Texture.cpp
     src/wolf/world/Map.cpp
 )
 
