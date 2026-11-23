@@ -63,6 +63,10 @@ void SpriteRenderer::render(std::span<const Sprite> sprites, const Player& playe
         const double width = frame.width() * item.sprite->scale * texture.width
             / (2.0 * planeWidth * item.depth * texture.height);
         const double centerX = frame.width() * (1.0 + item.lateral / (item.depth * planeWidth)) / 2.0;
+        if (!std::isfinite(height) || !std::isfinite(width) || !std::isfinite(centerX))
+        {
+            continue;
+        }
         const double left = centerX - width / 2.0;
         const double top = (frame.height() - height) / 2.0;
         const int endX = edge(left + width, frame.width());

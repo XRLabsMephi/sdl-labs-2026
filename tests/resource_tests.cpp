@@ -6,6 +6,7 @@
 #include "wolf/world/Scene.hpp"
 
 #include <stdexcept>
+#include <string_view>
 
 namespace
 {
@@ -16,6 +17,23 @@ void require(bool condition, const char* message)
     {
         throw std::runtime_error(message);
     }
+}
+
+void requireReadError(auto read, std::string_view expected)
+{
+    try
+    {
+        read();
+    }
+    catch (const std::runtime_error& error)
+    {
+        if (!std::string_view(error.what()).starts_with(expected))
+        {
+            throw;
+        }
+        return;
+    }
+    throw std::runtime_error("Malformed fixture was accepted");
 }
 
 } // namespace
@@ -42,6 +60,12 @@ int main()
             "Lamp foreground should remain visible");
 
     const wolf::Map map = wolf::Map::loadFromFile("assets/wolf/maps/map01.txt");
+    requireReadError([] { (void)wolf::Map::loadFromFile("tests/fixtures/oversized_map.txt"); },
+                     "Invalid map dimensions:");
+    requireReadError([&] { (void)wolf::Scene::loadFromFile("tests/fixtures/truncated_scene.txt", map); },
+                     "Malformed sprite data in scene:");
+    requireReadError([&] { (void)wolf::Scene::loadFromFile("tests/fixtures/outside_scene.txt", map); },
+                     "Invalid sprite in scene:");
     const wolf::Scene scene = wolf::Scene::loadFromFile("assets/wolf/maps/scene01.txt", map);
     require(scene.sprites().size() >= 3, "Demo scene needs several visible objects");
     for (const wolf::Sprite& sprite : scene.sprites())

@@ -2,6 +2,7 @@
 
 #include <stdexcept>
 #include <fstream>
+#include <limits>
 #include <utility>
 
 namespace wolf
@@ -12,7 +13,8 @@ Map::Map(int width, int height, std::vector<int> cells)
     , height_(height)
     , cells_(std::move(cells))
 {
-    if (width_ <= 0 || height_ <= 0 || static_cast<int>(cells_.size()) != width_ * height_)
+    if (width_ <= 0 || height_ <= 0 || width_ > std::numeric_limits<int>::max() / height_
+        || cells_.size() != static_cast<std::size_t>(width_) * height_)
     {
         throw std::invalid_argument("Map dimensions do not match its cells");
     }
@@ -28,13 +30,13 @@ Map Map::loadFromFile(const std::string& path)
 
     int width = 0;
     int height = 0;
-    if (!(input >> width >> height) || width <= 0 || height <= 0)
+    if (!(input >> width >> height) || width <= 0 || height <= 0
+        || width > std::numeric_limits<int>::max() / height)
     {
         throw std::runtime_error("Invalid map dimensions: " + path);
     }
 
     std::vector<int> cells;
-    cells.reserve(static_cast<std::size_t>(width) * static_cast<std::size_t>(height));
     for (int index = 0; index < width * height; ++index)
     {
         int tile = 0;
@@ -43,6 +45,11 @@ Map Map::loadFromFile(const std::string& path)
             throw std::runtime_error("Invalid map cell data: " + path);
         }
         cells.push_back(tile);
+    }
+    input >> std::ws;
+    if (!input.eof())
+    {
+        throw std::runtime_error("Extra map cell data: " + path);
     }
     return {width, height, std::move(cells)};
 }
