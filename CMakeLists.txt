@@ -52,4 +52,13 @@ if(BUILD_TESTING)
     target_compile_features(wolf_render_tests PRIVATE cxx_std_20)
     target_include_directories(wolf_render_tests PRIVATE include)
     add_test(NAME wolf_render_tests COMMAND wolf_render_tests)
+
+    add_executable(wolf_resource_tests
+        tests/resource_tests.cpp
+        src/wolf/texture/Texture.cpp
+        src/wolf/texture/TextureStore.cpp
+    )
+    target_compile_features(wolf_resource_tests PRIVATE cxx_std_20)
+    target_include_directories(wolf_resource_tests PRIVATE include)
+    add_test(NAME wolf_resource_tests COMMAND wolf_resource_tests)
 endif()
