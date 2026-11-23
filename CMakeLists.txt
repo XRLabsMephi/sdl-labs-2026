@@ -12,6 +12,7 @@ add_executable(graphics_lab
     src/wolf/render/FrameBuffer.cpp
     src/wolf/render/SdlPresenter.cpp
     src/wolf/texture/Texture.cpp
+    src/wolf/texture/DemoTextures.cpp
     src/wolf/texture/TextureStore.cpp
     src/wolf/world/Map.cpp
     src/wolf/world/Scene.cpp
