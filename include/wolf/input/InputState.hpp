@@ -33,5 +33,9 @@ namespace input {
         void clear() noexcept {
             flags = 0;
         }
+
+        bool empty() const noexcept {
+            return flags == 0;
+        }
     };
 }

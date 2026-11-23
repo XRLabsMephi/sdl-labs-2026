@@ -2,9 +2,19 @@
 #include <cstddef>
 #include <cstdint>
 
+#if defined(__clang__)
+#  pragma clang diagnostic push
+#  pragma clang diagnostic ignored "-Wgnu-anonymous-struct"
+#  pragma clang diagnostic ignored "-Wnested-anon-types"
+#elif defined(__GNUC__)
+#  pragma GCC diagnostic push
+#  pragma GCC diagnostic ignored "-Wgnu-anonymous-struct"
+#  pragma GCC diagnostic ignored "-Wnested-anon-types"
+#endif
+
 namespace core {
     struct ColorRGBA {
-         union {
+        union {
             struct {
                 uint8_t r;
                 uint8_t g;
@@ -38,3 +48,9 @@ namespace core {
         }
     };
 }
+
+#if defined(__clang__)
+#  pragma clang diagnostic pop
+#elif defined(__GNUC__)
+#  pragma GCC diagnostic pop
+#endif
