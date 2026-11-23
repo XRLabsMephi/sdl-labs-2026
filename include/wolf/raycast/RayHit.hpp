@@ -19,6 +19,7 @@ struct RayHit
     int cellY = -1;
     int wallId = 0;
     HitSide side = HitSide::X;
+    double wallU = 0.0;
 };
 
 } // namespace wolf

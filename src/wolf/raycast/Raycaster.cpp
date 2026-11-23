@@ -1,6 +1,8 @@
 #include "wolf/raycast/Raycaster.hpp"
 
 #include "wolf/render/FrameBuffer.hpp"
+#include "wolf/render/Fog.hpp"
+#include "wolf/render/TextureStore.hpp"
 #include "wolf/world/Map.hpp"
 #include "wolf/world/Player.hpp"
 
@@ -9,6 +11,7 @@
 #include <cmath>
 #include <cstdint>
 #include <limits>
+#include <stdexcept>
 
 namespace wolf
 {
@@ -115,6 +118,10 @@ RayHit Raycaster::cast(const Map& map, const Player& player, double cameraX) con
             result.cellX = cellX;
             result.cellY = cellY;
             result.wallId = wallId;
+            const double alongWall = result.side == HitSide::X
+                ? position.y + distanceAlongRay * rayDirection.y
+                : position.x + distanceAlongRay * rayDirection.x;
+            result.wallU = alongWall - std::floor(alongWall);
             return result;
         }
     }
@@ -145,6 +152,41 @@ void Raycaster::render(const Map& map, const Player& player, FrameBuffer& frameB
         const int stripeHeight = std::max(1, static_cast<int>(std::round(projectedHeight)));
         const int top = (screenHeight - stripeHeight) / 2;
         frameBuffer.drawVerticalSpan(x, top, top + stripeHeight - 1, color);
+    }
+}
+
+void Raycaster::renderTextured(const Map& map, const Player& player, const TextureStore& textures,
+                               const Fog& fog, FrameBuffer& frame, std::span<double> wallDepths) const
+{
+    if (wallDepths.size() != static_cast<std::size_t>(frame.width()))
+    {
+        throw std::invalid_argument("Expected one wall depth per screen column");
+    }
+
+    frame.fillHorizon(ceilingColor, floorColor);
+    for (int x = 0; x < frame.width(); ++x)
+    {
+        const double cameraX = 2.0 * x / frame.width() - 1.0;
+        const RayHit hit = cast(map, player, cameraX);
+        wallDepths[x] = std::numeric_limits<double>::infinity();
+        if (!hit.hit || !std::isfinite(hit.depth) || hit.depth < 0.0)
+        {
+            continue;
+        }
+
+        wallDepths[x] = hit.depth;
+        const auto& texture = textures.at(hit.wallId);
+        const int textureX = std::min(texture.width - 1, static_cast<int>(hit.wallU * texture.width));
+        const double height = std::max(1.0, frame.height() / std::max(hit.depth, 1e-6));
+        const double top = (frame.height() - height) / 2.0;
+        const int startY = static_cast<int>(std::max(0.0, std::ceil(top)));
+        const int endY = static_cast<int>(std::min(double(frame.height()), std::ceil(top + height)));
+        for (int y = startY; y < endY; ++y)
+        {
+            // Sample relative to the full stripe so a close wall keeps its scale when clipped.
+            const int textureY = std::min(texture.height - 1, static_cast<int>((y - top) / height * texture.height));
+            frame.setPixel(x, y, fog.apply(texture.sample(textureX, textureY), hit.depth));
+        }
     }
 }
 
