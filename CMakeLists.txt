@@ -60,6 +60,8 @@ if(BUILD_TESTING)
         src/wolf/texture/DemoTextures.cpp
         src/wolf/texture/Texture.cpp
         src/wolf/texture/TextureStore.cpp
+        src/wolf/world/Map.cpp
+        src/wolf/world/Scene.cpp
     )
     target_compile_features(wolf_resource_tests PRIVATE cxx_std_20)
     target_include_directories(wolf_resource_tests PRIVATE include)

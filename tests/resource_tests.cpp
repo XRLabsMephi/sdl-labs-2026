@@ -2,6 +2,8 @@
 #include "wolf/texture/TextureStore.hpp"
 #include "wolf/texture/DemoTextures.hpp"
 #include "wolf/texture/ResourceIds.hpp"
+#include "wolf/world/Map.hpp"
+#include "wolf/world/Scene.hpp"
 
 #include <stdexcept>
 
@@ -38,4 +40,12 @@ int main()
             "Sprite color key should become transparent");
     require(store.get(wolf::resource::lamp).sample(3, 1) != 0,
             "Lamp foreground should remain visible");
+
+    const wolf::Map map = wolf::Map::loadFromFile("assets/wolf/maps/map01.txt");
+    const wolf::Scene scene = wolf::Scene::loadFromFile("assets/wolf/maps/scene01.txt", map);
+    require(scene.sprites().size() >= 3, "Demo scene needs several visible objects");
+    for (const wolf::Sprite& sprite : scene.sprites())
+    {
+        require(store.contains(sprite.textureId), "Scene references a missing texture");
+    }
 }
