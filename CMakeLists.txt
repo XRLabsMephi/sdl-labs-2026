@@ -14,6 +14,7 @@ add_executable(graphics_lab
     src/wolf/texture/Texture.cpp
     src/wolf/texture/TextureStore.cpp
     src/wolf/world/Map.cpp
+    src/wolf/world/Scene.cpp
 )
 
 target_compile_features(graphics_lab PRIVATE cxx_std_20)
