@@ -3,8 +3,11 @@
 #include "wolf/input/InputState.hpp"
 #include "wolf/input/PlayerController.hpp"
 #include "wolf/raycast/Raycaster.hpp"
+#include "wolf/render/Fog.hpp"
 #include "wolf/render/FrameBuffer.hpp"
 #include "wolf/render/SdlPresenter.hpp"
+#include "wolf/render/SpriteRenderer.hpp"
+#include "wolf/render/TextureStore.hpp"
 #include "wolf/world/Map.hpp"
 #include "wolf/world/Player.hpp"
 
@@ -12,6 +15,7 @@
 
 #include <chrono>
 #include <stdexcept>
+#include <vector>
 
 namespace wolf
 {
@@ -65,14 +69,15 @@ InputState readInput()
 
 } // namespace
 
-int Application::run()
+int Application::run(bool textured)
 {
     if (!SDL_Init(SDL_INIT_VIDEO))
     {
         throw std::runtime_error(SDL_GetError());
     }
 
-    SDL_Window* window = SDL_CreateWindow("Software Raycaster", 960, 600, SDL_WINDOW_RESIZABLE);
+    SDL_Window* window = SDL_CreateWindow(textured ? "Software Raycaster - Lab 2" : "Software Raycaster - Lab 1",
+                                          960, 600, SDL_WINDOW_RESIZABLE);
     if (window == nullptr)
     {
         const char* error = SDL_GetError();
@@ -91,12 +96,28 @@ int Application::run()
 
     try
     {
-        const Map map = Map::loadFromFile("assets/wolf/maps/map01.txt");
+        const Map map = Map::loadFromFile(textured ? "assets/wolf/maps/map02.txt" : "assets/wolf/maps/map01.txt");
         Player player;
+        TextureStore textures;
+        std::vector<Sprite> sprites;
+        if (textured)
+        {
+            player.position = {8.5, 5.5};
+            textures.loadBmp(1, "assets/wolf/textures/brick.bmp");
+            textures.loadBmp(2, "assets/wolf/textures/metal.bmp");
+            textures.loadBmp(3, "assets/wolf/textures/concrete.bmp");
+            textures.loadBmp(4, "assets/wolf/textures/barrel.bmp", true);
+            textures.loadBmp(5, "assets/wolf/textures/lamp.bmp", true);
+            sprites = {{{6.8, 4.85}, 4, 0.65}, {{4.3, 6.22}, 5, 1.0},
+                       {{2.0, 3.1}, 4, 0.85}, {{1.6, 7.7}, 5, 0.9}};
+        }
         resetPlayerIfInsideWall(player, map);
         FrameBuffer frame(320, 200);
         PlayerController controller;
         Raycaster raycaster;
+        SpriteRenderer spriteRenderer;
+        const Fog fog{2.0, 8.0};
+        std::vector<double> wallDepths(frame.width());
         SdlPresenter presenter(renderer);
         bool running = true;
         auto previous = std::chrono::steady_clock::now();
@@ -118,7 +139,15 @@ int Application::run()
 
             const InputState input = readInput();
             controller.update(player, map, input, deltaSeconds);
-            raycaster.render(map, player, frame);
+            if (textured)
+            {
+                raycaster.renderTextured(map, player, textures, fog, frame, wallDepths);
+                spriteRenderer.render(sprites, player, textures, wallDepths, fog, frame);
+            }
+            else
+            {
+                raycaster.render(map, player, frame);
+            }
             presenter.present(frame);
         }
     }

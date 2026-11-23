@@ -11,6 +11,8 @@ add_executable(graphics_lab
     src/wolf/raycast/Raycaster.cpp
     src/wolf/render/FrameBuffer.cpp
     src/wolf/render/SdlPresenter.cpp
+    src/wolf/render/SpriteRenderer.cpp
+    src/wolf/render/TextureStore.cpp
     src/wolf/world/Map.cpp
 )
 
@@ -45,9 +47,20 @@ if(BUILD_TESTING)
         tests/render_tests.cpp
         src/wolf/raycast/Raycaster.cpp
         src/wolf/render/FrameBuffer.cpp
+        src/wolf/render/SpriteRenderer.cpp
+        src/wolf/render/TextureStore.cpp
         src/wolf/world/Map.cpp
     )
     target_compile_features(wolf_render_tests PRIVATE cxx_std_20)
     target_include_directories(wolf_render_tests PRIVATE include)
+    target_link_libraries(wolf_render_tests PRIVATE SDL3::SDL3)
+    if(WIN32)
+        add_custom_command(TARGET wolf_render_tests POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                $<TARGET_FILE:SDL3::SDL3>
+                $<TARGET_FILE_DIR:wolf_render_tests>
+        )
+    endif()
     add_test(NAME wolf_render_tests COMMAND wolf_render_tests)
+    set_tests_properties(wolf_render_tests PROPERTIES WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
 endif()

@@ -6,7 +6,7 @@ namespace wolf
 class Application
 {
 public:
-    int run();
+    int run(bool textured);
 };
 
 } // namespace wolf
