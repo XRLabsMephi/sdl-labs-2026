@@ -57,10 +57,12 @@ if(BUILD_TESTING)
 
     add_executable(wolf_resource_tests
         tests/resource_tests.cpp
+        src/wolf/texture/DemoTextures.cpp
         src/wolf/texture/Texture.cpp
         src/wolf/texture/TextureStore.cpp
     )
     target_compile_features(wolf_resource_tests PRIVATE cxx_std_20)
     target_include_directories(wolf_resource_tests PRIVATE include)
     add_test(NAME wolf_resource_tests COMMAND wolf_resource_tests)
+    set_tests_properties(wolf_resource_tests PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 endif()

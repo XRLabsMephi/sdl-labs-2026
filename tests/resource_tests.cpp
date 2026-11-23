@@ -1,5 +1,7 @@
 #include "wolf/texture/Texture.hpp"
 #include "wolf/texture/TextureStore.hpp"
+#include "wolf/texture/DemoTextures.hpp"
+#include "wolf/texture/ResourceIds.hpp"
 
 #include <stdexcept>
 
@@ -26,4 +28,14 @@ int main()
     store.insert(7, std::move(texture));
     require(store.contains(7), "Stored texture identifier is missing");
     require(store.get(7).sample(0, 0) == 0xFF112233U, "Stored texture data changed");
+
+    wolf::loadWallTextures(store);
+    wolf::loadSpriteTextures(store);
+    require(store.get(wolf::resource::brickWall).valid(), "Brick wall texture is invalid");
+    require(store.get(wolf::resource::metalWall).valid(), "Metal wall texture is invalid");
+    require(store.get(wolf::resource::stoneWall).valid(), "Stone wall texture is invalid");
+    require(store.get(wolf::resource::barrel).sample(0, 0) == 0,
+            "Sprite color key should become transparent");
+    require(store.get(wolf::resource::lamp).sample(3, 1) != 0,
+            "Lamp foreground should remain visible");
 }
