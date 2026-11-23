@@ -1,6 +1,6 @@
 #pragma once
 
-#include "wolf/world/Sprite.hpp"
+#include "wolf/sprite/Sprite.hpp"
 
 #include <span>
 

@@ -2,7 +2,7 @@
 
 #include "wolf/render/FrameBuffer.hpp"
 #include "wolf/render/Fog.hpp"
-#include "wolf/render/TextureStore.hpp"
+#include "wolf/texture/TextureStore.hpp"
 #include "wolf/world/Map.hpp"
 #include "wolf/world/Player.hpp"
 
@@ -175,7 +175,7 @@ void Raycaster::renderTextured(const Map& map, const Player& player, const Textu
         }
 
         wallDepths[x] = hit.depth;
-        const auto& texture = textures.at(hit.wallId);
+        const auto& texture = textures.get(hit.wallId);
         const int textureX = std::min(texture.width - 1, static_cast<int>(hit.wallU * texture.width));
         const double height = std::max(1.0, frame.height() / std::max(hit.depth, 1e-6));
         const double top = (frame.height() - height) / 2.0;

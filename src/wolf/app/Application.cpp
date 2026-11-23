@@ -7,9 +7,11 @@
 #include "wolf/render/FrameBuffer.hpp"
 #include "wolf/render/SdlPresenter.hpp"
 #include "wolf/render/SpriteRenderer.hpp"
-#include "wolf/render/TextureStore.hpp"
+#include "wolf/texture/DemoTextures.hpp"
+#include "wolf/texture/TextureStore.hpp"
 #include "wolf/world/Map.hpp"
 #include "wolf/world/Player.hpp"
+#include "wolf/world/Scene.hpp"
 
 #include <SDL3/SDL.h>
 
@@ -96,20 +98,25 @@ int Application::run(bool textured)
 
     try
     {
-        const Map map = Map::loadFromFile(textured ? "assets/wolf/maps/map02.txt" : "assets/wolf/maps/map01.txt");
-        Player player;
+        const Map map = Map::loadFromFile(textured ? "assets/wolf/maps/map01.txt"
+                                                   : "assets/wolf/maps/map_lab1.txt");
         TextureStore textures;
-        std::vector<Sprite> sprites;
+        Scene scene;
+        Player player;
         if (textured)
         {
-            player.position = {8.5, 5.5};
-            textures.loadBmp(1, "assets/wolf/textures/brick.bmp");
-            textures.loadBmp(2, "assets/wolf/textures/metal.bmp");
-            textures.loadBmp(3, "assets/wolf/textures/concrete.bmp");
-            textures.loadBmp(4, "assets/wolf/textures/barrel.bmp", true);
-            textures.loadBmp(5, "assets/wolf/textures/lamp.bmp", true);
-            sprites = {{{6.8, 4.85}, 4, 0.65}, {{4.3, 6.22}, 5, 1.0},
-                       {{2.0, 3.1}, 4, 0.85}, {{1.6, 7.7}, 5, 0.9}};
+            loadWallTextures(textures);
+            loadSpriteTextures(textures);
+            scene = Scene::loadFromFile("assets/wolf/maps/scene01.txt", map);
+            for (const Sprite& sprite : scene.sprites())
+            {
+                if (!textures.contains(sprite.textureId))
+                {
+                    throw std::runtime_error("Scene references an unknown sprite texture");
+                }
+            }
+            player.direction = {1.0, 0.0};
+            player.cameraPlane = {0.0, -0.66};
         }
         resetPlayerIfInsideWall(player, map);
         FrameBuffer frame(320, 200);
@@ -142,7 +149,7 @@ int Application::run(bool textured)
             if (textured)
             {
                 raycaster.renderTextured(map, player, textures, fog, frame, wallDepths);
-                spriteRenderer.render(sprites, player, textures, wallDepths, fog, frame);
+                spriteRenderer.render(scene.sprites(), player, textures, wallDepths, fog, frame);
             }
             else
             {

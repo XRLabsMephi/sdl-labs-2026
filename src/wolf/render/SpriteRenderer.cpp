@@ -2,7 +2,7 @@
 
 #include "wolf/render/Fog.hpp"
 #include "wolf/render/FrameBuffer.hpp"
-#include "wolf/render/TextureStore.hpp"
+#include "wolf/texture/TextureStore.hpp"
 #include "wolf/world/Player.hpp"
 
 #include <algorithm>
@@ -58,7 +58,7 @@ void SpriteRenderer::render(std::span<const Sprite> sprites, const Player& playe
     };
     for (const auto& item : visible)
     {
-        const auto& texture = textures.at(item.sprite->textureId);
+        const auto& texture = textures.get(item.sprite->textureId);
         const double height = frame.height() * item.sprite->scale / item.depth;
         const double width = frame.width() * item.sprite->scale * texture.width
             / (2.0 * planeWidth * item.depth * texture.height);

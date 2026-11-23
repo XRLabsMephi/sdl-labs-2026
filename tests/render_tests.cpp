@@ -2,7 +2,9 @@
 #include "wolf/render/Fog.hpp"
 #include "wolf/render/FrameBuffer.hpp"
 #include "wolf/render/SpriteRenderer.hpp"
-#include "wolf/render/TextureStore.hpp"
+#include "wolf/texture/DemoTextures.hpp"
+#include "wolf/texture/ResourceIds.hpp"
+#include "wolf/texture/TextureStore.hpp"
 #include "wolf/world/Map.hpp"
 #include "wolf/world/Player.hpp"
 
@@ -133,9 +135,8 @@ void testProjectionAndClipping()
 void testTexturedScene()
 {
     wolf::TextureStore textures;
-    textures.loadBmp(1, "assets/wolf/textures/brick.bmp");
-    textures.loadBmp(4, "assets/wolf/textures/barrel.bmp", true);
-    textures.loadBmp(5, "assets/wolf/textures/lamp.bmp", true);
+    wolf::loadWallTextures(textures);
+    wolf::loadSpriteTextures(textures);
     const wolf::Fog fog{2.0, 8.0};
     const wolf::Player player;
     const wolf::Raycaster raycaster;
@@ -145,15 +146,15 @@ void testTexturedScene()
 
     raycaster.renderTextured(boxedMap(), player, textures, fog, frame, depths);
     require(std::abs(depths[40] - 1.5) < 1e-9, "Textured pass did not save wall depth");
-    const auto& brick = textures.at(1);
+    const auto& brick = textures.get(1);
     require(frame.data()[25 * 80 + 40] == brick.sample(brick.width / 2, brick.height / 2),
             "Textured wall did not sample the center of the image");
     require(fog.apply(0xFF000000, 2.0) == 0xFF000000
             && fog.apply(0xFF000000, 8.0) == fog.color
             && fog.apply(0xFF000000, 5.0) == 0xFF1F242C, "Fog gradient is wrong");
 
-    const wolf::Sprite barrel{{1.5, 2.5}, 4, 0.8};
-    const wolf::Sprite lamp{{1.2, 2.5}, 5, 0.8};
+    const wolf::Sprite barrel{{1.5, 2.5}, wolf::resource::barrel, 0.8};
+    const wolf::Sprite lamp{{1.2, 2.5}, wolf::resource::lamp, 0.8};
     const auto center = [&frame] { return frame.data()[25 * 80 + 40]; };
     const auto background = center();
     const auto transparentCorner = frame.data()[5 * 80 + 20];

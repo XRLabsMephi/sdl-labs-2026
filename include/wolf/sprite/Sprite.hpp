@@ -8,7 +8,7 @@ namespace wolf
 struct Sprite
 {
     Vec2 position;
-    int textureId;
+    int textureId = 0;
     double scale = 1.0;
 };
 
