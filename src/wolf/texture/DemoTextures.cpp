@@ -13,4 +13,11 @@ void loadWallTextures(TextureStore& store)
     store.loadPpm(resource::stoneWall, "assets/wolf/textures/wall_stone.ppm");
 }
 
+void loadSpriteTextures(TextureStore& store)
+{
+    constexpr Texture::Pixel transparent = 0xFFFF00FFU;
+    store.loadPpm(resource::barrel, "assets/wolf/sprites/barrel.ppm", transparent);
+    store.loadPpm(resource::lamp, "assets/wolf/sprites/lamp.ppm", transparent);
+}
+
 } // namespace wolf
