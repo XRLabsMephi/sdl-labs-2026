@@ -72,7 +72,7 @@ namespace wolf::sprite {
                         int d = (y - vMoveScreen) * 256 - height * 128 + spriteHeight * 128;
                         int textureY = ((d * textura.height) / spriteHeight) / 256;
                         std::uint32_t color = textura.sample(textureX, textureY);
-                        if ((color & 0xFFFFFF) == 0xFF00FF) {
+                        if ((color >> 24) == 0) {
                             continue;
                         }
                         color = fog.apply(color, transformY);
