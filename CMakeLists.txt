@@ -8,6 +8,7 @@ add_executable(graphics_lab
     src/wolf/world/Map.cpp
     src/wolf/texture/TextureStore.cpp
     src/wolf/input/PlayerController.cpp
+    src/wolf/world/SceneSetup.cpp
     src/wolf/input/SdlInput.cpp
     src/wolf/raycast/Raycaster.cpp
 )
