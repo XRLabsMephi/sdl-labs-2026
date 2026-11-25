@@ -130,6 +130,23 @@ add_test(
         COMMAND wolf_player_test
 )
 
+add_executable(wolf_raycaster_test
+    tests/raycaster_test.cpp
+    src/wolf/world/Map.cpp
+    src/wolf/raycast/Raycaster.cpp
+)
+
+target_link_libraries(wolf_raycaster_test PRIVATE
+    wolf_render
+)
+
+target_compile_features(wolf_raycaster_test PRIVATE cxx_std_20)
+
+add_test(
+    NAME wolf_raycaster_test
+    COMMAND wolf_raycaster_test
+)
+
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     foreach(target
         graphics_lab
@@ -141,6 +158,7 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
         wolf_render_demo
         wolf_map_preview
         wolf_player_test
+        wolf_raycaster_test
     )
         target_compile_options(${target} PRIVATE
             -Wall
