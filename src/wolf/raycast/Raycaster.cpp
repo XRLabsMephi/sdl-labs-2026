@@ -77,14 +77,11 @@ RayHit Raycaster::castRay(const Map& map, const Vec2& origin, const Vec2& dir) c
 
         // Вычисление точной точки пересечения и координаты текстуры wallU
         result.hitPoint = Vec2{origin.x + dir.x * result.depth, origin.y + dir.y * result.depth};
-        double wallX = 0.0;
-        if (hitSide == WallSide::Vertical) {
-            wallX = origin.y + result.depth * dir.y;
-        } else {
-            wallX = origin.x + result.depth * dir.x;
-        }
+        double wallX = (hitSide == WallSide::Vertical)
+            ? (origin.y + result.depth * dir.y)
+            : (origin.x + result.depth * dir.x);
         wallX -= std::floor(wallX);
-        result.wallU = wallX;
+        result.wallU = std::clamp(wallX, 0.0, std::nextafter(1.0, 0.0));
     } else {
         result.depth = std::numeric_limits<double>::infinity();
     }
@@ -96,9 +93,10 @@ void Raycaster::render(FrameBuffer& fb, const Map& map, const Player& player) {
     const int screenWidth = fb.width();
     const int screenHeight = fb.height();
 
-    if (static_cast<int>(m_depthBuffer.size()) != screenWidth) {
-        m_depthBuffer.resize(screenWidth);
-    }
+    m_depthBuffer.assign(
+        static_cast<std::size_t>(screenWidth),
+        std::numeric_limits<double>::infinity()
+    );
 
     for (int x = 0; x < screenWidth; ++x) {
         // Координата столбца камеры: левый = -1, центр = 0, правый = +1
