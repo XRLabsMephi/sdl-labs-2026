@@ -63,6 +63,17 @@ For a preset build, run `ctest --preset debug`. To build and test in one
 step after configuration, use `cmake --build --preset debug --target check`.
 Use `ctest --preset debug -L render` to run the rendering tests only.
 
+## Run the raycaster
+
+Run from the repository root so relative paths under `assets/wolf/` resolve.
+After the Debug preset build:
+
+```bash
+./build/debug/bin/graphics_lab
+```
+
+After the manual build above, use `./build/bin/graphics_lab`.
+
 ## Rendering demo
 
 Run the standalone SDL3 demo:
