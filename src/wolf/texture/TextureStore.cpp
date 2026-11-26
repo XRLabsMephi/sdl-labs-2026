@@ -76,14 +76,4 @@ void TextureStore::load(int id, const std::string& filename) {
     textures_.emplace(id, std::move(texture));
 }
 
-const Texture& TextureStore::get(int id) const {
-    auto it = textures_.find(id);
-
-    if (it == textures_.end()) {
-        throw std::runtime_error("Unknown texture id: " + std::to_string(id));
-    }
-
-    return it->second;
-}
-
 }

@@ -30,6 +30,8 @@ target_link_libraries(graphics_lab PRIVATE
 )
 
 add_library(wolf_render
+    src/wolf/texture/TextureLookup.cpp
+    src/wolf/sprite/SpriteRenderer.cpp
     src/wolf/render/Fog.cpp
     src/wolf/texture/Texture.cpp
     src/wolf/render/FrameBuffer.cpp
