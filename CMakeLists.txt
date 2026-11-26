@@ -30,6 +30,7 @@ target_link_libraries(graphics_lab PRIVATE
 )
 
 add_library(wolf_render
+    src/wolf/render/Fog.cpp
     src/wolf/texture/Texture.cpp
     src/wolf/render/FrameBuffer.cpp
 )
