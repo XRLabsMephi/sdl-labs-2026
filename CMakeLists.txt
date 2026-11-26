@@ -163,6 +163,13 @@ set_tests_properties(wolf_sprite_test wolf_presenter_test PROPERTIES LABELS "ren
 set_tests_properties(wolf_player_test PROPERTIES LABELS "input")
 set_tests_properties(wolf_raycaster_test PROPERTIES LABELS "raycast")
 
+add_custom_target(check
+    COMMAND "${CMAKE_CTEST_COMMAND}" -C "$<CONFIG>" --output-on-failure
+    DEPENDS wolf_render_test wolf_raster_test wolf_sprite_test wolf_presenter_test
+            wolf_player_test wolf_raycaster_test
+    USES_TERMINAL
+)
+
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     foreach(target
         graphics_lab
