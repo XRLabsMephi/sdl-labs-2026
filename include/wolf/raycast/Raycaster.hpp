@@ -1,12 +1,15 @@
 #pragma once
 
-#include "wolf/raycast/RayHit.hpp"
-#include "wolf/core/Vec2.hpp"
+#include <vector>
+
 #include "wolf/core/Color.hpp"
+#include "wolf/core/Vec2.hpp"
+#include "wolf/raycast/RayHit.hpp"
+#include "wolf/render/Fog.hpp"
+#include "wolf/render/FrameBuffer.hpp"
+#include "wolf/texture/TextureStore.hpp"
 #include "wolf/world/Map.hpp"
 #include "wolf/world/Player.hpp"
-#include "wolf/render/FrameBuffer.hpp"
-#include <vector>
 
 namespace wolf {
 
@@ -19,6 +22,15 @@ public:
 
     // Рендеринг стен сцены в FrameBuffer
     void render(FrameBuffer& fb, const Map& map, const Player& player);
+
+    // Текстурированные стены, туман и буфер глубины
+    void render(
+        FrameBuffer& frame,
+        const Map& map,
+        const Player& player,
+        const TextureStore& textures,
+        const Fog& fog
+    );
 
     // Буфер глубины стен
     const std::vector<double>& getDepthBuffer() const;
