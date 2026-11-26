@@ -28,6 +28,15 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release"
       }
+    },
+    {
+      "name": "sanitizers",
+      "inherits": "base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_CXX_FLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+        "CMAKE_EXE_LINKER_FLAGS": "-fsanitize=address,undefined"
+      }
     }
   ],
   "buildPresets": [
@@ -38,6 +47,10 @@
     {
       "name": "release",
       "configurePreset": "release"
+    },
+    {
+      "name": "sanitizers",
+      "configurePreset": "sanitizers"
     }
   ],
   "testPresets": [
@@ -54,6 +67,16 @@
     {
       "name": "release",
       "configurePreset": "release",
+      "output": {
+        "outputOnFailure": true
+      },
+      "execution": {
+        "noTestsAction": "error"
+      }
+    },
+    {
+      "name": "sanitizers",
+      "configurePreset": "sanitizers",
       "output": {
         "outputOnFailure": true
       },
