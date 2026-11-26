@@ -8,6 +8,7 @@ Development is organized in separate team and lab branches.
 - `Blobick` - team branch
 - `Blobick_wolf` - Raycaster project branch
 - `Blobick_wolf_lab01` - Lab 1 development
+- `Blobick_wolf_lab02` - Lab 2 development (textures, sprites and fog)
 
 Do not commit directly to `main`.
 
@@ -54,6 +55,9 @@ SDL should not be used for wall geometry calculations.
 
 Public interfaces should be agreed upon before changing
 them in ways that affect other modules.
+
+For Lab 2, coordinate interface changes using the responsibilities and
+rendering contracts in [docs/wolf/render.md](docs/wolf/render.md#lab-2-conventions).
 
 ## Before committing
 
