@@ -37,13 +37,31 @@ Compile all targets:
 cmake --build build
 ```
 
+## Build presets
+
+With Ninja installed, configure and build from the repository root:
+
+```bash
+cmake --preset debug
+cmake --build --preset debug
+```
+
+Use the `release` preset for an optimized build or `sanitizers` with GCC or
+Clang on Linux for AddressSanitizer and UBSan. Each preset uses its own
+directory under `build/`. If SDL3 is installed outside the default search
+paths, pass `-DCMAKE_PREFIX_PATH=/path/to/sdl3` when configuring.
+
 ## Tests
 
-Run framebuffer tests:
+Run the full test suite after a manual build:
 
 ```bash
 ctest --test-dir build --output-on-failure
 ```
+
+For a preset build, run `ctest --preset debug`. To build and test in one
+step after configuration, use `cmake --build --preset debug --target check`.
+Use `ctest --preset debug -L render` to run the rendering tests only.
 
 ## Rendering demo
 
