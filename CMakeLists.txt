@@ -151,12 +151,20 @@ add_test(
     COMMAND wolf_raycaster_test
 )
 
+add_executable(wolf_sprite_test
+    tests/sprite_renderer_test.cpp
+    src/wolf/texture/TextureStore.cpp
+)
+target_link_libraries(wolf_sprite_test PRIVATE wolf_render SDL3::SDL3)
+add_test(NAME wolf_sprite_test COMMAND wolf_sprite_test)
+
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     foreach(target
         graphics_lab
         wolf_render
         wolf_render_test
         wolf_raster_test
+        wolf_sprite_test
         wolf_sdl
         wolf_presenter_test
         wolf_render_demo
