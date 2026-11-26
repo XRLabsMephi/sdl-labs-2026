@@ -158,6 +158,11 @@ add_executable(wolf_sprite_test
 target_link_libraries(wolf_sprite_test PRIVATE wolf_render SDL3::SDL3)
 add_test(NAME wolf_sprite_test COMMAND wolf_sprite_test)
 
+set_tests_properties(wolf_render_test wolf_raster_test PROPERTIES LABELS "render")
+set_tests_properties(wolf_sprite_test wolf_presenter_test PROPERTIES LABELS "render;sdl")
+set_tests_properties(wolf_player_test PROPERTIES LABELS "input")
+set_tests_properties(wolf_raycaster_test PROPERTIES LABELS "raycast")
+
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     foreach(target
         graphics_lab
