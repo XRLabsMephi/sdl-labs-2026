@@ -138,10 +138,12 @@ add_executable(wolf_raycaster_test
     tests/raycaster_test.cpp
     src/wolf/world/Map.cpp
     src/wolf/raycast/Raycaster.cpp
+    src/wolf/texture/TextureStore.cpp
 )
 
 target_link_libraries(wolf_raycaster_test PRIVATE
     wolf_render
+    SDL3::SDL3
 )
 
 target_compile_features(wolf_raycaster_test PRIVATE cxx_std_20)
@@ -161,7 +163,7 @@ add_test(NAME wolf_sprite_test COMMAND wolf_sprite_test)
 set_tests_properties(wolf_render_test wolf_raster_test PROPERTIES LABELS "render")
 set_tests_properties(wolf_sprite_test wolf_presenter_test PROPERTIES LABELS "render;sdl")
 set_tests_properties(wolf_player_test PROPERTIES LABELS "input")
-set_tests_properties(wolf_raycaster_test PROPERTIES LABELS "raycast")
+set_tests_properties(wolf_raycaster_test PROPERTIES LABELS "raycast;sdl")
 
 add_custom_target(check
     COMMAND "${CMAKE_CTEST_COMMAND}" -C "$<CONFIG>" --output-on-failure
