@@ -1,6 +1,6 @@
 # Software Graphics Labs - Raycaster
 
-[![C++ CI](https://github.com/XRLabsMephi/sdl-labs-2026/actions/workflows/ci.yml/badge.svg?branch=Blobick_wolf_lab01)](https://github.com/XRLabsMephi/sdl-labs-2026/actions/workflows/ci.yml)
+[![C++ CI](https://github.com/XRLabsMephi/sdl-labs-2026/actions/workflows/ci.yml/badge.svg?branch=Blobick_wolf_lab02)](https://github.com/XRLabsMephi/sdl-labs-2026/actions/workflows/ci.yml?query=branch%3ABlobick_wolf_lab02)
 
 A simple software raycaster written in C++20 using SDL3.
 
